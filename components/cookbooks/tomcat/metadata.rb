@@ -53,7 +53,7 @@ attribute 'version',
               :help => 'Version of Tomcat',
               :category => '1.Global',
               :order => 4,
-              :form => {'field' => 'select', 'options_for_select' => [['6.0', '6.0'], ['7.0', '7.0']]},
+              :form => {'field' => 'select', 'options_for_select' => [['7.0', '7.0']]},
               :pattern => "[0-9\.]+"
           }
 
