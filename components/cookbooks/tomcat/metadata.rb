@@ -53,7 +53,7 @@ attribute 'version',
               :help => 'Version of Tomcat',
               :category => '1.Global',
               :order => 4,
-              :form => {'field' => 'select', 'options_for_select' => [['7.0', '7.0']]},
+              :form => {'field' => 'select', 'options_for_select' => [['6.0', '6.0'], ['7.0', '7.0']]},
               :pattern => "[0-9\.]+"
           }
 
@@ -82,7 +82,7 @@ attribute 'webapp_install_dir',
 attribute 'tomcat_user',
           :description => "User",
           :format => {
-              :help => 'System user to use for the tomcat process (Note: if empty will default to os-specific tomcat or tomcat6)',
+              :help => 'System user to use for the tomcat process (Note: if empty will default to os-specific tomcat or tomcat version selected )',
               :category => '2.Server',
               :order => 1
           }
@@ -90,7 +90,7 @@ attribute 'tomcat_user',
 attribute 'tomcat_group',
           :description => "Group",
           :format => {
-              :help => 'System group to use for the tomcat process (Note: if empty will default to os-specific tomcat or tomcat6)',
+              :help => 'System group to use for the tomcat process (Note: if empty will default to os-specific tomcat or tomcat version selected )',
               :category => '2.Server',
               :order => 2
           }
