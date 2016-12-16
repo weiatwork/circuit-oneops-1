@@ -1,9 +1,6 @@
 
-major_version = node.workorder.rfcCi.ciAttributes.version.gsub(/\..*/,"")
-major = node.workorder.rfcCi.ciAttributes.version
-minor = node.workorder.rfcCi.ciAttributes.build_version
-tomcat_version_name = "tomcat"+major_version
-server_version = "tomcat-"+major+"."+minor
+tomcat_version_name = tom_ver
+
 # tomcat reinstalls correct version for a few cases
 case node.platform
 when /fedora|redhat|centos/
@@ -19,9 +16,9 @@ tomcat_pkgs = value_for_platform(
   ["centos","redhat","fedora"] => {
                                  # wmt internal rhel 6.2 repo doesnt have tomcatX-admin-webapps
                                  #"default" => [tomcat_version_name,tomcat_version_name+"-admin-webapps"]
-                                 "default" => [server_version]
+                                 "default" => [tomcat_version_name]
   },
-  "default" => [server_version]
+  "default" => [tomcat_version_name]
 )
 
 # Fix package install failure due to metadata expiry
@@ -53,7 +50,7 @@ tomcat_pkgs.each do |pkg|
   end
 end
 
-package "tomcat-admin-webapps" do
+package "#{tomcat_version_name}-admin-webapps" do
   only_if { ["redhat","centos"].include?(node.platform) }
 end
 
@@ -110,7 +107,7 @@ if node["tomcat"].has_key?("environment")
 end
 
 
-template "/etc/init.d/tomcat6" do
+template "/etc/init.d/#{tomcat_version_name}" do
   only_if { node.tomcat.override_default_init=='true'}
   source "tomcat#{major_version}_initd.erb"
   owner "root"
