@@ -1,6 +1,6 @@
 
-tomcat_version_name = tom_ver
-
+full_ver = "#{node.workorder.rfcCi.ciAttributes.version}+"."+#{node.workorder.rfcCi.ciAttributes.build_version}"
+major_version = node.workorder.rfcCi.ciAttributes.version.gsub(/\..*/,"")
 # tomcat reinstalls correct version for a few cases
 case node.platform
 when /fedora|redhat|centos/
@@ -16,9 +16,9 @@ tomcat_pkgs = value_for_platform(
   ["centos","redhat","fedora"] => {
                                  # wmt internal rhel 6.2 repo doesnt have tomcatX-admin-webapps
                                  #"default" => [tomcat_version_name,tomcat_version_name+"-admin-webapps"]
-                                 "default" => [tomcat_version_name]
+                                 "default" => ["tomcat-#{full_ver}"]
   },
-  "default" => [tomcat_version_name]
+  "default" => ["tomcat-#{full_ver}"]
 )
 
 # Fix package install failure due to metadata expiry
@@ -43,18 +43,22 @@ tomcat_pkgs.each do |pkg|
         end
       end
     end
-  end
-  package pkg do
-    Chef::Log.warn("We are installing #{pkg}")
-    action :install
+    package pkg do
+      Chef::Log.warn("We are installing #{pkg}")
+      action :install
+    end
+
+else
+  Chef::Log.warn("We are installing #{pkg}")
+  bash 'Install Tomcat' do
+    code <<-EOH
+    sudo yum -y install tomcat-#{full_ver} tomcat-admin-webapps-#{full_ver}
+    EOH
   end
 end
 
-package "#{tomcat_version_name}-admin-webapps" do
-  only_if { ["redhat","centos"].include?(node.platform) }
-end
 
-template "/etc/#{tomcat_version_name}/server.xml" do
+template "/etc/tomcat/server.xml" do
   source "server#{major_version}.xml.erb"
   owner "root"
   group "root"
@@ -63,14 +67,14 @@ end
 
 
 
-template "/etc/#{tomcat_version_name}/tomcat-users.xml" do
+template "/etc/tomcat/tomcat-users.xml" do
   source "tomcat-users.xml.erb"
   owner "root"
   group "root"
   mode "0644"
 end
 
-template "/etc/#{tomcat_version_name}/Catalina/localhost/manager.xml" do
+template "/etc/tomcat/Catalina/localhost/manager.xml" do
   source "manager.xml.erb"
   owner "root"
   group "root"
@@ -78,13 +82,13 @@ template "/etc/#{tomcat_version_name}/Catalina/localhost/manager.xml" do
 end
 
 
-directory "/etc/#{tomcat_version_name}/policy.d" do
+directory "/etc/tomcat/policy.d" do
   action :create
   owner "root"
   group "root"
 end
 
-template "/etc/#{tomcat_version_name}/policy.d/50local.policy" do
+template "/etc/tomcat/policy.d/50local.policy" do
   source "50local.policy.erb"
   owner "root"
   group "root"
@@ -92,10 +96,10 @@ template "/etc/#{tomcat_version_name}/policy.d/50local.policy" do
 end
 
 
-tomcat_env_setup = "/etc/default/#{tomcat_version_name}"
+tomcat_env_setup = "/etc/default/tomcat"
 case node["platform"]
 when "centos","redhat","fedora"
-  tomcat_env_setup = "/etc/sysconfig/#{tomcat_version_name}"
+  tomcat_env_setup = "/etc/sysconfig/tomcat"
 end
 
 
@@ -107,7 +111,7 @@ if node["tomcat"].has_key?("environment")
 end
 
 
-template "/etc/init.d/#{tomcat_version_name}" do
+template "/etc/init.d/tomcat" do
   only_if { node.tomcat.override_default_init=='true'}
   source "tomcat#{major_version}_initd.erb"
   owner "root"
@@ -116,7 +120,7 @@ template "/etc/init.d/#{tomcat_version_name}" do
 end
 
 template tomcat_env_setup do
-  source "default_#{tomcat_version_name}.erb"
+  source "default_tomcat.erb"
   owner "root"
   group "root"
   mode "0644"

@@ -1,13 +1,12 @@
 # Tomcat
-major_version = node.workorder.rfcCi.ciAttributes.version.gsub(/\..*/,"")
-tomcat_version_name = "tomcat"+major_version
+tversion = tom_ver
 default["tomcat"]["port"] = 8080
 default["tomcat"]["server_port"] = 8005
 default["tomcat"]["ssl_port"] = 8443
 default["tomcat"]["ajp_port"] = 8009
 default["tomcat"]["java_options"] = "-Djava.awt.headless=true"
 default["tomcat"]["use_security_manager"] = false
-default["tomcat"]["webapp_install_dir"] = "/var/lib/#{tomcat_version_name}/webapps"
+default["tomcat"]["webapp_install_dir"] = "/var/lib/#{tversion}/webapps"
 default["tomcat"]["stop_time"] = 45
 # Default thread pool configuration
 default['tomcat']['executor']['executor_name'] = 'tomcatThreadPool'
@@ -31,35 +30,35 @@ case platform
 when "centos","redhat","fedora"
   set["tomcat"]["user"] = "tomcat"
   set["tomcat"]["group"] = "tomcat"
-  set["tomcat"]["home"] = "/usr/share/#{tomcat_version_name}"
-  set["tomcat"]["base"] = "/usr/share/#{tomcat_version_name}"
-  set["tomcat"]["config_dir"] = "/etc/#{tomcat_version_name}"
-  set["tomcat"]["log_dir"] = "/var/log/#{tomcat_version_name}"
-  set["tomcat"]["tmp_dir"] = "/var/cache/#{tomcat_version_name}/temp"
-  set["tomcat"]["work_dir"] = "/var/cache/#{tomcat_version_name}/work"
+  set["tomcat"]["home"] = "/usr/share/#{tversion}"
+  set["tomcat"]["base"] = "/usr/share/#{tversion}"
+  set["tomcat"]["config_dir"] = "/etc/#{tversion}"
+  set["tomcat"]["log_dir"] = "/var/log/#{tversion}"
+  set["tomcat"]["tmp_dir"] = "/var/cache/#{tversion}/temp"
+  set["tomcat"]["work_dir"] = "/var/cache/#{tversion}/work"
   set["tomcat"]["context_dir"] = "#{tomcat["config_dir"]}/Catalina/localhost"
-  set["tomcat"]["webapp_dir"] = "/var/lib/#{tomcat_version_name}/webapps"
+  set["tomcat"]["webapp_dir"] = "/var/lib/#{tversion}/webapps"
 when "debian","ubuntu"
-  set["tomcat"]["user"] = "#{tomcat_version_name}"
-  set["tomcat"]["group"] = "#{tomcat_version_name}"
-  set["tomcat"]["home"] = "/usr/share/#{tomcat_version_name}"
-  set["tomcat"]["base"] = "/var/lib/#{tomcat_version_name}"
-  set["tomcat"]["config_dir"] = "/etc/#{tomcat_version_name}"
-  set["tomcat"]["log_dir"] = "/var/log/#{tomcat_version_name}"
-  set["tomcat"]["tmp_dir"] = "/tmp/#{tomcat_version_name}-tmp"
-  set["tomcat"]["work_dir"] = "/var/cache/#{tomcat_version_name}"
+  set["tomcat"]["user"] = "#{tversion}"
+  set["tomcat"]["group"] = "#{tversion}"
+  set["tomcat"]["home"] = "/usr/share/#{tversion}"
+  set["tomcat"]["base"] = "/var/lib/#{tversion}"
+  set["tomcat"]["config_dir"] = "/etc/#{tversion}"
+  set["tomcat"]["log_dir"] = "/var/log/#{tversion}"
+  set["tomcat"]["tmp_dir"] = "/tmp/#{tversion}-tmp"
+  set["tomcat"]["work_dir"] = "/var/cache/#{tversion}"
   set["tomcat"]["context_dir"] = "#{tomcat["config_dir"]}/Catalina/localhost"
-  set["tomcat"]["webapp_dir"] = "/var/lib/#{tomcat_version_name}/webapps"
+  set["tomcat"]["webapp_dir"] = "/var/lib/#{tversion}/webapps"
 else
-  set["tomcat"]["user"] = "#{tomcat_version_name}"
-  set["tomcat"]["group"] = "#{tomcat_version_name}"
-  set["tomcat"]["home"] = "/usr/share/#{tomcat_version_name}"
-  set["tomcat"]["base"] = "/var/lib/#{tomcat_version_name}"
-  set["tomcat"]["config_dir"] = "/etc/#{tomcat_version_name}"
-  set["tomcat"]["access_log_dir"] = "/var/log/#{tomcat_version_name}"
-  set["tomcat"]["log_dir"] = "/var/log/#{tomcat_version_name}"
-  set["tomcat"]["tmp_dir"] = "/tmp/#{tomcat_version_name}-tmp"
-  set["tomcat"]["work_dir"] = "/var/cache/#{tomcat_version_name}"
+  set["tomcat"]["user"] = "#{tversion}"
+  set["tomcat"]["group"] = "#{tversion}"
+  set["tomcat"]["home"] = "/usr/share/#{tversion}"
+  set["tomcat"]["base"] = "/var/lib/#{tversion}"
+  set["tomcat"]["config_dir"] = "/etc/#{tversion}"
+  set["tomcat"]["access_log_dir"] = "/var/log/#{tversion}"
+  set["tomcat"]["log_dir"] = "/var/log/#{tversion}"
+  set["tomcat"]["tmp_dir"] = "/tmp/#{tversion}-tmp"
+  set["tomcat"]["work_dir"] = "/var/cache/#{tversion}"
   set["tomcat"]["context_dir"] = "#{tomcat["config_dir"]}/Catalina/localhost"
-  set["tomcat"]["webapp_dir"] = "/var/lib/#{tomcat_version_name}/webapps"
+  set["tomcat"]["webapp_dir"] = "/var/lib/#{tversion}/webapps"
 end
