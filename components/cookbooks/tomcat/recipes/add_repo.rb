@@ -1,5 +1,4 @@
-
-full_ver = "#{node.workorder.rfcCi.ciAttributes.version}+"."+#{node.workorder.rfcCi.ciAttributes.build_version}"
+full_ver = "#{node.workorder.rfcCi.ciAttributes.version}.#{node.workorder.rfcCi.ciAttributes.build_version}"
 major_version = node.workorder.rfcCi.ciAttributes.version.gsub(/\..*/,"")
 # tomcat reinstalls correct version for a few cases
 case node.platform
@@ -11,7 +10,7 @@ end
 
 tomcat_pkgs = value_for_platform(
   ["debian","ubuntu"] => {
-    "default" => [tomcat_version_name, tomcat_version_name+"-admin"]
+    "default" => ["tomcat-#{full_ver}", "tomcat-admin-webapps-#{full_ver}"]
   },
   ["centos","redhat","fedora"] => {
                                  # wmt internal rhel 6.2 repo doesnt have tomcatX-admin-webapps
@@ -55,8 +54,8 @@ else
     sudo yum -y install tomcat-#{full_ver} tomcat-admin-webapps-#{full_ver}
     EOH
   end
+ end
 end
-
 
 template "/etc/tomcat/server.xml" do
   source "server#{major_version}.xml.erb"
@@ -125,8 +124,6 @@ template tomcat_env_setup do
   group "root"
   mode "0644"
 end
-
-
 
 unless node["tomcat"]["access_log_dir"].start_with?("/")
   node.set['tomcat']['access_log_dir'] = "/var/log/tomcat#{major_version}/"

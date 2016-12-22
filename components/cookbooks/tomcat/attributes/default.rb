@@ -1,5 +1,5 @@
 # Tomcat
-tversion = tom_ver
+tversion = "tomcat"+node[:tomcat][:version][0,1]
 default["tomcat"]["port"] = 8080
 default["tomcat"]["server_port"] = 8005
 default["tomcat"]["ssl_port"] = 8443

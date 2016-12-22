@@ -4,7 +4,11 @@ def get_attribute_value(attr_name)
 end
 
 def tom_ver
-	major_version = node.workorder.rfcCi.ciAttributes.version.gsub(/\..*/,"")
-	tomcat_version_name = "tomcat"+major_version
+	case node.tomcat.install_type
+	when "repository"
+		tomcat_version_name = "tomcat"
+	when "binary"
+		tomcat_service_name = "tomcat"+node[:tomcat][:version][0,1]
+	end
 	return tomcat_version_name
 end
