@@ -80,8 +80,8 @@ attribute 'pfx_enable',
           :description => 'SSL Certificate (PFX)',
           :default => "false",
           :format => {
-              :help => 'Enable it to upload .pfx file data for Application Gateway.',
-              :category => '3.Application Gateway',
+              :help => 'Enable it to upload .pfx file data for Application Gateway/Certificate store.',
+              :category => '3.PFX format',
               :order => 1,
               :form => {'field' => 'checkbox'}
           }
@@ -92,7 +92,7 @@ attribute 'ssl_data',
           :default => "",
           :format => {
               :help => 'Enter the base-64 encoded form of the .pfx file.',
-              :category => '3.Application Gateway',
+              :category => '3.PFX format',
               :order => 2,
               :filter => {'all' => {'visible' => 'pfx_enable:eq:true'}}
           }
@@ -103,7 +103,7 @@ attribute 'ssl_password',
           :default => "",
           :format => {
               :help => 'Enter password for a .pfx certificate.',
-              :category => '3.Application Gateway',
+              :category => '3.PFX format',
               :order => 3,
               :filter => {'all' => {'visible' => 'pfx_enable:eq:true'}}
           }
