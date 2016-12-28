@@ -6,9 +6,8 @@ end
 def tom_ver
 	case node.tomcat.install_type
 	when "repository"
-		tomcat_version_name = "tomcat"
+		return "tomcat"
 	when "binary"
-		tomcat_service_name = "tomcat"+node[:tomcat][:version][0,1]
+		return "tomcat"+node[:tomcat][:version][0,1]
 	end
-	return tomcat_version_name
 end
