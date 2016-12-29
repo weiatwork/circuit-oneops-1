@@ -434,7 +434,7 @@ ruby_block 'create-ephemeral-volume-on-azure-vm' do
     `echo "pvcreate -f #{ephemeralDevice}" >> #{script_fullpath_name}`
     `echo "vgcreate #{platform_name}-eph #{ephemeralDevice}" >> #{script_fullpath_name}`
 
-    size = node.workorder.rfcCi.ciAttributes["size"]
+    size = node.workorder.rfcCi.ciAttributes["size"].gsub(/\s+/, "")
     l_switch = "-L"
     if size =~ /%/
       l_switch = "-l"
@@ -538,7 +538,7 @@ ruby_block 'create-ephemeral-volume-ruby-block' do
       Chef::Log.info("no ephemerals.")
     end
 
-    size = node.workorder.rfcCi.ciAttributes["size"]
+    size = node.workorder.rfcCi.ciAttributes["size"].gsub(/\s+/, "")
     l_switch = "-L"
     if size =~ /%/
       l_switch = "-l"
@@ -611,7 +611,7 @@ ruby_block 'create-storage-non-ephemeral-volume' do
       Chef::Log.info("Volume Group Exists Already")
     end
 
-    size = node.workorder.rfcCi.ciAttributes["size"]
+    size = node.workorder.rfcCi.ciAttributes["size"].gsub(/\s+/, "")
     l_switch = "-L"
     if size =~ /%/
       l_switch = "-l"
@@ -738,7 +738,7 @@ ruby_block 'ramdisk tmpfs' do
       execute_command("umount #{_mount_point}`")
     end
 
-    _size = node.workorder.rfcCi.ciAttributes["size"]
+    _size = node.workorder.rfcCi.ciAttributes["size"].gsub(/\s+/, "")
     if _options == nil || _options.empty?
       _options = "defaults"
     end
