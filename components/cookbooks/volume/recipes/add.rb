@@ -34,6 +34,8 @@ node.workorder.payLoad[:DependsOn].each do |dep|
 end
 include_recipe "shared::set_provider"
 
+size = node.workorder.rfcCi.ciAttributes["size"].gsub(/\s+/, "")
+
 storage_provider = node.storage_provider_class
 if (storage_provider =~ /azure/) && !storage.nil?        
        dev_id=nil
@@ -63,12 +65,12 @@ end
 cloud_name = node[:workorder][:cloud][:ciName]
 newDevicesAttached = ""
 mode = "no-raid"
-vol_size =  node.workorder.rfcCi.ciAttributes[:size]
+
 Chef::Log.info("-------------------------------------------------------------")
-Chef::Log.info("Volume Size : "+vol_size )
+Chef::Log.info("Volume Size : "+size )
 Chef::Log.info("-------------------------------------------------------------")
 
-if node.workorder.rfcCi.ciAttributes[:size] == "-1"
+if size == "-1"
   Chef::Log.info("skipping because size = -1")
   return
 end
@@ -434,7 +436,6 @@ ruby_block 'create-ephemeral-volume-on-azure-vm' do
     `echo "pvcreate -f #{ephemeralDevice}" >> #{script_fullpath_name}`
     `echo "vgcreate #{platform_name}-eph #{ephemeralDevice}" >> #{script_fullpath_name}`
 
-    size = node.workorder.rfcCi.ciAttributes["size"].gsub(/\s+/, "")
     l_switch = "-L"
     if size =~ /%/
       l_switch = "-l"
@@ -538,7 +539,6 @@ ruby_block 'create-ephemeral-volume-ruby-block' do
       Chef::Log.info("no ephemerals.")
     end
 
-    size = node.workorder.rfcCi.ciAttributes["size"].gsub(/\s+/, "")
     l_switch = "-L"
     if size =~ /%/
       l_switch = "-l"
@@ -611,7 +611,6 @@ ruby_block 'create-storage-non-ephemeral-volume' do
       Chef::Log.info("Volume Group Exists Already")
     end
 
-    size = node.workorder.rfcCi.ciAttributes["size"].gsub(/\s+/, "")
     l_switch = "-L"
     if size =~ /%/
       l_switch = "-l"
@@ -738,22 +737,21 @@ ruby_block 'ramdisk tmpfs' do
       execute_command("umount #{_mount_point}`")
     end
 
-    _size = node.workorder.rfcCi.ciAttributes["size"].gsub(/\s+/, "")
     if _options == nil || _options.empty?
       _options = "defaults"
     end
 
-    Chef::Log.info("mounting ramdisk :: filetype:#{_fstype} dir:#{_mount_point} device:#{_device} size:#{_size} options:#{_options}")
+    Chef::Log.info("mounting ramdisk :: filetype:#{_fstype} dir:#{_mount_point} device:#{_device} size:#{size} options:#{_options}")
 
     # Make directory if not existing
     `mkdir -p #{_mount_point}`
 
-    execute_command("mount -t #{_fstype} -o size=#{_size} #{_fstype} #{_mount_point}")
+    execute_command("mount -t #{_fstype} -o size=#{size} #{_fstype} #{_mount_point}")
 
     # clear existing mount_point and add to fstab again to ensure update attributes and to persist the ramdisk across reboots
     execute_command("grep -v #{_mount_point} /etc/fstab > /tmp/fstab")
     ::File.open("/tmp/fstab","a") do |fstab|
-      fstab.puts("#{_device} #{_mount_point} #{_fstype} #{_options},size=#{_size}")
+      fstab.puts("#{_device} #{_mount_point} #{_fstype} #{_options},size=#{size}")
       Chef::Log.info("adding to fstab #{_device} #{_mount_point} #{_fstype} #{_options}")
     end
     `mv /tmp/fstab /etc/fstab`
