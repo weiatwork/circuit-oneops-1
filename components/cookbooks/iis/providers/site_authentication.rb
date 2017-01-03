@@ -12,15 +12,13 @@ def iis_available?
 end
 private :iis_available?
 
-
 def load_current_resource
-  @session_state = OO::IIS.new.session_state(new_resource.site_name)
+  @request_filtering = OO::IIS.new.authentication
   @current_resource = new_resource.class.new(new_resource.name)
 
   if iis_available?
-    @current_resource.cookieless(@session_state.cookieless_value)
-    @current_resource.cookiename(@session_state.cookiename_value)
-    @current_resource.time_out(@session_state.time_out_value)
+    @current_resource.central_w3c_log_file_directory(@request_filtering.central_w3c_log_file_directory?)
+    @current_resource.central_binary_log_file_directory(@request_filtering.central_binary_log_file_directory?)
   end
 end
 
@@ -36,16 +34,15 @@ action :configure do
   modified = false
 
   [
-    [:cookieless, "Session state cookieless"],
-    [:cookiename, "Session state cookiename"],
-    [:time_out, "Session state timeout"],
+    [:central_w3c_log_file_directory, "Central W3C log file location"],
+    [:central_binary_log_file_directory, "Central binary log file location"],
   ].each do |(property, name)|
     if resource_needs_change_for?(property)
       current_value = current_resource.send(property)
       desired_value = new_resource.send(property)
+
       converge_by("#{name} is set to #{desired_value}\n") do
-        desired_value =
-        @session_state.send("#{property}=", desired_value)
+        @request_filtering.send("#{property}=", desired_value)
         Chef::Log.info "#{name} was set to #{desired_value} (older value was #{current_value})"
         modified = true
       end
