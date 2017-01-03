@@ -88,10 +88,12 @@ iis_urlcompression 'configure url compression and parameters' do
   dynamic_compression_before_cache site.url_compression_dc_before_cache.to_bool
 end
 
+
 iis_compression 'configure compression parameters' do
   max_disk_usage site.compression_max_disk_usage.to_i
   min_file_size_to_compress site.compresion_min_file_size.to_i
   directory site.sc_file_directory
+  only_if { site.enable_static_compression.to_bool }
 end
 
 iis_staticcompression 'configure static compression paramters' do
@@ -100,6 +102,7 @@ iis_staticcompression 'configure static compression paramters' do
   cpu_usage_to_disable site.sc_cpu_usage_to_disable.to_i
   cpu_usage_to_reenable site.sc_cpu_usage_to_reenable.to_i
   directory site.sc_file_directory
+  only_if { site.enable_static_compression.to_bool }
 end
 
 iis_dynamiccompression 'configure dynamic compression paramters' do
@@ -108,6 +111,7 @@ iis_dynamiccompression 'configure dynamic compression paramters' do
   cpu_usage_to_disable site.dc_cpu_usage_to_disable.to_i
   cpu_usage_to_reenable site.dc_cpu_usage_to_reenable.to_i
   directory site.dc_file_directory
+  only_if { site.enable_dynamic_compression.to_bool }
 end
 
 iis_requestfiltering 'configure request filter parameters' do
