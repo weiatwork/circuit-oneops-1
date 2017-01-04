@@ -6,7 +6,7 @@ deps.each do |dep|
   class_name = dep['ciClassName'].split('.').last
   db_type = dep['ciClassName'].split('.').last.downcase
   if class_name == "Redisio"
-    isRedis = true
+    is_redis = true
     include_recipe "ring::replace_#{db_type}"
   end
 end
