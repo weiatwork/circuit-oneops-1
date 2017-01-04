@@ -1,7 +1,7 @@
 deps = node.workorder.payLoad.DependsOn
 
 db_type = nil
-isRedis = false
+is_redis = false
 deps.each do |dep|
   class_name = dep['ciClassName'].split('.').last
   db_type = dep['ciClassName'].split('.').last.downcase
@@ -11,8 +11,6 @@ deps.each do |dep|
   end
 end
 
-if !isRedis
+if !is_redis
   include_recipe "ring::add"
 end
-
-include_recipe "ring::add"
