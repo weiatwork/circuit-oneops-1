@@ -17,8 +17,27 @@
 
 rfcCi = node["workorder"]["rfcCi"]
 nsPathParts = rfcCi["nsPath"].split("/")
-container_name = node.workorder.box.ciName+'-'+nsPathParts[3]+'-'+nsPathParts[2]+'-'+nsPathParts[1]+'-'+ rfcCi["ciId"].to_s
-node.set[:container_name] = container_name
+# TODO if entrypoint payload use platform name, otherwise use component name
+#node.set[:container_name] = node.workorder.box.ciName+'-'+rfcCi["ciId"].to_s
+node.set[:container_name] = node.workorder.box.ciName
+node.set[:container_labels] = {
+  'organization' => nsPathParts[1],
+  'assembly' => nsPathParts[2],
+  'environment' => nsPathParts[3]
+}
+
+image = node.workorder.payLoad.DependsOn.select { |d| d[:ciClassName] =~ /Image/ }
+if image.empty?
+  raise "Not able to get image dependency"
+else
+  image_name = image.first['ciAttributes']['image_url']
+  if image_name && !image_name.empty?
+    Chef::Log.info("Using image name #{image_name}")
+    node.set[:image_name] = image_name
+  else
+    raise "Empty image name attribute"
+  end
+end
 
 cloud_name = node.workorder.cloud.ciName
 
@@ -34,20 +53,6 @@ end
 
 Chef::Log.info("Container Cloud Service: #{cloud_service[:ciClassName]}")
 
-# check if we need to build image
-container = rfcCi[:ciAttributes]
-case container[:image_type]
-when 'registry'
-  Chef::Log.info("Using image #{container[:image]} from registry")
-  node.set[:image_name] = container[:image]
-when 'dockerfile'
-  Chef::Log.info("Build image using a Dockerfile")
-  node.set[:image_name] = container_name + ":" + container[:tag]
-  include_recipe "container::add_image"
-else
-  Chef::Log.fatal!("I don't know how to deal with image type #{container[:image_type]}")
-end
-
 case cloud_service[:ciClassName].split(".").last.downcase
 when /kubernetes/
   include_recipe "kubernetes::add_container"
@@ -56,5 +61,6 @@ when /swarm/
 when /ecs/
   include_recipe "ecs::add_container"
 else
-  Chef::Log.fatal!("Container Cloud Service: #{cloud_service[:ciClassName]}")
+  Chef::Log.error("Container Cloud Service: #{cloud_service[:ciClassName]}")
+  raise
 end

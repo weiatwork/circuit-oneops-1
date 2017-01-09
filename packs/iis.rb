@@ -36,9 +36,10 @@ resource "iis-website",
     :help       => "Installs/Configure IIS"
   },
   :attributes   => {
-    "site_name"     => '',
-    "app_pool_name" => '',
-    "physical_path" => '$OO_LOCAL{app_directory}'
+    "physical_path" => '$OO_LOCAL{app_directory}',
+    "log_file_directory" => '$OO_LOCAL{log_directory}',
+    "dc_file_directory" => '$OO_LOCAL{log_directory}\\IISTemporaryCompressedFiles',
+    "sc_file_directory" => '$OO_LOCAL{log_directory}\\IISTemporaryCompressedFiles'
   }
 
 resource "dotnetframework",
@@ -60,7 +61,7 @@ nuget = '$OO_LOCAL{nuget_exe}'
 package_name = node.artifact.repository
 depends_on = node.workorder.payLoad.DependsOn.select {|c| c[:ciClassName] =~ /website/ }
 physical_path = depends_on.first[:ciAttributes][:physical_path]
-site_name = depends_on.first[:ciAttributes][:site_name]
+site_name = node.workorder.box.ciName
 package_physical_path = ::File.join(physical_path, package_name)
 website_physical_path = ::File.join(physical_path, site_name)
 
@@ -150,6 +151,12 @@ resource "volume",
     :to_resource   => link[:to],
     :attributes    => { "flex" => false, "min" => 1, "max" => 1 }
 end
+
+relation "iis-website::depends_on::certificate",
+  :relation_name => 'DependsOn',
+  :from_resource => 'iis-website',
+  :to_resource => 'certificate',
+  :attributes => {"propagate_to" => "from", "flex" => false, "min" => 1, "max" => 1}
 
 [ 'iis-website', 'nuget-package', 'dotnetframework', 'volume', 'os' ].each do |from|
   relation "#{from}::managed_via::compute",
