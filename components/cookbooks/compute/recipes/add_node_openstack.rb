@@ -93,7 +93,6 @@ server = nil
 ruby_block 'set flavor/image/availability_zone' do
   block do
 
-
     if compute_service.has_key?("availability_zones") && !compute_service[:availability_zones].empty?
       availability_zones = JSON.parse(compute_service[:availability_zones])
     end
@@ -119,8 +118,10 @@ ruby_block 'set flavor/image/availability_zone' do
       Chef::Log.info("using required_availability_zone: #{availability_zone}")
     end
 
-    if ! rfcCi["ciAttributes"]["instance_id"].nil? && ! rfcCi["ciAttributes"]["instance_id"].empty?
-      server = conn.servers.get(rfcCi["ciAttributes"]["instance_id"])
+    if rfcCi['rfcAction'] != 'replace' && 
+      !rfcCi['ciAttributes']['instance_id'].nil? && 
+      !rfcCi['ciAttributes']['instance_id'].empty?      
+        server = conn.servers.get(rfcCi['ciAttributes']['instance_id'])
     else
       conn.servers.all.each do |i|
         if i.name == node.server_name && i.os_ext_sts_task_state != "deleting" && i.state != "DELETED"
@@ -133,31 +134,23 @@ ruby_block 'set flavor/image/availability_zone' do
 
     if server.nil?
       # size / flavor
-
-      Chef::Log.debug("add_node_openstack SizeID: #{node.size_id}")
-
       flavor = conn.flavors.get node.size_id
       Chef::Log.info("flavor: "+flavor.inspect.gsub("\n"," ").gsub("<","").gsub(">",""))
-      if flavor.nil?
-        Chef::Log.error("cannot find flavor: #{node.size_id}")
-        exit 1
-      end
 
       # image_id
       image = conn.images.get node.image_id
       Chef::Log.info("image: "+image.inspect.gsub("\n"," ").gsub("<","").gsub(">",""))
-      if image.nil?
-        Chef::Log.error("cannot find image: #{node.image_id}")
-        exit 1
+
+      exit_with_error "Invalid compute size provided #{node.size_id} .. Please specify different Compute size." if flavor.nil?
+      exit_with_error "Invalid compute image provided #{node.image_id} .. Please specify different OS type." if image.nil?
+
+    elsif ["BUILD","ERROR"].include?(server.state)
+      msg = "vm #{server.id} is stuck in #{server.state} state"
+      if defined?(server.fault)
+        msg = "vm state: #{server.state} " + "fault message: " + server.fault["message"] + " fault code: " + server.fault["code"].to_s if !server.fault.nil? && !fault.empty?
       end
+      exit_with_error "#{msg}"
     else
-      if ["BUILD","ERROR"].include?(server.state)
-        msg = "vm #{server.id} is stuck in #{server.state} state"
-        puts "***FAULT:FATAL=#{msg}"
-        e = Exception.new("no backtrace")
-        e.set_backtrace("")
-        raise e
-      end
       node.set[:existing_server] = true
     end
 
@@ -189,21 +182,14 @@ ruby_block 'setup security groups' do
              case e.response[:body]
              when /\"code\": \d{3}+/
               msg = JSON.parse(e.response[:body])['badRequest']['message']
-              Chef::Log.error("error response body :: #{msg}")
-              puts "***FAULT:FATAL=OpenStack API error: #{msg}"
-              raise Excon::Errors::BadRequest, msg
+              exit_with_error "#{msg}"
              else
               msg = JSON.parse(e.response[:body])
-              Chef::Log.error("error response body :: #{msg}")
-              puts "***FAULT:FATAL=OpenStack API error: #{msg}"
-              raise Excon::Errors::Error, msg
+              exit_with_error "#{msg}"
              end
           rescue Exception => ex
               msg = ex.message
-              puts "***FAULT:FATAL= #{msg}"
-              e = Exception.new("no backtrace")
-              e.set_backtrace("")
-              raise e
+              exit_with_error "#{msg}"
           end
         end
       end
@@ -219,25 +205,8 @@ ruby_block 'setup security groups' do
   end
 end
 
-
-=begin
-
-  openstack vm metadata:
-  owner ( assembly attr )
-  mgmt_url ( new inductor property)
-  organization (org ciName)
-  assembly (assembly ciName)
-  environment (environment ciName)
-  platform (box ciName)
-  component (RealizedAs ciId)
-  instance (Rfc ciId)
-
-=end
-
 mgmt_url = "https://"+node.mgmt_domain
-if node.has_key?("mgmt_url") && !node.mgmt_url.empty?
-  mgmt_url = node.mgmt_url
-end
+mgmt_url = node.mgmt_url if node.has_key?("mgmt_url") && !node.mgmt_url.empty?
 
 metadata = {
   "owner" => owner,
@@ -315,8 +284,7 @@ ruby_block 'create server' do
           when /Request Entity Too Large/,/Quota exceeded/
             limits = conn.get_limits.body["limits"]
             Chef::Log.info("limits: "+limits["absolute"].inspect)
-            Chef::Log.error("openstack quota exceeded for tenant: #{compute_service[:tenant]} user: #{compute_service[:tenant]} - see limits above.")
-            message = "openstack quota exceeded"
+            message = "openstack quota exceeded to spin up new computes on #{cloud_name} cloud for #{compute_service[:tenant]} tenant"
           else
             message = e.message
           end
@@ -335,12 +303,9 @@ ruby_block 'create server' do
             Chef::Log.info("availability zone: #{server_request[:availability_zone]}")
           end
 
-          puts "***FAULT:FATAL="+message
-          e = Exception.new("no backtrace")
-          e.set_backtrace("")
-          raise e
+          exit_with_error "#{message}"
 
-        end
+      end
 
       # give openstack a min
       sleep 60
@@ -398,22 +363,15 @@ ruby_block 'set node network params' do
 
     # specific network
     if !compute_service[:subnet].empty?
-
       network_name = compute_service[:subnet]
       if server.addresses.has_key?(network_name)
-
         addrs = server.addresses[network_name]
         addrs_map = {}
         # some time openstack returns 2 of same addr
         addrs.each do |addr|
           next if ( addr.has_key? "OS-EXT-IPS:type" && addr["OS-EXT-IPS:type"] != "fixed" )
           ip = addr['addr']
-          if addrs_map.has_key? ip
-            puts "***FAULT:FATAL=The same ip #{ip} returned multiple times"
-            e = Exception.new("no backtrace")
-            e.set_backtrace("")
-            raise e
-          end
+          exit_with_error "The same ip #{ip} returned multiple times" if addrs_map.has_key? ip
           addrs_map[ip] = 1
         end
         private_ip = addrs.first["addr"]
@@ -435,39 +393,30 @@ ruby_block 'set node network params' do
 
     if((public_ip.nil? || public_ip.empty?) &&
        rfcCi["rfcAction"] != "add" && rfcCi["rfcAction"] != "replace")
-
       public_ip = node.workorder.rfcCi.ciAttributes.public_ip
       node.set[:ip] = public_ip
       Chef::Log.info("node ip: " + node.ip)
       Chef::Log.info("Fetching ip from workorder rfc for compute update")
     end
 
-
     if node.workorder.rfcCi.ciAttributes.require_public_ip == 'true' && public_ip.empty?
-
       if compute_service[:public_network_type] == "floatingip"
-
         server.addresses.each_value do |addr_list|
           addr_list.each do |addr|
             puts "addr: #{addr.inspect}"
-
             if addr["OS-EXT-IPS:type"] == "floating"
               public_ip = addr["addr"]
               node.set["ip"] = public_ip
             end
           end
         end
-
         if public_ip.empty?
           floating_ip = conn.addresses.create
           floating_ip.server = server
           public_ip = floating_ip.ip
         end
-
       end
-
     end
-
 
     puts "***RESULT:public_ip="+public_ip
     dns_record = public_ip
@@ -503,24 +452,18 @@ ruby_block 'catch errors/faults' do
     # catch faults
     if !server.fault.nil? && !server.fault.empty?
       Chef::Log.error("server.fault: "+server.fault.inspect)
-      if server.fault.inspect =~ /NoValidHost/
-          puts "***FAULT:FATAL=NoValidHost - #{cloud_name} openstack doesn't have resources to create your vm."
-      end
-      e = Exception.new("no backtrace")
-      e.set_backtrace("")
-      raise e
+      exit_with_error "NoValidHost - #{cloud_name} openstack doesn't have resources to create your vm" if server.fault.inspect =~ /NoValidHost/
     end
-
     # catch other, e.g. stuck in BUILD state
     if !node.has_key?("ip") || node.ip.nil?
       msg = "server.state: "+ server.state + " and no ip for vm: #{server.id}"
-      Chef::Log.error(msg)
-      puts "***FAULT:FATAL=#{msg}"
-      e = Exception.new("no backtrace")
-      e.set_backtrace("")
-      raise e
+      exit_with_error "#{msg}"
     end
-
+    # catch other, e.g. VM is in ERROR state
+    if "#{server.state}".eql? "ERROR"
+      msg = "server.state: "+ server.state + "The newly spawned VM is in ERROR state"
+      exit_with_error "#{msg}"
+    end
   end
 end
 
@@ -528,31 +471,23 @@ include_recipe "compute::ssh_port_wait"
 
 ruby_block 'handle ssh port closed' do
   block do
-
     if node[:ssh_port_closed]
       Chef::Log.error("ssh port closed after 5min, dumping console log")
       begin
         console_log = server.console.body
-
         console_log["output"].split("\n").each do |row|
           case row
           when /IP information for eth0... failed|Could not retrieve public key from instance metadata/
             puts "***FAULT:KNOWN=#{row}"
           else
-            puts "***FAULT:FATAL=SSH port not open on VM"
+            exit_with_error "SSH port not open on VM"
           end
           Chef::Log.info("console-log:" +row)
         end
       rescue Exception => e
         Chef::Log.error("could not dump console-log. exception: #{e.inspect}")
       end
-
-      Chef::Log.error("ssh port closed after 5min - fail")
-      puts "***FAULT:FATAL=ssh port closed after 5min"
-      e = Exception.new("no backtrace")
-      e.set_backtrace("")
-      raise e
+      exit_with_error "ssh port closed after 5min"
     end
-
   end
 end
