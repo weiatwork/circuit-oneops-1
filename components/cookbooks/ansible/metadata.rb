@@ -1,4 +1,4 @@
-name             'ansible'
+name             'Ansible'
 maintainer       'OneOps'
 maintainer_email 'support@oneops.com'
 license          'Apache License, Version 2.0'
