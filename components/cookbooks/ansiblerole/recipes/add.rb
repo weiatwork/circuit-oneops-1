@@ -29,16 +29,15 @@ else
     ansiblerole_galaxy "#{ansible_role_filename}" do
       action :install_file
     end
-
-    ansible_playbook = "#{Chef::Config['file_cache_path']}/playbook_#{node.workorder.rfcId}_#{node.workorder.deploymentId}_#{node.workorder.dpmtRecordId}.yml"
-
-    file "#{ansible_playbook}" do
-      content ansible_role_playbook
-    end
-
-    ansiblerole_galaxy "#{ansible_playbook}" do
-      action :run
-    end 
-
   end
 end
+
+ansible_playbook = "#{Chef::Config['file_cache_path']}/playbook_#{node.workorder.rfcId}_#{node.workorder.deploymentId}_#{node.workorder.dpmtRecordId}.yml"
+
+file "#{ansible_playbook}" do
+  content ansible_role_playbook
+end
+
+ansiblerole_galaxy "#{ansible_playbook}" do
+  action :run
+end 
