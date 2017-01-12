@@ -50,7 +50,7 @@ end
   end
 end
 
-%w{attr psmisc}.each do |p|
+%w{attr psmisc lvm2}.each do |p|
   package p do
     action :install
   end
