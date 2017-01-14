@@ -262,7 +262,7 @@ ruby_block 'create server' do
         server.reload
         sleep_count = 0
 
-        # wait for server to be ready for fail within 5min
+        # wait for server to be ready or fail within 5min
         while (!server.ready? && server.fault.nil? && sleep_count < 30) do
           sleep 10
           sleep_count += 1
