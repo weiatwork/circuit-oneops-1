@@ -35,28 +35,6 @@ conn = Fog::Compute.new({
 })
 
 
-# net_id for specifying network to use via subnet attr
-net_id = ''
-begin
-  quantum = Fog::Network.new({
-    :provider => 'OpenStack',
-    :openstack_api_key => compute_service[:password],
-    :openstack_username => compute_service[:username],
-    :openstack_tenant => compute_service[:tenant],
-    :openstack_auth_url => compute_service[:endpoint]
-  })
-
-  quantum.networks.each do |net|
-    if net.name == compute_service[:subnet]
-      Chef::Log.info("net_id: "+net.id)
-      net_id = net.id
-      break
-    end
-  end
-rescue Exception => e
-  Chef::Log.warn("no quantum networking installed")
-end
-
 rfcCi = node["workorder"]["rfcCi"]
 nsPathParts = rfcCi["nsPath"].split("/")
 customer_domain = node["customer_domain"]
@@ -227,8 +205,10 @@ ruby_block 'create server' do
 
       # openstack cant have .'s in key_pair name
       node.set["kp_name"] = node.kp_name.gsub(".","-")
+      attempted_networks = []
 
       begin
+        network_name, net_id = get_enabled_network(compute_service,attempted_networks)
 
         # network / quantum support
         if !net_id.empty?
@@ -278,9 +258,31 @@ ruby_block 'create server' do
 
         Chef::Log.info("server create returned in: #{duration}s")
 
+        sleep 10
+        server.reload
+        sleep_count = 0
+
+        # wait for server to be ready for fail within 5min
+        while (!server.ready? && server.fault.nil? && sleep_count < 30) do
+          sleep 10
+          sleep_count += 1
+          server.reload
+        end
+
+        if !server.fault.nil? && server.fault.has_key?('message')
+          raise Exception.new(server.fault['message'])
+        end        
+        
         rescue Exception =>e
           message = ""
           case e.message
+          when /Failed to allocate the network/
+            Chef::Log.info("retrying different network due to: #{e.message}")
+            attempted_networks.push(network_name)
+            server.destroy
+            sleep 5
+            retry
+                        
           when /Request Entity Too Large/,/Quota exceeded/
             limits = conn.get_limits.body["limits"]
             Chef::Log.info("limits: "+limits["absolute"].inspect)
@@ -289,9 +291,11 @@ ruby_block 'create server' do
             message = e.message
           end
 
-          case e.response[:body]
-           when /\"code\": 400/
-            message = JSON.parse(e.response[:body])['badRequest']['message']
+          if e.respond_to?('response')
+            case e.response[:body]
+             when /\"code\": 400/
+              message = JSON.parse(e.response[:body])['badRequest']['message']
+            end
           end
 
           if message =~ /Invalid imageRef provided/
@@ -307,15 +311,8 @@ ruby_block 'create server' do
 
       end
 
-      # give openstack a min
-      sleep 60
-
-      # wait for server to be ready checking every 30 sec
-      server.wait_for( Fog.timeout, 20 ) { server.ready? }
-
       end_time = Time.now.to_i
       duration = end_time - start_time
-
       Chef::Log.info("server ready in: #{duration}s")
 
     end
