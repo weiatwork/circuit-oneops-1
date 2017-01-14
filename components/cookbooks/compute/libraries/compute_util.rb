@@ -3,11 +3,11 @@
 # @param : msg -  Error message
 #
 def exit_with_error(msg)
-	Chef::Log.error(msg)
-	puts "***FAULT:FATAL=#{msg}"
-	e = Exception.new(msg)
+  Chef::Log.error(msg)
+  puts "***FAULT:FATAL=#{msg}"
+  e = Exception.new(msg)
   e.set_backtrace("")
-	raise e
+  raise e
 end
 
 # get enabled network using the openstack compute cloud service
