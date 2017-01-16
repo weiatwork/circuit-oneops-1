@@ -25,7 +25,6 @@ puts "***RESULT:instance_name=#{node[:server_name]}"
 Chef::Log.info("ostype: #{node[:ostype]} size: #{node[:size_id]} image: #{node[:image_id]}")
 
 cloud_name = node[:workorder][:cloud][:ciName]
-Chef::Log.info("Workorder: #{node[:workorder]}")
 provider = node[:workorder][:services][:compute][cloud_name][:ciClassName].gsub("cloud.service.","").downcase.split(".").last
 node.set['cloud_provider'] = provider
 Chef::Log.info("Cloud Provider: #{provider}")
