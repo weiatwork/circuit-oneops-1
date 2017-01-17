@@ -310,7 +310,7 @@ attribute 'session_state_cookieless',
   :description => 'Cookieless',
   :default     => 'UseCookies',
   :format      => {
-    :help      => 'Specifies whether dynamic compression is enabled for URLs',
+    :help      => 'Specifies how cookies are used for a Web application.',
     :category  => '5.Session State',
     :form        => { 'field' => 'select',
                     'options_for_select' => [['Use URI', 'UseURI'], ['Use Cookies', 'UseCookies'],
@@ -323,7 +323,7 @@ attribute 'session_state_cookie_name',
   :description => 'Cookie name',
   :default     => 'ASP.NET_SessionId',
   :format      => {
-    :help      => 'Specifies whether static compression is enabled for URLs.',
+    :help      => 'Specifies the name of the cookie that stores the session identifier.',
     :category  => '5.Session State',
     :order     => 2
   }
