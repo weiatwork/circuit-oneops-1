@@ -72,14 +72,7 @@ elsif provider == "docker"
   sleep_time = 1
 end
 
-Chef::Log.info("Action is: #{node.workorder.rfcCi.rfcAction}")
-
-if node.workorder.rfcCi.rfcAction !~ /update/
-  # need to sleep a long time for windows to be ready
-  if node[:ostype] =~ /windows/
-    sleep_time = 240
-  end
-end
+Chef::Log.info("Action is: #{node.workorder.rfcCi.rfcAction}") 
 
 ruby_block "wait for boot" do
   block do
