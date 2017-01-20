@@ -4,7 +4,6 @@ maintainer_email 'support@oneops.com'
 license          'Apache License, Version 2.0'
 license          'Apache 2.0'
 description      'Run Ansible Role'
-long_description IO.read(File.join(File.dirname(__FILE__), 'README.md'))
 version          '0.1.0'
 
 grouping 'bom',
@@ -42,6 +41,7 @@ attribute 'ansible_role_name',
           :default     => '<place_holder>',
           :format      => {
             :help     => 'Ansible role name',
+            :filter => {"all" => {"visible" => "source_yaml:eq:false"}},
             :category => '2.Role',
             :order    => 1
           }
@@ -52,6 +52,7 @@ attribute 'ansible_role_version',
           :default     => '<place_holder>',
           :format      => {
             :help     => 'Ansible role name',
+            :filter => {"all" => {"visible" => "source_yaml:eq:false"}},
             :category => '2.Role',
             :order    => 2
           }
