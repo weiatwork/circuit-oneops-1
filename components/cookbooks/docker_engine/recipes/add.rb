@@ -41,6 +41,12 @@ log 'package_install' do
   message "Installing the package #{docker_pkg}-#{docker_ver}-#{docker_rel} from OS repo..."
 end
 
+# install docker-engine-selinux first to avoid installing latest (1.13.0-1 - broken on centos7.2) 
+package "docker-engine-selinux" do
+  version "#{docker_ver}-#{docker_rel}"
+  action :install
+end
+
 package "#{docker_pkg}" do
   version "#{docker_ver}-#{docker_rel}"
   action :install
