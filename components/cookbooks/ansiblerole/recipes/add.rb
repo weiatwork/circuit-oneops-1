@@ -1,7 +1,3 @@
-require 'ap'
-# ansible-playbook -i "localhost," -c local ansible-role-java.yml
-
-# ansible-playbook site.yaml -i hostinv -e firstvar=false -e second_var=value2
 ansible_role_name = node.workorder.rfcCi.ciAttributes.ansible_role_name
 ansible_role_version = node.workorder.rfcCi.ciAttributes.ansible_role_version
 ansible_role_source = node.workorder.rfcCi.ciAttributes.ansible_role_source

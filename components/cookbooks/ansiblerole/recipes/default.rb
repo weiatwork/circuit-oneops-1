@@ -1,1 +1,1 @@
-include_recipe "ansible-role::add"
+include_recipe "ansiblerole::add"
