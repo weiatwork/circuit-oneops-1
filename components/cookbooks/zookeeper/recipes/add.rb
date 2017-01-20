@@ -10,6 +10,7 @@ zk_basename = "zookeeper-#{node[:zookeeper][:version]}"
 ci = node.workorder.rfcCi.ciAttributes;
 zk_base_url = ci['mirror']
 zk_download_url = "#{zk_base_url}"+"#{zk_basename}/"+"#{zk_basename}.tar.gz"
+
 Chef::Log.info("download url from #{zk_download_url} ")
 
 remote_file ::File.join(Chef::Config[:file_cache_path], "#{zk_basename}.tar.gz") do
@@ -68,10 +69,8 @@ service "start-zookeeper-server" do
 end
 
 # Copy the monitoring script to machine, get list of IPs first
-ci = node.workorder.rfcCi
-cloud_index = ci[:ciName].split('-').reverse[1].to_i
-nodes = node.workorder.payLoad.RequiresComputes.reject{ |c| c[:ciName].split('-').reverse[1].to_i != cloud_index }
-string_of_ips = "" 
+nodes = node.workorder.payLoad.RequiresComputes
+string_of_ips = ""
 nodes.each do |n|   
    if string_of_ips.length == 0
      string_of_ips = n[:ciAttributes][:dns_record]
@@ -88,7 +87,7 @@ template check_cluster_health do
   owner 'root'
   group 'root'
   mode "0755"
-  action :create_if_missing
+  #  action :create_if_missing
   variables({
                 :string_of_ips => string_of_ips                
             })

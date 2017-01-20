@@ -479,6 +479,13 @@ ruby_block 'catch errors/faults' do
   end
 end
 
+#give windows some time to initialize - 4 min
+ruby_block 'wait for windows initialization' do
+  block do
+      sleep 240
+  end
+end if node[:ostype] =~ /windows/
+
 include_recipe "compute::ssh_port_wait"
 
 ruby_block 'handle ssh port closed' do
