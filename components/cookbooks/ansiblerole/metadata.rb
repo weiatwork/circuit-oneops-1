@@ -56,12 +56,12 @@ attribute 'ansible_role_version',
             :order    => 2
           }
 
-attribute 'install_from_galaxy',
-          :description => 'install from galaxy?',
+attribute 'source_yaml',
+          :description => 'Source YAML',
           :required => 'required',
-          :default => true,
+          :default => false,
           :format => {
-            :help => 'install from galaxy',
+            :help => 'Source Content',
             :category => '2.Role',
             :form => { 'field' => 'checkbox' },
             :order => 3
@@ -73,12 +73,14 @@ attribute 'ansible_role_source',
           :default     => '',
           :format      => {
             :help     => 'Ansible role source',
+            :filter => {"all" => {"visible" => "source_yaml:eq:true"}},
             :category => '3.Source',
             :order    => 1
           }
 
 attribute 'ansible_role_playbook',
           :description => 'ansible role playbook',
+          :required => 'required',
           :data_type => "text",
           :default     => '',
           :format      => {
