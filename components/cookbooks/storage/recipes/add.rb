@@ -33,7 +33,7 @@ provider = node['provider_class']
 
 size_config = node.workorder.rfcCi.ciAttributes["size"]
 size_scale = size_config[-1,1]
-size = size_config[0..-2].to_i
+size = size_config.to_i.to_s.to_i
 action = node.workorder.rfcCi.rfcAction
 if node.workorder.has_key?("payLoad") && node.workorder.payLoad.has_key?("volumes")
   mode = node.workorder.payLoad.volumes[0].ciAttributes["mode"]

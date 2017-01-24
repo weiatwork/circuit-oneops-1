@@ -3,7 +3,7 @@ include_pack "genericlb"
 name "iis"
 description "Internet Information Services(IIS)"
 type "Platform"
-category "Web Server"
+category "Web Application"
 
 environment "single", {}
 environment "redundant", {}

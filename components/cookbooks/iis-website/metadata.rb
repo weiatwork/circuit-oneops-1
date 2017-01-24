@@ -17,7 +17,7 @@ attribute 'physical_path',
   :description => 'Web Site Physical Path',
   :required    => 'required',
   :format      => {
-    :help      => 'Website physical path',
+    :help      => 'The physical path on disk this Web Site will point to, Default value is set to e:\apps',
     :category  => '1.IIS Web site',
     :order     => 1
   }
@@ -46,7 +46,7 @@ attribute 'binding_type',
   :default     => 'http',
   :required    => 'required',
   :format      => {
-    :help      => 'IIS binding type http or https',
+    :help      => 'Select HTTP/HTTPS bindings that should be added to the IIS Web Site',
     :category  => '1.IIS Web site',
     :order     => 4,
     :form      => { 'field' => 'select',
@@ -68,22 +68,22 @@ attribute 'binding_port',
   }
 
 attribute 'windows_authentication',
-  :description => 'Windows authentiction',
+  :description => 'Windows authentication',
   :default     => 'true',
   :required    => 'required',
   :format      => {
-    :help      => 'Enable windows authentiction',
+    :help      => 'Enable windows authentication',
     :category  => '1.IIS Web site',
     :form     => {'field' => 'checkbox'},
     :order     => 6
   }
 
 attribute 'anonymous_authentication',
-  :description => 'Anonymous authentiction',
+  :description => 'Anonymous authentication',
   :default     => 'true',
   :required    => 'required',
   :format      => {
-    :help      => 'Enable anonymous authentiction',
+    :help      => 'Enable anonymous authentication',
     :category  => '1.IIS Web site',
     :form     => {'field' => 'checkbox'},
     :order     => 7
@@ -247,7 +247,7 @@ attribute 'dc_level',
   }
 
 attribute 'dc_mime_types',
-  :description => 'Minimum file size to compression',
+  :description => 'Mime type(s)',
   :default     => '{
     "text/*":"true",
     "message/*":"true",
@@ -310,7 +310,7 @@ attribute 'session_state_cookieless',
   :description => 'Cookieless',
   :default     => 'UseCookies',
   :format      => {
-    :help      => 'Specifies whether dynamic compression is enabled for URLs',
+    :help      => 'Specifies how cookies are used for a Web application.',
     :category  => '5.Session State',
     :form        => { 'field' => 'select',
                     'options_for_select' => [['Use URI', 'UseURI'], ['Use Cookies', 'UseCookies'],
@@ -323,7 +323,7 @@ attribute 'session_state_cookie_name',
   :description => 'Cookie name',
   :default     => 'ASP.NET_SessionId',
   :format      => {
-    :help      => 'Specifies whether static compression is enabled for URLs.',
+    :help      => 'Specifies the name of the cookie that stores the session identifier.',
     :category  => '5.Session State',
     :order     => 2
   }
