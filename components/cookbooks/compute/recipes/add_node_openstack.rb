@@ -359,6 +359,21 @@ ruby_block 'set node network params' do
       puts "***RESULT:dns_record="+private_ip
     end
 
+    # enabled_networks
+    if compute_service.has_key?('enabled_networks')
+      JSON.parse(compute_service['enabled_networks']).each do |net|
+        Chef::Log.info("checking for address by network name: #{net}")
+        if server.addresses.has_key?(net)
+          addrs = server.addresses[net]
+          exit_with_error "multiple ips returned" if addrs.size > 1
+          public_ip = addrs.first["addr"]
+          private_ip = public_ip
+          node.set[:ip] = public_ip
+          break
+        end
+      end
+    end
+      
     # specific network
     if !compute_service[:subnet].empty?
       network_name = compute_service[:subnet]
@@ -464,6 +479,13 @@ ruby_block 'catch errors/faults' do
     end
   end
 end
+
+#give windows some time to initialize - 4 min
+ruby_block 'wait for windows initialization' do
+  block do
+      sleep 240
+  end
+end if node[:ostype] =~ /windows/
 
 include_recipe "compute::ssh_port_wait"
 

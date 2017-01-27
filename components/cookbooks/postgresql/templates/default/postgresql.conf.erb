@@ -507,6 +507,8 @@
   'shared_buffers' => "24MB",            # min 128kB or max_connections*16kB
   'log_line_prefix' => "'%t '",            # special values:
   'datestyle' => "'iso, mdy'",
+  'archive_mode' => "off",        # allows archiving to be done
+  'archive_command' => "'cp \"%p\" #{node[:postgresql][:dir]}/archivedir/\"%f\"'",        # command to use to archive a logfile segment
   'default_text_search_config' => "'pg_catalog.english'"
 }.merge(JSON.parse(node.workorder.rfcCi.ciAttributes[:postgresql_conf])).each do |param,value| %>
 	<%= param %> = <%= value %>
@@ -517,8 +519,6 @@
       <% if node.workorder.cloud.ciAttributes.priority.to_i < 2 %>		
 		<%- {
 		  'wal_level' => "hot_standby",
-		  'archive_mode' => "on",        # allows archiving to be done
-		  'archive_command' => "'cp \"%p\" #{node[:postgresql][:dir]}/archivedir/\"%f\"'",        # command to use to archive a logfile segment
 		  'max_wal_senders' => 3,
 		  'wal_keep_segments' => 32
 		}.each do |param,value| %>
@@ -535,9 +535,6 @@
 <%   else %>
 	<%- {
 	  'wal_level' => "archive",
-	  'archive_mode' => "on",        # allows archiving to be done
-	  'archive_command' => "'cp \"%p\" #{node[:postgresql][:dir]}/archivedir/\"%f\"'",        # command to use to archive a logfile segment
-	  'archive_timeout' => 0      # force a logfile segment switch after this
 	}.each do |param,value| %>
 		<%= param %> = <%= value %>
 	<% end %>
