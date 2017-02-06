@@ -103,7 +103,7 @@ attribute 'runtime_version',
 }
 
 attribute 'identity_type',
-  :description => 'Indentity type',
+  :description => 'Identity type',
   :required    => 'required',
   :default     => 'ApplicationPoolIdentity',
   :format      => {
@@ -380,7 +380,7 @@ attribute 'requestfiltering_max_url',
   :description => 'Maximum url length',
   :default     => '4096',
   :format      => {
-    :help      => 'Specifies the maximum length of the query string, in bytes.',
+    :help      => 'Specifies the maximum length of the URL, in bytes.',
     :category  => '6.Request filtering',
     :order     => 5
   }
@@ -389,7 +389,7 @@ attribute 'requestfiltering_max_query_string',
   :description => 'Maximum query string length',
   :default     => '2048',
   :format      => {
-    :help      => 'Specifies the maximum length of the URL, in bytes.',
+    :help      => 'Specifies the maximum length of the query string, in bytes.',
     :category  => '6.Request filtering',
     :order     => 6
   }
