@@ -125,7 +125,7 @@ ruby_block 'set flavor/image/availability_zone' do
     elsif ["BUILD","ERROR"].include?(server.state)
       msg = "vm #{server.id} is stuck in #{server.state} state"
       if defined?(server.fault)
-        msg = "vm state: #{server.state} " + "fault message: " + server.fault["message"] + " fault code: " + server.fault["code"].to_s if !server.fault.nil? && !fault.empty?
+        msg = "vm state: #{server.state} " + "fault message: " + server.fault["message"] + " fault code: " + server.fault["code"].to_s if !server.fault.nil? && !server.fault.empty?
       end
       exit_with_error "#{msg}"
     else
@@ -159,7 +159,8 @@ ruby_block 'setup security groups' do
              msg=""
              case e.response[:body]
              when /\"code\": \d{3}+/
-              msg = JSON.parse(e.response[:body])['badRequest']['message']
+              error_key=JSON.parse(e.response[:body]).keys[0]
+              msg = JSON.parse(e.response[:body])[error_key]['message']
               exit_with_error "#{msg}"
              else
               msg = JSON.parse(e.response[:body])
@@ -482,7 +483,7 @@ end
 #give windows some time to initialize - 4 min
 ruby_block 'wait for windows initialization' do
   block do
-      sleep 240
+      sleep 60
   end
 end if node[:ostype] =~ /windows/
 

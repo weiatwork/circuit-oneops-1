@@ -25,10 +25,7 @@ resource "zookeeper",
          :cookbook => "oneops.1.zookeeper",
          :design => true,
          :requires => {"constraint" => "1..1"},
-         :attributes => {
-             'mirror' => "http://archive.apache.org/dist/zookeeper/"
-
-             },
+         :attributes => {},
           :monitors => {
              'zookeeperprocess' => {:description => 'ZookeeperProcess',
                            :source => '',
@@ -89,7 +86,7 @@ resource 'java',
 
 
 resource "hostname",
-  :cookbook => "fqdn",
+  :cookbook => "oneops.1.fqdn",
   :design => true,
   :requires => {
     :constraint => "1..1",
