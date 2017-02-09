@@ -104,7 +104,7 @@ resource "tomcat-daemon",
          :cookbook => "oneops.1.daemon",
          :design => true,
          :requires => {
-             :constraint => "0..1",
+             :constraint => "1..1",
              :help => "Restarts Tomcat"
          },
          :attributes => {
@@ -137,7 +137,7 @@ resource "keystore",
 resource "artifact",
   :cookbook => "oneops.1.artifact",
   :design => true,
-  :requires => { "constraint" => "0..*" },
+  :requires => { "constraint" => "1..*" },
   :attributes => {
 
   },
