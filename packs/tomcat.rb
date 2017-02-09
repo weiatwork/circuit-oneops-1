@@ -17,7 +17,7 @@ resource "tomcat",
    :attributes => {
        'install_type' => 'binary'
    },
-  :monitors => {     
+  :monitors => {
       'HttpValue' => {:description => 'HttpValue',
                  :source => '',
                  :chart => {'min' => 0, 'unit' => ''},
@@ -29,9 +29,9 @@ resource "tomcat",
                  },
                  :metrics => {
                      'value' => metric( :unit => '',  :description => 'value', :dstype => 'DERIVE'),
-                     
+
                  }
-       },  
+       },
         'Log' => {:description => 'Log',
                  :source => '',
                  :chart => {'min' => 0, 'unit' => ''},
@@ -51,7 +51,7 @@ resource "tomcat",
                  :thresholds => {
                    'CriticalLogException' => threshold('15m', 'avg', 'logtomcat_criticals', trigger('>=', 1, 15, 1), reset('<', 1, 15, 1)),
                  }
-       },    
+       },
       'JvmInfo' =>  { :description => 'JvmInfo',
                   :source => '',
                   :chart => {'min'=>0, 'unit'=>''},
@@ -93,7 +93,7 @@ resource "tomcat",
                     'requestCount'   => metric( :unit => 'reqs /sec', :description => 'Requests /sec', :dstype => 'DERIVE'),
                     'errorCount'   => metric( :unit => 'errors /sec', :description => 'Errors /sec', :dstype => 'DERIVE'),
                     'maxTime'   => metric( :unit => 'ms', :description => 'Max Time', :dstype => 'GAUGE'),
-                    'processingTime'   => metric( :unit => 'ms', :description => 'Processing Time /sec', :dstype => 'DERIVE')                                                          
+                    'processingTime'   => metric( :unit => 'ms', :description => 'Processing Time /sec', :dstype => 'DERIVE')
                   },
                   :thresholds => {
                   }
@@ -161,7 +161,7 @@ resource "artifact",
                        'size' => metric(:unit => 'B', :description => 'Content Size', :dstype => 'GAUGE', :display => false)
                    },
                    :thresholds => {
-                     
+
                    }
          },
           'exceptions' => {:description => 'Exceptions',
@@ -183,9 +183,9 @@ resource "artifact",
                      :thresholds => {
                        'CriticalExceptions' => threshold('15m', 'avg', 'logexc_criticals', trigger('>=', 1, 15, 1), reset('<', 1, 15, 1))
                     }
-           }        
+           }
        }
-       
+
 resource "build",
   :cookbook => "oneops.1.build",
   :design => true,
@@ -260,19 +260,26 @@ relation "tomcat-daemon::depends_on::artifact",
   :to_resource => 'artifact',
   :attributes => {"propagate_to" => "from", "flex" => false, "min" => 1, "max" => 1}
 
+relation "artifact::depends_on::tomcat",
+  :relation_name => 'DependsOn',
+  :from_resource => 'artifact',
+  :to_resource => 'tomcat',
+  :attributes => {"propagate_to" => "from", "flex" => false, "min" => 1, "max" => 1}
+
+
 relation "tomcat-daemon::depends_on::keystore",
   :relation_name => 'DependsOn',
   :from_resource => 'tomcat-daemon',
   :to_resource => 'keystore',
-  :attributes => {"propagate_to" => "from", "flex" => false, "min" => 1, "max" => 1}                                          
+  :attributes => {"propagate_to" => "from", "flex" => false, "min" => 1, "max" => 1}
 
 relation "keystore::depends_on::certificate",
   :relation_name => 'DependsOn',
   :from_resource => 'keystore',
   :to_resource => 'certificate',
-  :attributes => {"propagate_to" => "from", "flex" => false, "min" => 1, "max" => 1}                                          
-                     
-                     
+  :attributes => {"propagate_to" => "from", "flex" => false, "min" => 1, "max" => 1}
+
+
 # managed_via
 [ 'tomcat', 'artifact', 'build', 'java','keystore', 'tomcat-daemon'].each do |from|
   relation "#{from}::managed_via::compute",
@@ -280,5 +287,5 @@ relation "keystore::depends_on::certificate",
     :relation_name => 'ManagedVia',
     :from_resource => from,
     :to_resource   => 'compute',
-    :attributes    => { } 
+    :attributes    => { }
 end

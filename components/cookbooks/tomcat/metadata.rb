@@ -60,12 +60,12 @@ attribute 'version',
 attribute 'build_version',
           :description => "Build Version",
           :required => "required",
-          :default => "70",
+          :default => "75",
           :format => {
             :category => '1.Global',
             :help => 'Tomcat minor version number.  Example: Version=7, Build Version=62 will install Tomcat 7.0.62',
             :order => 5,
-            :form => {'field' => 'select', 'options_for_select' => [['42', '42'], ['62', '62'], ['67', '67'], ['68', '68'], ['70', '70'], ['72', '72'], ['73', '73']]}
+            :form => {'field' => 'select', 'options_for_select' => [['42', '42'], ['62', '62'], ['67', '67'], ['68', '68'], ['70', '70'], ['72', '72'], ['73', '73'], ['75', '75']]}
           }
 
 attribute 'webapp_install_dir',
