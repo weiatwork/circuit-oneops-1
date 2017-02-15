@@ -104,7 +104,7 @@ resource "tomcat-daemon",
          :cookbook => "oneops.1.daemon",
          :design => true,
          :requires => {
-             :constraint => "1..1",
+             :constraint => "0..1",
              :help => "Restarts Tomcat"
          },
          :attributes => {
@@ -137,7 +137,7 @@ resource "keystore",
 resource "artifact",
   :cookbook => "oneops.1.artifact",
   :design => true,
-  :requires => { "constraint" => "1..*" },
+  :requires => { "constraint" => "0..*" },
   :attributes => {
 
   },
@@ -227,31 +227,32 @@ resource 'java',
 
 # depends_on
 [ { :from => 'tomcat',     :to => 'os' },
-  { :from => 'tomcat',     :to => 'user'  },
-  { :from => 'tomcat-daemon',     :to => 'compute' },
-  { :from => 'tomcat-daemon',     :to => 'tomcat' },
-  { :from => 'tomcat',     :to => 'java'  },
-  { :from => 'tomcat',     :to => 'volume'},
-  { :from => 'tomcat',     :to => 'keystore'},
-  { :from => 'artifact',   :to => 'library' },
-  { :from => 'artifact',   :to => 'tomcat'  },
-  { :from => 'artifact',   :to => 'download'},
-  { :from => 'artifact',   :to => 'build'},
-  { :from => 'artifact',   :to => 'volume'},
-  { :from => 'build',      :to => 'library' },
-  { :from => 'build',      :to => 'tomcat'  },
-  { :from => 'build',      :to => 'download'},
-  { :from => 'daemon',     :to => 'artifact' },
-  { :from => 'daemon',     :to => 'build' },
-  { :from => 'java',       :to => 'compute' },
-  { :from => 'java',       :to => 'os' },
-  { :from => 'keystore',    :to => 'java'},
-  { :from => 'java',       :to => 'download'} ].each do |link|
-  relation "#{link[:from]}::depends_on::#{link[:to]}",
-    :relation_name => 'DependsOn',
-    :from_resource => link[:from],
-    :to_resource   => link[:to],
-    :attributes    => { "flex" => false, "min" => 1, "max" => 1 }
+ { :from => 'tomcat',     :to => 'user'  },
+ { :from => 'tomcat-daemon',     :to => 'compute' },
+ { :from => 'tomcat-daemon',     :to => 'tomcat' },
+ { :from => 'tomcat',     :to => 'java'  },
+ { :from => 'tomcat',     :to => 'volume'},
+ { :from => 'tomcat',     :to => 'keystore'},
+ { :from => 'artifact',   :to => 'library' },
+ { :from => 'artifact',   :to => 'tomcat'  },
+ { :from => 'artifact',   :to => 'download'},
+ { :from => 'artifact',   :to => 'build'},
+ { :from => 'artifact',   :to => 'volume'},
+ { :from => 'build',      :to => 'library' },
+ { :from => 'build',      :to => 'tomcat'  },
+ { :from => 'build',      :to => 'download'},
+ { :from => 'daemon',     :to => 'tomcat' },
+ { :from => 'daemon',     :to => 'artifact' },
+ { :from => 'daemon',     :to => 'build' },
+ { :from => 'java',       :to => 'compute' },
+ { :from => 'java',       :to => 'os' },
+ { :from => 'keystore',    :to => 'java'},
+ { :from => 'java',       :to => 'download'} ].each do |link|
+ relation "#{link[:from]}::depends_on::#{link[:to]}",
+   :relation_name => 'DependsOn',
+   :from_resource => link[:from],
+   :to_resource   => link[:to],
+   :attributes    => { "flex" => false, "min" => 1, "max" => 1 }
 end
 
 relation "tomcat-daemon::depends_on::artifact",
@@ -260,12 +261,17 @@ relation "tomcat-daemon::depends_on::artifact",
   :to_resource => 'artifact',
   :attributes => {"propagate_to" => "from", "flex" => false, "min" => 1, "max" => 1}
 
+relation "tomcat-daemon::depends_on::tomcat",
+  :relation_name => 'DependsOn',
+  :from_resource => 'tomcat-daemon',
+  :to_resource => 'tomcat',
+  :attributes => {"propagate_to" => "from", "flex" => false, "min" => 1, "max" => 1}
+
 relation "artifact::depends_on::tomcat",
   :relation_name => 'DependsOn',
   :from_resource => 'artifact',
   :to_resource => 'tomcat',
   :attributes => {"propagate_to" => "from", "flex" => false, "min" => 1, "max" => 1}
-
 
 relation "tomcat-daemon::depends_on::keystore",
   :relation_name => 'DependsOn',
