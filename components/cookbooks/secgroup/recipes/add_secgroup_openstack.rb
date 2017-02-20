@@ -1,10 +1,5 @@
 #
-# supports openstack keypair::add
-#
-require 'fog/openstack'
-
-#
-# supports openstack keypair::add
+# openstack secgroup::add
 #
 require 'fog/openstack'
 
