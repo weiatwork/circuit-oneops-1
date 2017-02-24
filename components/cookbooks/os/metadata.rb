@@ -56,8 +56,10 @@ attribute 'ostype',
       ['Ubuntu 14.04','ubuntu-14.04'],
       ['CentOS 7.0','centos-7.0'],
       ['CentOS 7.2','centos-7.2'],
+      ['CentOS 7.3','centos-7.3'],	    
       ['Redhat 7.0','redhat-7.0'],
-      ['Redhat 7.2','redhat-7.2'],        
+      ['Redhat 7.2','redhat-7.2'],
+      ['Redhat 7.3','redhat-7.3'],        	    
       ['Windows 2012 R2','windows_2012_r2'],
 	  ['Windows 2016','windows_2016']
 	] }
