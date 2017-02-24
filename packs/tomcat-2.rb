@@ -108,8 +108,21 @@ resource "tomcat",
                        :thresholds => {
                          'CriticalLogException' => threshold('15m', 'avg', 'logtomcat_criticals', trigger('>=', 1, 15, 1), reset('<', 1, 15, 1)),
                        }
+             },
+             'AppVersion' => {:description => 'AppVersion',
+                       :source => '',
+                       :enable => 'false',
+                       :chart => {'min' => 0, 'unit' => ''},
+                       :cmd => 'check_tomcat_app_version',
+                       :cmd_line => '/opt/nagios/libexec/check_tomcat_app_version.sh',
+                       :metrics => {
+                           'versionlatest' => metric(:unit => '', :description => 'value=0; App version is latest', :dstype => 'GAUGE'),
+                       },
+                       :thresholds => {
+                         'VersionIssue' => threshold('1m', 'avg', 'versionlatest', trigger('>', 0, 5, 4), reset('<=', 0, 1, 1)),
+                       }
              }
-         }
+          }
 
 restart_artifact_command=  <<-"EOF"
 execute "rm -rf /opt/tomcat/webapps/$OO_LOCAL{deployContext}"
