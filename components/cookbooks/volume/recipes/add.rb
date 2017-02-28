@@ -144,7 +144,7 @@ ruby_block 'create-iscsi-volume-ruby-block' do
             case token_class
               when /ibm/
                 if vol.attached?
-                  exit_with_error "attached already, no way to determine device"
+                  Chef::Log.error("attached already, no way to determine device")
                   # mdadm sometime reassembles with _0
                   new_raid_device = `ls -1 #{raid_device}* 2>/dev/null`.chop
                   if new_raid_device.empty?
@@ -197,7 +197,7 @@ ruby_block 'create-iscsi-volume-ruby-block' do
               when /openstack/
                 if vol.attachments != nil && vol.attachments.size > 0 &&
                     vol.attachments[0]["serverId"] == instance_id
-                  exit_with_error "attached already, no way to determine device"
+                  Chef::Log.error("attached already, no way to determine device")
                   # mdadm sometime reassembles with _0
                   new_raid_device = `ls -1 #{raid_device}* 2>/dev/null`.chop
 		              non_raid_device  = `ls -1 /dev/#{platform_name}/#{node.workorder.rfcCi.ciName}* 2>/dev/null`.chop
@@ -708,7 +708,7 @@ ruby_block 'filesystem' do
         else
           cmd = "mkfs -t #{_fstype} -f #{_device}"
         end
-        execute_command("#{cmd}")
+        Chef::Log.info(cmd+" ... "+`#{cmd}`)
       end
 
       # in-line because of the ruby_block doesn't allow updated _device value passed to mount resource
