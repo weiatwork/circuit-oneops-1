@@ -62,6 +62,10 @@ unless dev_map.nil?
         sleep(sleep_sec) 
       end
     end
-    exit_with_error("couldnt destroy: #{vol_id}") if !ok
+    if !ok
+      error_key=JSON.parse(e.response[:body]).keys[0]
+      msg = JSON.parse(e.response[:body])[error_key]['message']
+      exit_with_error "couldnt destroy: #{vol_id} because #{msg} .. #{error_key}"
+    end
   end
 end       
