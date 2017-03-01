@@ -97,8 +97,21 @@ resource "tomcat",
                   },
                   :thresholds => {
                   }
-                }
-}
+                },
+      'AppVersion' => {:description => 'AppVersion',
+                       :source => '',
+                       :enable => 'false',
+                       :chart => {'min' => 0, 'unit' => ''},
+                       :cmd => 'check_tomcat_app_version',
+                       :cmd_line => '/opt/nagios/libexec/check_tomcat_app_version.sh',
+                       :metrics => {
+                           'versionlatest' => metric(:unit => '', :description => 'value=0; App version is latest', :dstype => 'GAUGE'),
+                       },
+                       :thresholds => {
+                         'VersionIssue' => threshold('1m', 'avg', 'versionlatest', trigger('>', 0, 5, 4), reset('<=', 0, 1, 1)),
+                       }
+      }
+  }
 
 resource "tomcat-daemon",
          :cookbook => "oneops.1.daemon",
@@ -293,3 +306,10 @@ relation "keystore::depends_on::certificate",
     :to_resource   => 'compute',
     :attributes    => { }
 end
+
+
+policy "vulnerable-tomcat-version",
+  :description => 'Using a known vulnerable version of Tomcat',
+  :query => 'ciClassName:(catalog.*Tomcat manifest.*Tomcat bom.*Tomcat) AND (ciAttributes.version:("7.0") AND NOT ciAttributes.build_version:("75"))',
+  :docUrl => '',
+  :mode => 'passive'

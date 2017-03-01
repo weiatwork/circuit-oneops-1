@@ -109,7 +109,7 @@ resource "tomcat",
                          'CriticalLogException' => threshold('15m', 'avg', 'logtomcat_criticals', trigger('>=', 1, 15, 1), reset('<', 1, 15, 1)),
                        }
              }
-         }
+        }
 
 restart_artifact_command=  <<-"EOF"
 execute "rm -rf /opt/tomcat/webapps/$OO_LOCAL{deployContext}"
@@ -294,7 +294,6 @@ relation "keystore::depends_on::certificate",
   :to_resource => 'certificate',
   :attributes => {"propagate_to" => "from", "flex" => false, "min" => 1, "max" => 1}
 
-
 # managed_via
 [ 'tomcat', 'artifact', 'build', 'java','keystore', 'tomcat-daemon'].each do |from|
   relation "#{from}::managed_via::compute",
@@ -304,3 +303,9 @@ relation "keystore::depends_on::certificate",
     :to_resource   => 'compute',
     :attributes    => { }
 end
+
+policy "vulnerable-tomcat-version",
+  :description => 'Using a known vulnerable version of Tomcat',
+  :query => 'ciClassName:(catalog.*Tomcat manifest.*Tomcat bom.*Tomcat) AND NOT ciAttributes.version:("8.5.9")',
+  :docUrl => '',
+  :mode => 'passive'
