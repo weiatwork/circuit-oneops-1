@@ -10,8 +10,9 @@ node.set["workorder"]["rfcCi"]["ciAttributes"]["dhclient"] = node.workorder.ci.c
 node.set["vmhostname"] = node.workorder.box.ciName+'-'+node.workorder.cloud.ciId.to_s+'-'+node.workorder.ci.ciName.split('-').last.to_i.to_s+'-'+ node.workorder.ci.ciId.to_s
 node.set["full_hostname"] = node["vmhostname"]+'.'+node["customer_domain"]
 
-# Rename existing dhclient.conf for backup
-execute "mv -f /etc/dhcp/dhclient.conf /etc/dhcp/dhclient.conf.#{Time.now.to_i}" do
+# Delete existing dhclient.conf to force reconfig
+file '/etc/dhcp/dhclient.conf' do
+	action :delete
   only_if { ::File.exist?('/etc/dhcp/dhclient.conf') }
 end
 
@@ -22,8 +23,6 @@ dhclient_ps = `ps auxwww|grep -v grep|grep dhclient`
 if dhclient_ps.to_s =~ /.*:\d{2} (.*dhclient.*)/
   dhclient_cmdline = $1
 end
-
-dhclient_cmdline = dhclient_cmdline + " &"
 
 # kill dhclient so we can regenerate /etc/resolv.conf
 `pkill -f dhclient`
