@@ -308,8 +308,8 @@ relation "keystore::depends_on::certificate",
 end
 
 
-policy "tomcat-version",
+policy "vulnerable-tomcat-version",
   :description => 'Using a known vulnerable version of Tomcat',
-  :query => 'ciClassName:(catalog.*Tomcat manifest.*Tomcat bom.*Tomcat) AND (ciAttributes.version:("7.0") AND NOT ciAttributes.build_version:("75"))'
-  :docUrl => ''
+  :query => 'ciClassName:(catalog.*Tomcat manifest.*Tomcat bom.*Tomcat) AND (ciAttributes.version:("7.0") AND NOT ciAttributes.build_version:("75"))',
+  :docUrl => '',
   :mode => 'passive'
