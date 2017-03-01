@@ -306,3 +306,10 @@ relation "keystore::depends_on::certificate",
     :to_resource   => 'compute',
     :attributes    => { }
 end
+
+
+policy "tomcat-version",
+  :description => 'Using a known vulnerable version of Tomcat',
+  :query => 'ciClassName:(catalog.*Tomcat manifest.*Tomcat bom.*Tomcat) AND (ciAttributes.version:("7.0") AND NOT ciAttributes.build_version:("75"))'
+  :docUrl => ''
+  :mode => 'passive'
