@@ -10,28 +10,27 @@ node.set["workorder"]["rfcCi"]["ciAttributes"]["dhclient"] = node.workorder.ci.c
 node.set["vmhostname"] = node.workorder.box.ciName+'-'+node.workorder.cloud.ciId.to_s+'-'+node.workorder.ci.ciName.split('-').last.to_i.to_s+'-'+ node.workorder.ci.ciId.to_s
 node.set["full_hostname"] = node["vmhostname"]+'.'+node["customer_domain"]
 
-# Delete existing dhclient.conf to force reconfig
-file '/etc/dhcp/dhclient.conf' do
-	action :delete
-  only_if { ::File.exist?('/etc/dhcp/dhclient.conf') }
-end
-
 dhclient_cmdline = "/sbin/dhclient"
 
-# try to use options that its running with
-dhclient_ps = `ps auxwww|grep -v grep|grep dhclient`
-if dhclient_ps.to_s =~ /.*:\d{2} (.*dhclient.*)/
-  dhclient_cmdline = $1
-end
+ruby_block "dhclient cleanup and reconfigure" do
+  block do
+    Chef::Resource::RubyBlock.send(:include, Chef::Mixin::ShellOut)
+    dhclient_out = shell_out("ps auxwww|grep -v grep|grep dhclient")
+    if dhclient_out.stdout =~ /.*:\d{2} (.*dhclient.*)/
+      dhclient_cmdline = $1
+      Chef::Log.info("DHCLIENT = #{dhclient_cmdline}")
+    end
 
-# kill dhclient so we can regenerate /etc/resolv.conf
-`pkill -f dhclient`
+    pkill_out = shell_out("pkill -f dhclient")
+    remove_cmd = shell_out("rm -rf /etc/dhcp/dhclient.conf")
+    dhclient_start = shell_out(dhclient_cmdline)
 
-# Start dhclient again to get default values from dhcp server
-output = `#{dhclient_cmdline}`
+    Chef::Log.info("dhclient start = #{dhclient_start.stdout}")
 
-if node["workorder"]["rfcCi"]["ciAttributes"]["dhclient"] != 'true'
-  `pkill -f dhclient`
+    if node["workorder"]["rfcCi"]["ciAttributes"]["dhclient"] != 'true'
+      pkill_out = shell_out("pkill -f dhclient")
+    end
+  end
 end
 
 # run the network script
