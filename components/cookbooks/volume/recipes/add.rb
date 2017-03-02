@@ -144,7 +144,7 @@ ruby_block 'create-iscsi-volume-ruby-block' do
             case token_class
               when /ibm/
                 if vol.attached?
-                  exit_with_error "attached already, no way to determine device"
+                  Chef::Log.error("attached already, no way to determine device")
                   # mdadm sometime reassembles with _0
                   new_raid_device = `ls -1 #{raid_device}* 2>/dev/null`.chop
                   if new_raid_device.empty?
@@ -197,7 +197,7 @@ ruby_block 'create-iscsi-volume-ruby-block' do
               when /openstack/
                 if vol.attachments != nil && vol.attachments.size > 0 &&
                     vol.attachments[0]["serverId"] == instance_id
-                  exit_with_error "attached already, no way to determine device"
+                  Chef::Log.error("attached already, no way to determine device")
                   # mdadm sometime reassembles with _0
                   new_raid_device = `ls -1 #{raid_device}* 2>/dev/null`.chop
 		              non_raid_device  = `ls -1 /dev/#{platform_name}/#{node.workorder.rfcCi.ciName}* 2>/dev/null`.chop
@@ -708,15 +708,15 @@ ruby_block 'filesystem' do
         else
           cmd = "mkfs -t #{_fstype} -f #{_device}"
         end
-        execute_command("#{cmd}")
+        Chef::Log.info(cmd+" ... "+`#{cmd}`)
       end
 
       # in-line because of the ruby_block doesn't allow updated _device value passed to mount resource
       `mkdir -p #{_mount_point}`
-      execute_command("mount -t #{_fstype} -o #{_options} #{_device} #{_mount_point}")
+      `mount -t #{_fstype} -o #{_options} #{_device} #{_mount_point}`
 
       # clear and add to fstab again to make sure has current attrs on update
-      execute_command("grep -v #{_device} /etc/fstab > /tmp/fstab")
+      `grep -v #{_device} /etc/fstab > /tmp/fstab`
       ::File.open("/tmp/fstab","a") do |fstab|
         fstab.puts("#{_device} #{_mount_point} #{_fstype} #{_options} 1 1")
         Chef::Log.info("adding to fstab #{_device} #{_mount_point} #{_fstype} #{_options} 1 1")
@@ -739,7 +739,8 @@ ruby_block 'ramdisk tmpfs' do
     `mount | grep #{_mount_point}`
     if $?.to_i == 0
       Chef::Log.info("device #{_device} for mount-point #{_mount_point} already mounted.Will unmount it.")
-      execute_command("umount #{_mount_point}`")
+      result=`umount #{_mount_point}`
+      Chef::Log.error("umount error: #{result.to_s}") if result.to_i != 0
     end
 
     if _options == nil || _options.empty?
@@ -750,11 +751,11 @@ ruby_block 'ramdisk tmpfs' do
 
     # Make directory if not existing
     `mkdir -p #{_mount_point}`
-
-    execute_command("mount -t #{_fstype} -o size=#{size} #{_fstype} #{_mount_point}")
+    result=`mount -t #{_fstype} -o size=#{size} #{_fstype} #{_mount_point}"`
+    Chef::Log.error("mount error: #{result.to_s}") if result.to_i != 0
 
     # clear existing mount_point and add to fstab again to ensure update attributes and to persist the ramdisk across reboots
-    execute_command("grep -v #{_mount_point} /etc/fstab > /tmp/fstab")
+    `grep -v #{_mount_point} /etc/fstab > /tmp/fstab`
     ::File.open("/tmp/fstab","a") do |fstab|
       fstab.puts("#{_device} #{_mount_point} #{_fstype} #{_options},size=#{size}")
       Chef::Log.info("adding to fstab #{_device} #{_mount_point} #{_fstype} #{_options}")
