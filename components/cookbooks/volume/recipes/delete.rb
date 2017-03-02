@@ -46,10 +46,14 @@ if rfcAttrs.has_key?("mount_point") &&
     package "lsof"
   end
 
-  Chef::Log.info("executing lsof #{mount_point} | awk '{print $2}' | grep -v PID | uniq | xargs kill -9; umount #{mount_point}")
-  execute "lsof #{mount_point} | awk '{print $2}' | grep -v PID | uniq | xargs kill -9; umount #{mount_point}" do
+  execute "lsof #{mount_point} | awk '{print $2}' | grep -v PID | uniq | xargs kill -9" do
     only_if { has_mounted }
   end
+
+  execute "umount -f #{mount_point}" do
+    only_if { has_mounted }
+  end
+
   cloud_name = node[:workorder][:cloud][:ciName]
   provider_class = node[:workorder][:services][:compute][cloud_name][:ciClassName].split(".").last.downcase
   Chef::Log.info("provider: #{provider_class}")
