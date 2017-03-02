@@ -82,4 +82,3 @@ when /neutron/
 
   include_recipe "neutron::delete_lb"
 end
-
