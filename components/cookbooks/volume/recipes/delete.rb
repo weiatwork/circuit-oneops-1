@@ -57,10 +57,10 @@ if rfcAttrs.has_key?("mount_point") &&
 # clear the tmpfs ramdisk entries and/or volume entries from /etc/fstab
  if(rfcAttrs["fstype"] == "tmpfs") || provider_class =~ /azure/ || provider_class =~ /cinder/
     Chef::Log.info("clearing /etc/fstab entry for fstype tmpfs")
-    execute_command("grep -v #{mount_point} /etc/fstab > /tmp/fstab")
-    execute_command("mv /tmp/fstab /etc/fstab")
+    `grep -v #{mount_point} /etc/fstab > /tmp/fstab`
+    `mv /tmp/fstab /etc/fstab`
     logical_name = node.workorder.rfcCi.ciName
-    execute_command("rm -rf '/opt/oneops/azure-restore-ephemeral-mntpts/#{logical_name}.sh'")
+    `rm -rf '/opt/oneops/azure-restore-ephemeral-mntpts/#{logical_name}.sh'`
     `cp /etc/rc.local tmpfile;sed -e "/\\/opt\\/oneops\\/azure-restore-ephemeral-mntpts\\/#{logical_name}.sh/d" tmpfile > /etc/rc.local;rm -rf tmpfile`
   end
 end
@@ -69,7 +69,7 @@ ruby_block 'lvremove ephemeral' do
   block do  
     platform_name = node.workorder.box.ciName
     if ::File.exists?("/dev/#{platform_name}-eph/#{node.workorder.rfcCi.ciName}")
-      execute_command("lvremove -f #{platform_name}-eph/#{node.workorder.rfcCi.ciName}")
+      `lvremove -f #{platform_name}-eph/#{node.workorder.rfcCi.ciName}`
       execute_command("sudo rm -rf #{mount_point}")
     end
    end
@@ -100,7 +100,7 @@ ruby_block 'lvremove storage' do
         
       platform_name = node.workorder.box.ciName
       Chef::Log.info("provider_class: #{provider_class}")
-      execute_command("lvremove -f #{platform_name}")
+      `lvremove -f #{platform_name}`
       
       raid_device = "/dev/md/"+ node.workorder.rfcCi.ciName
       retry_count = 0
@@ -110,8 +110,8 @@ ruby_block 'lvremove storage' do
         Chef::Log.info "no raid for rackspace"
       else
         while retry_count < max_retry_count && ::File.exists?(raid_device) do
-          execute_command("mdadm --stop #{raid_device}")
-          execute_command("mdadm --remove #{raid_device}")
+          `mdadm --stop #{raid_device}`
+          `mdadm --remove #{raid_device}`
           retry_count += 1
           if ::File.exists?(raid_device)
             Chef::Log.info("waiting 10sec for raid array to stop/remove")
