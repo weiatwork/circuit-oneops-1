@@ -26,6 +26,8 @@ if lbCi.has_key?("ciBaseAttributes") &&
   end  
 end
 
+ecv_map = JSON.parse(lbCi["ciAttributes"]["ecv_map"])
+
 env_name = node.workorder.payLoad.Environment[0]["ciName"]
 assembly_name = node.workorder.payLoad.Assembly[0]["ciName"]
 platform_name = node.workorder.box.ciName
@@ -49,6 +51,16 @@ iport_map.each_pair do |iport,protocol|
     base_monitor_name = lb_ci_id + "-"+ iport +"-monitor"
   end
   
+  monitor_request = 'get /'
+  if ecv_map.has_key?(iport)
+    monitor_request = ecv_map[iport].downcase
+  end
+
+  # use generic monitors
+  if ["get /","head /"].include?(monitor_request)
+    base_monitor_name = "generic-" + monitor_request.gsub(' ','-').gsub('/','slash')
+  end
+    
   monitor = {
     :monitor_name => base_monitor_name, 
     :iport => iport, 
