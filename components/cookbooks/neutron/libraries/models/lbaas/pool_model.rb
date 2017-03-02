@@ -1,7 +1,6 @@
 require File.expand_path('../base_model', __FILE__)
 require File.expand_path('../label_model', __FILE__)
 require File.expand_path('../session_persistence_model', __FILE__)
-require 'active_support/inflector'
 
 class PoolModel < BaseModel
   module Protocol
