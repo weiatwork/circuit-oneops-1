@@ -25,7 +25,7 @@ lb_name = node[:lb_name]
 
 cloud_service = nil
 if !node.workorder.services["lb"].nil? &&
-   !node.workorder.services["lb"][cloud_name].nil?
+  !node.workorder.services["lb"][cloud_name].nil?
 
   cloud_service = node.workorder.services["lb"][cloud_name]
 end
@@ -43,42 +43,43 @@ Chef::Log.info("using security_group:"+security_group)
 
 
 case cloud_service[:ciClassName].split(".").last.downcase
- when /azure_lb/
+when /azure_lb/
 
     include_recipe "azure_lb::delete"
 
- when /f5-bigip/
+when /f5-bigip/
 
    include_recipe "f5-bigip::f5_delete_lbvserver"
    include_recipe "f5-bigip::f5_delete_pool"
    include_recipe "f5-bigip::f5_delete_monitor"
    include_recipe "f5-bigip::f5_delete_node"
 
- when /netscaler/
+when /netscaler/
 
-   n = netscaler_connection "conn" do
-     action :nothing
-   end
-   n.run_action(:create)
+  n = netscaler_connection "conn" do
+    action :nothing
+  end
+  n.run_action(:create)
 
-   include_recipe "netscaler::delete_lbvserver"
-   include_recipe "netscaler::delete_servicegroup"
-   include_recipe "netscaler::delete_server"
-   include_recipe "netscaler::logout"
+  include_recipe "netscaler::delete_lbvserver"
+  include_recipe "netscaler::delete_servicegroup"
+  include_recipe "netscaler::delete_server"
+  include_recipe "netscaler::logout"
 
- when /rackspace/
+when /rackspace/
 
-   include_recipe "rackspace::delete_lb"
+  include_recipe "rackspace::delete_lb"
 
- when /elb/
+when /elb/
 
-   include_recipe "elb::delete_lb"
+  include_recipe "elb::delete_lb"
 
- when /haproxy/
+when /haproxy/
 
-   include_recipe "haproxy::delete_lb"
+  include_recipe "haproxy::delete_lb"
 
- when /neutron/
+when /neutron/
 
-   include_recipe "neutron::delete_lb"
+  include_recipe "neutron::delete_lb"
 end
+
