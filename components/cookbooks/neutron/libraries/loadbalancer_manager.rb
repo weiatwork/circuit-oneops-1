@@ -48,20 +48,26 @@ class LoadbalancerManager
   def get_loadbalancer(loadbalancer_id)
     fail ArgumentError, 'loadbalancer_id is nil' if loadbalancer_id.nil? || loadbalancer_id.empty?
 
-    loadbalancer = @loadbalancer_dao.get_loadbalancer(loadbalancer_id)
+    if loadbalancer_id =~ /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/
+      loadbalancer = @loadbalancer_dao.get_loadbalancer(loadbalancer_id)
+    else
+      lb_id = @loadbalancer_dao.get_loadbalancer_id(loadbalancer_id)
+      loadbalancer = @loadbalancer_dao.get_loadbalancer(lb_id)
+    end
 
     listeners = Array.new()
     loadbalancer.listeners.each do |listener|
       listener = @listener_dao.get_listener(listener['id'])
       listener.pool = @pool_dao.get_pool(listener.default_pool_id) if !listener.default_pool_id.nil?
-      listener.pool.members = @member_dao.get_members(listener.pool.id) if !listener.pool.id.nil?
-      listener.pool.health_monitor = @health_monitor_dao.get_health_monitor(listener.pool.healthmonitor_id) if !listener.pool.healthmonitor_id.nil?
+      listener.pool.members = @member_dao.get_members(listener.pool.id) if !listener.pool.nil? && !listener.pool.id.nil?
+      listener.pool.health_monitor = @health_monitor_dao.get_health_monitor(listener.pool.healthmonitor_id) if !listener.pool.nil? && !listener.pool.healthmonitor_id.nil?
       listeners.push(listener)
     end
     loadbalancer.listeners = listeners
 
     return loadbalancer
   end
+
 
   def delete_loadbalancer(loadbalancer_name)
     fail ArgumentError, 'loadbalancer is nil' if loadbalancer_name.nil?
@@ -86,3 +92,7 @@ class LoadbalancerManager
   end
 
 end
+
+
+
+

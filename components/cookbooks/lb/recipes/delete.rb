@@ -77,5 +77,9 @@ when /elb/
 when /haproxy/  
 
   include_recipe "haproxy::delete_lb"
+
+when /neutron/
+
+  include_recipe "neutron::delete_lb"
     
 end

@@ -52,7 +52,7 @@ class MemberRequest < BaseRequest
 
   def get_lbaas_member(pool_id, member_id)
     request(
-        :expects => 200,
+        :expects => [200,404],
         :method  => 'GET',
         :path    => "/lbaas/pools/#{pool_id}/members/#{member_id}"
     )

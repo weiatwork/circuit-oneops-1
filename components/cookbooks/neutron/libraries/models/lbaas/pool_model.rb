@@ -34,7 +34,7 @@ class PoolModel < BaseModel
   end
 
   attr_reader :protocol, :lb_algorithm, :tenant_id, :listener_id, :id, :healthmonitor_id, :provisioning_status,
-              :operating_status, :members, :health_monitor
+              :operating_status, :members, :health_monitor, :session_persistence
 
   def lb_algorithm=(lb_algorithm)
     @lb_algorithm = validate_lb_algorithm(lb_algorithm)
@@ -43,6 +43,8 @@ class PoolModel < BaseModel
   def session_persistence=(session_persistence)
     if session_persistence.class == Hash || session_persistence.nil?
       @session_persistence = session_persistence
+    elsif session_persistence == "none"
+      @session_persistence = nil
     else
       fail ArgumentError, 'session_persistence is invalid'
     end
@@ -61,7 +63,9 @@ class PoolModel < BaseModel
     options[:name] = @label.name
     options[:description] = @label.description
     options[:admin_state_up] = admin_state_up
-    options[:session_persistence] = @session_persistence
+    options[:lb_algorithm] = lb_algorithm
+    options[:session_persistence] = session_persistence
+    options[:health_monitor] = health_monitor
     if !@tenant_id.nil? then options[:tenant_id] = @tenant_id end
 
     return options
