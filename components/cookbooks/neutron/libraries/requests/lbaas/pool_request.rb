@@ -31,11 +31,7 @@ class PoolRequest < BaseRequest
     optional_parameters = [:name, :description, :admin_state_up, :lb_algorithm, :session_persistence]
     optional_parameters.select{ |o| options.key?(o) }.each do |key|
       data['pool'][key] = options[key]
-      Chef::Log.info("lb_method #{data['pool'][key]}")
-
     end
-
-    Chef::Log.info("data :" + data.inspect)
     request(
         :body     => Fog::JSON.encode(data),
         :expects  => 200,
