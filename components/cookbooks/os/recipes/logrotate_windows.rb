@@ -3,7 +3,7 @@ directory "C:/opscode/logrotate" do
   recursive true
 end
 
-#tbd - move to mirror
+#No documentation available - please refer to the [the website](http://oneops.com). - move to mirror
 cookbook_file "C:/opscode/logrotate/logrotate.exe" do
   cookbook "os"
   source "logrotate.exe"
