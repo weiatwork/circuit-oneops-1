@@ -44,19 +44,26 @@ if node.platform == "centos" && node.platform_version == "5.8"
   end
 end
 
+cloud_name = node[:workorder][:cloud][:ciName]
+if node[:workorder][:services].has_key? "mirror"
+  mirrors = JSON.parse(node[:workorder][:services][:mirror][cloud_name][:ciAttributes][:mirrors])
+  _source_list = mirrors['maven']
+else
+  mirrors = Hash.new
+end
+
+_source_list = mirrors['maven']
+if _source_list.nil?
+  Chef::Log.info("maven source repository has not beed defined in cloud mirror service.. taking from default attributes #{node.build.maven_source}")
+  _source_list = node.build.maven_source
+else
+  Chef::Log.info("maven source repository has been defined in cloud mirror service #{_source_list}")
+end
 
 # install maven3
 if ::File.exists?("/opt/maven/bin/mvn") 
   Chef::Log.info("/opt/maven/bin/mvn exists.")                
-else  
-  _source_list = 'http://www.us.apache.org/dist/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.tar.gz,'+
-                 'http://apache.osuosl.org/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.tar.gz,'+
-                 'http://mirrors.ibiblio.org/apache/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.tar.gz'
-
-  misc_proxy = ENV["misc_proxy"]
-  if !misc_proxy.nil?
-    _source_list = misc_proxy+"/dist/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.tar.gz"
-  end
+else
   _target = '/usr/src/maven-3.3.9.tar'
   
   shared_download_http "#{_source_list}" do
