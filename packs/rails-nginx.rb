@@ -12,7 +12,7 @@ environment "redundant", {}
 resource "ruby",
   :cookbook => "oneops.1.ruby",
   :design => true,
-  :requires => { "constraint" => "1..1" },
+  :requires => { "constraint" => "1..1", "services" => "*mirror" },
   :attributes => {
     "version"       => "1.8.7",
     "gems"          => '{"bundler":""}'
