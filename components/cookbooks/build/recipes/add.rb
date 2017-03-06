@@ -47,7 +47,6 @@ end
 cloud_name = node[:workorder][:cloud][:ciName]
 if node[:workorder][:services].has_key? "mirror"
   mirrors = JSON.parse(node[:workorder][:services][:mirror][cloud_name][:ciAttributes][:mirrors])
-  _source_list = mirrors['maven']
 else
   mirrors = Hash.new
 end
