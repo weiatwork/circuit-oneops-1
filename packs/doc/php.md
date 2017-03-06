@@ -1,1 +1,1 @@
-No documentation available - please refer to the [the website](http://oneops.com).
+No pack documentation available. Please contact the pack owner or refer to [the OneOps website](http://oneops.com).
