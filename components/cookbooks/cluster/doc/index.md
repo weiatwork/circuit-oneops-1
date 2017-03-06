@@ -1,1 +1,1 @@
-No documentation available - please refer to the [the website](http://oneops.com).
+No component documentation available. Please refer to the pack documentation or [the OneOps website](http://oneops.com).
