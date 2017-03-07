@@ -34,7 +34,6 @@ class HealthMonitorRequest < BaseRequest
     optional_parameters.select{ |o| options.key?(o) }.each do |key|
       data['healthmonitor'][key] = options[key]
     end
-
     request(
         :body     => Fog::JSON.encode(data),
         :expects  => 200,
@@ -54,7 +53,7 @@ class HealthMonitorRequest < BaseRequest
 
   def get_lbaas_health_monitor(healthmonitor_id)
     request(
-        :expects => 200,
+        :expects => [200,404],
         :method  => 'GET',
         :path    => "/lbaas/healthmonitors/#{healthmonitor_id}"
     )

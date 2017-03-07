@@ -52,12 +52,12 @@ class ListenerRequest < BaseRequest
 
   def get_lbaas_listener(listener_id)
     request(
-        :expects => 200,
+        :expects => [200,404],
         :method  => 'GET',
         :path    => "/lbaas/listeners/#{listener_id}"
     )
   end
-
+  
   def delete_lbaas_listener(listener_id)
     request(
         :expects => 204,

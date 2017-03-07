@@ -5,10 +5,9 @@ cloud_name = node[:workorder][:cloud][:ciName]
 service_lb_attributes = node[:workorder][:services][:lb][cloud_name][:ciAttributes]
 tenant = TenantModel.new(service_lb_attributes[:endpoint],service_lb_attributes[:tenant],
                          service_lb_attributes[:username],service_lb_attributes[:password])
-lb_name = ''
-node.loadbalancers.each do |loadbalancer|
-  lb_name = loadbalancer[:name]
-end
+include_recipe "neutron::build_lb_name"
+
+lb_name = node[:lb_name]
 
 lb_manager = LoadbalancerManager.new(tenant)
 Chef::Log.info("Deleting Loadbalancer..." + lb_name)
