@@ -430,6 +430,16 @@ ruby_block 'set node network params' do
         end
       end
     end
+    private_ipv6 = ''
+    server.addresses.each_value do |addr_list|
+      addr_list.each do |addr|
+        puts "addr: #{addr.inspect}"
+        if addr["OS-EXT-IPS:type"] == "fixed" && addr["version"] == 6
+          private_ipv6 = addr["addr"]
+          Chef::Log.info("private ipv6 address:#{private_ipv6}")
+        end
+      end
+    end
 
     puts "***RESULT:public_ip="+public_ip
     dns_record = public_ip
@@ -440,6 +450,7 @@ ruby_block 'set node network params' do
     # lets set private_ip to this addr too for other cookbooks which use private_ip
     puts "***RESULT:private_ip="+private_ip
     puts "***RESULT:host_id=#{server.host_id}"
+    puts "***RESULT:private_ipv6="+private_ipv6
 
     if node.ip_attribute == "private_ip"
       node.set[:ip] = private_ip

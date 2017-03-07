@@ -309,6 +309,16 @@ attribute 'require_public_ip',
     :order => 10
   }
 
+attribute 'private_ipv6',
+  :description => "Private IPv6",
+  :grouping => 'bom',
+  :format => {
+    :important => true,
+    :help => 'Private IPv6 address allocated by the cloud provider',
+    :category => '4.Networking',
+    :order => 11
+  }
+
 
 recipe "status", "Compute Status"
 recipe "reboot", "Reboot Compute"
