@@ -4,6 +4,7 @@ description   "Tomcat"
 type          "Platform"
 category      "Web Application"
 version       "2"
+enabled false
 
 environment "single", {}
 environment "redundant", {}
