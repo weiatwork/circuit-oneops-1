@@ -20,16 +20,13 @@ class LoadbalancerDao
     return loadbalancer_id
   end
 
-  def update_loadbalancer?(loadbalancer)
+  def update_loadbalancer(id,loadbalancer)
     fail ArgumentError, 'loadbalancer is nil' if loadbalancer.nil?
 
     options = {
-        :name            => loadbalancer.name,
-        :description     => loadbalancer.description,
-        :admin_state_up  => loadbalancer.admin_state_up
     }
-    response = @loadbalancer_request.update_lbaas_loadbalancer(loadbalancer.id, options)
-    if response[:'status'] == 200
+    response = @loadbalancer_request.update_lbaas_loadbalancer(id, options)
+    if response[:'status'] == 204 || response[:'status'] == 200
       return true
     else
       return false

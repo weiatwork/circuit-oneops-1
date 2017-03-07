@@ -7,18 +7,23 @@ require File.expand_path('../../libraries/models/tenant_model', __FILE__)
 require File.expand_path('../../libraries/loadbalancer_manager', __FILE__)
 require File.expand_path('../../libraries/network_manager', __FILE__)
 
+def initialize_health_monitor(iprotocol, ecv_map, lb_name, iport)
+  fail ArgumentError, 'ecv_map is invalid' if ecv_map.nil? || ecv_map.empty?
 
-def initialize_health_monitor(iprotocol, ecv_map, lb_name)
-  ecv = ecv_map.tr('"', '').tr('{}', '')
-  ecv_port, ecv_path = ecv.split(':', 2)
-  ecv_method, ecv_url = ecv_path.split(' ', 2)
-
-  health_monitor = HealthMonitorModel.new(iprotocol, 5, 2, 3)
-  health_monitor.label.name=lb_name + '-ecv'
-  health_monitor.http_method=ecv_method
-  health_monitor.url_path=ecv_url
-
-  return health_monitor
+  begin
+    ecv_map_list = JSON.parse(ecv_map)
+    ecv_map_list.each do |ecv_port, ecv_path|
+      if ecv_port == iport
+        ecv_method, ecv_url = ecv_path.split(' ', 2)
+        health_monitor = HealthMonitorModel.new(iprotocol, 5, 2, 3)
+        health_monitor.label.name=lb_name + '-ecv'
+        health_monitor.http_method=ecv_method
+        health_monitor.url_path=ecv_url
+        return health_monitor
+      end
+    end
+    raise "No ECV defined for port #{iport}"
+   end
 end
 
 def initialize_members(subnet_id, protocol_port)
@@ -77,11 +82,13 @@ subnet_name = service_lb_attributes[:subnet_name]
 network_manager = NetworkManager.new(tenant)
 subnet_id = network_manager.get_subnet_id(subnet_name)
 
-lb_name = ''
+
+include_recipe "neutron::build_lb_name"
+
+lb_name = node[:lb_name]
 listeners = Array.new
 #loadbalancers array contains a list of listeners from lb::build_load_balancers
 node.loadbalancers.each do |loadbalancer|
-  lb_name = loadbalancer[:name]
   vprotocol = loadbalancer[:vprotocol]
   vport = loadbalancer[:vport]
   iprotocol = loadbalancer[:iprotocol]
@@ -89,9 +96,9 @@ node.loadbalancers.each do |loadbalancer|
   sg_name = loadbalancer[:sg_name]
 
   if vprotocol == 'HTTPS' and iprotocol == 'HTTPS'
-    health_monitor = initialize_health_monitor('TCP', lb_attributes[:ecv_map], lb_name)
+    health_monitor = initialize_health_monitor('TCP', lb_attributes[:ecv_map], lb_name, iport)
   else
-    health_monitor = initialize_health_monitor(iprotocol, lb_attributes[:ecv_map], lb_name)
+    health_monitor = initialize_health_monitor(iprotocol, lb_attributes[:ecv_map], lb_name, iport)
   end
 
   members = initialize_members(subnet_id, iport)

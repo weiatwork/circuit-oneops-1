@@ -41,4 +41,27 @@ class MemberDao
     return members
   end
 
+
+  def delete_member(pool_id, member_id)
+    fail ArgumentError, 'pool_id is nil' if pool_id.nil? || pool_id.empty?
+    fail ArgumentError, 'member id is nil' if member_id.nil?
+
+    response = @member_request.delete_lbaas_member(pool_id, member_id)
+    return response[:'status'] == 204 || response[:'status'] == 404 ? true : false
+
+  end
+  def update_member(loadbalancer_id, pool_id, member_id, member)
+    fail ArgumentError, 'loadbalancer_id is nil' if loadbalancer_id.nil? || loadbalancer_id.empty?
+    fail ArgumentError, 'pool_id is nil' if pool_id.nil? || pool_id.empty?
+    fail ArgumentError, 'member is nil' if member.nil?
+
+    options = member.serialize_optional_parameters
+    response = @member_request.wait(loadbalancer_id).update_lbaas_member(pool_id, member_id, options)
+    if response[:'status'] == 204 || response[:'status'] == 200
+      member_id = JSON.parse(response[:body])['member']['id']
+    end
+
+    return member_id
+  end
+
 end
