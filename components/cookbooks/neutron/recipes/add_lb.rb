@@ -31,10 +31,14 @@ def initialize_members(subnet_id, protocol_port)
   computes = node[:workorder][:payLoad][:DependsOn].select { |d| d[:ciClassName] =~ /Compute/ }
   computes.each do |compute|
     ip_address = compute["ciAttributes"]["private_ip"]
+    if compute["ciAttributes"].has_key?("private_ipv6")
+      ip_address = compute["ciAttributes"]["private_ipv6"]
+      Chef::Log.info("ipv6 address: #{ip_address}")
+    end
+
     member = MemberModel.new(ip_address, protocol_port, subnet_id)
     members.push(member)
   end
-
   return members
 end
 
@@ -84,7 +88,6 @@ subnet_id = network_manager.get_subnet_id(subnet_name)
 
 
 include_recipe "neutron::build_lb_name"
-
 lb_name = node[:lb_name]
 listeners = Array.new
 #loadbalancers array contains a list of listeners from lb::build_load_balancers
