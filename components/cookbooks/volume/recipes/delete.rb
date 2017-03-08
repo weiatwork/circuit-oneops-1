@@ -46,7 +46,10 @@ if rfcAttrs.has_key?("mount_point") &&
     package "lsof"
   end
 
-  execute "lsof #{mount_point} | awk '{print $2}' | grep -v PID | uniq | xargs kill -9" do
+  ruby_block "killing open files at #{mount_point}" do
+    block do
+      `lsof #{mount_point} | awk '{print $2}' | grep -v PID | uniq | xargs kill -9`
+    end
     only_if { has_mounted }
   end
 
