@@ -29,6 +29,11 @@ default['sql_server']['version'] = version
 default['sql_server']['instance_name']  = 'MSSQLSERVER'
 default['sql_server']['server']['package_name'] = "Microsoft SQL Server #{version} (64-bit)"
 default['sql_server']['feature_list'] = 'SQLENGINE,REPLICATION,SNAC_SDK,SSMS'
+default['sql_server']['sql_temp_db_dir']   = node['mssql']['tempdb_data']
+default['sql_server']['sql_temp_db_log_dir']   = node['mssql']['tempdb_log']
+default['sql_server']['sql_user_db_dir']   = node['mssql']['userdb_data']
+default['sql_server']['sql_user_db_log_dir']   = node['mssql']['userdb_log']
+
 
 #Configure settings
 # Tcp settings
