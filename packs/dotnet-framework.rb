@@ -27,7 +27,7 @@ resource "secgroup",
 
 resource "os",
   :requires => {
-    "services" => "mirror"
+    "services" => "compute,dns,mirror,*ntp,*windows-domain"
   },
   :attributes => {
     "ostype"  => "windows_2012_r2"
