@@ -3,7 +3,6 @@ description      "telegraf"
 version          "0.1"
 maintainer       "OneOps"
 maintainer_email "kho@walmartlabs.com"
-license          "Copyright OneOps, All rights reserved."
 
 grouping 'default',
   :access => "global",
