@@ -31,3 +31,35 @@ attribute 'password',
     :category => '1.Global',
     :order => 2
   }
+
+attribute 'tempdb_data',
+  :description => 'TempDB data directory',
+  :format => {
+    :help => 'Default directory for tempdb data files',
+    :category => '2.Directories',
+    :order => 1
+  }
+
+attribute 'tempdb_log',
+  :description => 'TempDB log directory',
+  :format => {
+    :help => 'Default directory for tempdb log file',
+    :category => '2.Directories',
+    :order => 2
+  }
+  
+attribute 'userdb_data',
+  :description => 'User db data directory',
+  :format => {
+    :help => 'Default directory for user databases',
+    :category => '2.Directories',
+    :order => 3
+  }
+
+attribute 'userdb_log',
+  :description => 'User db log directory',
+  :format => {
+    :help => 'Default directory for user database logs',
+    :category => '2.Directories',
+    :order => 4
+  }  
