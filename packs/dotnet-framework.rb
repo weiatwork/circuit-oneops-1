@@ -25,6 +25,9 @@ resource "secgroup",
     "inbound" => '[ "22 22 tcp 0.0.0.0/0", "3389 3389 tcp 0.0.0.0/0" ]'
   }
 
+resource "compute",
+  :attributes => {"size" => "M-WIN"}
+
 resource "os",
   :requires => {
     "services" => "compute,dns,mirror,*ntp,*windows-domain"
