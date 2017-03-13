@@ -161,7 +161,7 @@ def playbook_cmd()
   options = { :timeout => new_resource.timeout }
   environment = Hash.new
   environment.merge!(new_resource.environment) if new_resource.environment && !new_resource.environment.empty?
-  shell = Mixlib::ShellOut.new("#{which_ansible_playbook(new_resource)} #{new_resource.name}", :live_stream => STDOUT)
+  shell = Mixlib::ShellOut.new("#{which_ansible_playbook(new_resource)} #{new_resource.name}", :live_stream => STDOUT, :environment => environment)
   shell.run_command
   shell.error!
 end
@@ -170,7 +170,7 @@ def galaxy_cmd(subcommand, version='')
   options = { :timeout => new_resource.timeout }
   environment = Hash.new
   environment.merge!(new_resource.environment) if new_resource.environment && !new_resource.environment.empty?
-  shell = Mixlib::ShellOut.new("#{which_galaxy(new_resource)} #{subcommand} #{new_resource.name}#{version}", :live_stream => STDOUT)
+  shell = Mixlib::ShellOut.new("#{which_galaxy(new_resource)} #{subcommand} #{new_resource.name}#{version}", :live_stream => STDOUT, :environment => environment)
   shell.run_command
   shell.error!
 end
