@@ -96,7 +96,7 @@ uri = URI.parse(node.artifact.location)
 file_name = File.basename(uri.path)
 file_physical_path = ::File.join(artifact_cache_version_path, file_name)
 
-if file_extension != 'nupkg' and File.exist?(file_physical_path)
+if file_extension != 'nupkg' && File.exist?(file_physical_path)
  package_location = ::File.join(artifact_cache_version_path, "#\{package_name\}.nupkg")
  ::File.rename(file_physical_path,package_location)
 end
