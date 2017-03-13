@@ -424,3 +424,6 @@ attribute 'requestfiltering_file_extension_allow_unlisted',
     :form      => {'field' => 'checkbox'},
     :order     => 7
   }
+
+recipe 'app_pool_recycle', 'Recycle application pool'
+recipe 'iis_reset', 'Restart IIS'
