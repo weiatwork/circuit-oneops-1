@@ -1,11 +1,3 @@
-nodes = node.workorder.payLoad.RequiresComputes
-dist = node.workorder.rfcCi.ciAttributes.version
-dpath = node.workorder.rfcCi.ciAttributes.datapath
-
-rabbitmq = node['rabbitmq']
-
-location = rabbitmq['src_url'] + rabbitmq['path'] + "/" + "rabbitmq-server-" + rabbitmq['version'] + "-1" + ".noarch.rpm"
-file = "rabbitmq-server-" + rabbitmq['version'] + "-1" + ".noarch.rpm"
 
 case node[:platform]
 when "debian", "ubuntu"
@@ -22,20 +14,52 @@ when "debian", "ubuntu"
   end
 when "redhat", "centos", "fedora"
   package "erlang"
-  package "wget"
+  package "socat"
 end
+
+cloud_name = node[:workorder][:cloud][:ciName]
+if node[:workorder][:services].has_key? "mirror"
+  mirrors = JSON.parse(node[:workorder][:services][:mirror][cloud_name][:ciAttributes][:mirrors])
+else
+  mirrors = Hash.new
+end
+
+source = mirrors["rabbitmq-server"]
+if source.nil?
+  Chef::Log.info("rabbitmq source repository has not beed defined in cloud mirror service.. taking default #{node.rabbitmq.source}")
+  source = node.rabbitmq.source
+else
+  Chef::Log.info("using rabbitmq source repository that has been defined in cloud mirror service #{source}")
+end
+
+version = node.rabbitmq.version
+
+if node.platform_version.start_with?("6")
+  file_name = "rabbitmq-server-#{version}-1.el6.noarch.rpm"
+elsif node.platform_version.start_with?("7")
+  file_name = "rabbitmq-server-#{version}-1.el7.noarch.rpm"
+end
+
+#chef_gem 'parallel'
+
+shared_download_http "#{source}/v#{version}/#{file_name}" do
+  path "/tmp/#{file_name}"
+  action :create
+end
+
+#remote_file "/tmp/#{file_name}" do
+#  source "#{source}/v#{version}/#{file_name}"
+#end
 
 bash "Install Rabbitmq" do
   code <<-EOH
-  cd /tmp
-  wget #{location}
-  rpm -ivh /tmp/#{file}
+  rpm -ivh /tmp/#{file_name}
   chkconfig rabbitmq-server on
   EOH
 end
 
-execute "Stop rabbitmq-server" do
-  command "service rabbitmq-server stop"
+service "rabbitmq-server" do
+  action :stop
 end
 
 directory "/etc/rabbitmq/" do
@@ -63,7 +87,7 @@ execute "Remove old rabbitmq data directory" do
   command "rm -rf /var/lib/rabbitmq/mnesia"
 end
 
-directory "#{dpath}" do
+directory node.workorder.rfcCi.ciAttributes.datapath do
   owner "rabbitmq"
   group "rabbitmq"
   mode 0755
@@ -71,8 +95,16 @@ directory "#{dpath}" do
   recursive true
 end
 
-execute "Start rabbitmq-server" do
-  command "service rabbitmq-server start"
+directory "/log/rabbitmq" do
+  owner "rabbitmq"
+  group "rabbitmq"
+  mode 0755
+  action :create
+  recursive true
+end
+
+service "rabbitmq-server" do
+  action [:enable, :start]
 end
 
 execute "Enable Rabbitmq Management" do
@@ -112,6 +144,10 @@ execute "Enable Rabbitmq Management for user guest" do
   action :run
 end
 
-execute "Restart rabbitmq-server" do
-  command "service rabbitmq-server restart"
+service "rabbitmq-server" do
+  action :restart
+end
+
+file "/tmp/#{file_name}" do
+  action :delete
 end

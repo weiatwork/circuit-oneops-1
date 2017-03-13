@@ -11,43 +11,12 @@ grouping 'default',
 attribute 'version',
   :description => "Version",
   :required => "required",
-  :default => "3.4.2",
+  :default => "3.6.6",
   :format => {
     :help => 'Version of RabbitMQ',
     :category => '1.Global',
     :order => 1,
-    :form => { 'field' => 'select', 'options_for_select' => [['3.5.6','3.5.6'],['3.4.2','3.4.2'],['3.4.3','3.4.3'],['2.8.5','2.8.5']]}
-  }
-
-attribute 'src_url',
-          :description => 'Source URL',
-          :required => 'required',
-          :default => 'https://www.rabbitmq.com/releases/rabbitmq-server/',
-          :format => {
-              :help => 'location of the Rabbitmq source distribution',
-              :category => '1.Global',
-              :order => 2
-          }
-
-attribute 'path',
-        :description => 'Package Directory',
-        :required => 'required',
-        :default => 'v3.4.2',
-        :format => {
-            :help => 'Name of Directory which contains Rabbitmq source distribution',
-            :category => '1.Global',
-            :order => 2
-        }
-
-
-attribute 'port',
-  :description => "Port",
-  :default => "5672",
-  :format => {
-    :help => 'Port RabbitMQ service listens on',
-    :category => '1.Global',
-    :order => 2,
-    :pattern => "[0-9]+"
+    :form => { 'field' => 'select', 'options_for_select' => [['3.6.6','3.6.6']] }
   }
 
 attribute 'datapath',
