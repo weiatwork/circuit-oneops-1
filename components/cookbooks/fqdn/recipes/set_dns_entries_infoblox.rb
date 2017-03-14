@@ -28,23 +28,32 @@ def delete_record (dns_name, dns_value)
 
   Chef::Log.info("delete #{delete_type}: #{dns_name} to #{dns_value}")
 
+  api_version = "v1.0"
+
   record = { :name => dns_name.downcase }
   case delete_type
-  when "cname"
-    record["canonical"] = dns_value.downcase
-  when "a"
-    record["ipv4addr"] = dns_value.downcase
-  when "ptr"
-    record = {"ipv4addr" => dns_name,
-              "ptrdname" => dns_value}
-  when "txt"
+    when "cname"
+      record["canonical"] = dns_value.downcase
+    when "a"
+      record["ipv4addr"] = dns_value.downcase
+    when "aaaa"
+      record["ipv6addr"] = dns_value.downcase
+    when "ptr"
+      if dns_name =~ Resolv::IPv4::Regex
+        record = {"ipv4addr" => dns_name,
+                  "ptrdname" => dns_value}
+      elsif dns_name =~ Resolv::IPv6::Regex
+        record = {"ipv6addr" => dns_name,
+                  "ptrdname" => dns_value}
+        api_version = "v1.2" #ipv6addr attribute is recognized only in infoblox api version >= 1.1
+      end
+    when "txt"
       record = {"name" => dns_name,
                 "text" => dns_value}
-              
   end
 
   records = JSON.parse(node.infoblox_conn.request(:method=>:get,
-    :path=>"/wapi/v1.0/record:#{delete_type}", :body => JSON.dump(record) ).body)
+    :path=>"/wapi/#{api_version}/record:#{delete_type}", :body => JSON.dump(record) ).body)
 
   if records.size == 0
     Chef::Log.info("record already deleted")
@@ -52,7 +61,7 @@ def delete_record (dns_name, dns_value)
   else
     records.each do |r|
       ref = r["_ref"]
-      resp = node.infoblox_conn.request(:method => :delete, :path => "/wapi/v1.0/#{ref}")
+      resp = node.infoblox_conn.request(:method => :delete, :path => "/wapi/#{api_version}/#{ref}")
       Chef::Log.info("status: #{resp.status}")
       if (resp.status.to_i != 200)
         Chef::Log.error("response: #{resp.inspect}")
@@ -215,23 +224,31 @@ node[:entries].each do |entry|
        :view => view_attribute,
        :ttl => ttl
     }
-
+    api_version = "v1.0"
     case dns_type
-    when "cname"
-      record[:canonical] = dns_value.gsub(/\.+$/,"")
-    when "a"
-      record[:ipv4addr] = dns_value
-    when "ptr"
-      record[:ipv4addr] = dns_name
-      record[:ptrdname] = dns_value
-      record.delete(:name)
+      when "cname"
+        record[:canonical] = dns_value.gsub(/\.+$/,"")
+      when "a"
+        record[:ipv4addr] = dns_value
+      when "aaaa"
+        record[:ipv6addr] = dns_value.gsub(/\.+$/,"")
+      when "ptr"
+        if dns_name =~ Resolv::IPv6::Regex
+          record[:ipv6addr] = dns_name
+          api_version = "v1.2" #ipv6addr attribute is recognized only in infoblox api version >= 1.1
+        elsif dns_name =~ Resolv::IPv4::Regex
+          record[:ipv4addr] = dns_name
+        end
+        record.delete(:name)
+        record[:ptrdname] = dns_value
+        
     end
 
     Chef::Log.debug("record: #{record.inspect}")
 
     handle_response node.infoblox_conn.request(
       :method => :post,
-      :path => "/wapi/v1.0/record:#{dns_type}",
+      :path => "/wapi/#{api_version}/record:#{dns_type}",
       :body => JSON.dump(record))
     
   end
