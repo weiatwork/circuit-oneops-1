@@ -3,7 +3,7 @@ ansible_role_version = node.workorder.rfcCi.ciAttributes.ansible_role_version
 ansible_role_source = node.workorder.rfcCi.ciAttributes.ansible_role_source
 ansible_role_playbook = node.workorder.rfcCi.ciAttributes.ansible_role_playbook
 
-if node.workorder.rfcCi.ciAttributes.source_yaml == 'false'
+if ansible_role_name != '' && ansible_role_source == ''
   ansiblerole_galaxy "#{ansible_role_name}" do
     name ansible_role_name
     version ansible_role_version

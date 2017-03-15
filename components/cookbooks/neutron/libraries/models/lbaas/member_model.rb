@@ -5,7 +5,7 @@ require 'resolv'
 class MemberModel < BaseModel
 
   def initialize(ip_address, protocol_port, subnet_id, tenant_id = nil, id = nil, operating_status = nil)
-    fail ArgumentError, 'ip_address is invalid' if ip_address.nil? || ip_address.empty? || !(ip_address =~ Resolv::IPv4::Regex)
+    fail ArgumentError, 'ip_address is invalid' if ip_address.nil? || ip_address.empty? || !((ip_address =~ Resolv::IPv4::Regex) || (ip_address =~ Resolv::IPv6::Regex))
     fail ArgumentError, 'protocol_port is invalid' if protocol_port.nil? || !is_valid_port(protocol_port)
     fail ArgumentError, 'subnet_id is invalid' if subnet_id.nil? || subnet_id.empty?
 
