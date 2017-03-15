@@ -41,11 +41,6 @@ def delete_gslb_service_by_name(gslb_service_name)
   dc_name = gdns_cloud_service[:ciAttributes][:gslb_site_dns_id]
   vport = get_gslb_port
   monitor_name = node.workorder.box.ciId.to_s+"-#{vport}-#{dc_name}-gmon"
-
-  # no delete generic monitors
-  if ["get /","head /"].include?(monitor_request)
-    
-  end  
       
   mon_response  = JSON.parse(conn.request(
     :method=>:get,
