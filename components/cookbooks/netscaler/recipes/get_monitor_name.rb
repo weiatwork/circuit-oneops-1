@@ -57,7 +57,10 @@ iport_map.each_pair do |iport,protocol|
   end
 
   # use generic monitors
+  orig_monitor_name = ""
   if ["get /","head /"].include?(monitor_request)
+    # orig monitor name to migrate in servicegroup before binding
+    orig_monitor_name  = base_monitor_name    
     base_monitor_name = "generic-" + monitor_request.gsub(' ','-').gsub('/','slash')
   end
     
@@ -67,6 +70,9 @@ iport_map.each_pair do |iport,protocol|
     :protocol => protocol,
     :sg_name => sg_name 
   }
+  if !orig_monitor_name.empty?
+    monitor[:orig_monitor_name] = orig_monitor_name
+  end
   monitors.push monitor
   
   # setup old name to unbind and delete
