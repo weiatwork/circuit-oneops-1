@@ -2,9 +2,6 @@
 # Cookbook Name:: hadoop-yarn-v1
 # Recipe:: datanode_setup
 #
-# Copyright 2016, @WalmartLabs
-#
-# All rights reserved - Do Not Redistribute
 #
 
 # install datanode init script

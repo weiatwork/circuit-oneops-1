@@ -1,7 +1,6 @@
 name             'Hadoop-yarn-v1'
 maintainer       '@WalmartLabs'
 maintainer_email 'dmoon@walmartlabs.com'
-license          'All rights reserved'
 description      'Hadoop YARN (v1 build)'
 long_description 'Hadoop YARN (v1 build)'
 version          '1.0.0'

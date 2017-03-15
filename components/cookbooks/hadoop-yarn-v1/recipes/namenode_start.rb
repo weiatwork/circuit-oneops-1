@@ -2,9 +2,6 @@
 # Cookbook Name:: hadoop-yarn-v1
 # Recipe:: namenode_start
 #
-# Copyright 2016, @WalmartLabs
-#
-# All rights reserved - Do Not Redistribute
 #
 
 # start namenode
