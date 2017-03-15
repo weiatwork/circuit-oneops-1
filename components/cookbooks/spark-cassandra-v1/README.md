@@ -1,4 +1,4 @@
-Spark Cassandra Connector Cookbook (RC8 Build)
+Spark Cassandra Connector Cookbook (V1 Build)
 ==============================================
 
 This cookbook deploys the Spark Cassandra connector into a Spark standalone
@@ -20,5 +20,5 @@ classpath of the driver and executors in a flat tar with no subdirectories.
 Attributes
 ----------
 
-* `default['spark-cassandra-vrc8']['spark_version']` - The version of Spark being installed.
-* `default['spark-cassandra-vrc8']['connector_tarball']` - The URL to the tarball containing the connector drivers.
+* `default['spark-cassandra-v1']['spark_version']` - The version of Spark being installed.
+* `default['spark-cassandra-v1']['connector_tarball']` - The URL to the tarball containing the connector drivers.
