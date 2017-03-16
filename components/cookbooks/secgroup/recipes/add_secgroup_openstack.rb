@@ -76,7 +76,7 @@ rules.each do |rule|
       ethertype = 'ipv4'
       if cidr =~ Resolv::IPv4::Regex
         ethertype = 'ipv4'
-      elsif cidr =~ Resolv::IPv6::Regex || cidr =~ Resolv::IPv6::Regex_CompressedHex
+      elsif cidr =~ Resolv::IPv6::Regex || cidr =~ Resolv::IPv6::Regex_CompressedHex 
         ethertype = 'ipv6'
       end
       sg_rule = {

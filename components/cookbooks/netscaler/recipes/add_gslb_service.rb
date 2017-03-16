@@ -144,7 +144,7 @@ end
 
 
 authoritative_servers = JSON.parse(local_cloud_service[:ciAttributes][:gslb_authoritative_servers])
-
+Chef::Log.info ("authoritative servers: #{authoritative_servers}")
 authoritative_servers.each do |dns_server|
   # skip if local or done already
   next if dns_server == local_cloud_service[:ciAttributes][:host]

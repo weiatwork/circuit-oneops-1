@@ -75,4 +75,13 @@ attribute 'provider',
   }
 }
 
+attribute 'gslb_site_dns_id',
+  :description => "GSLB Site DNS id",
+  :default => '',
+  :format => {
+      :category => '2.Configuration',
+      :order => 3,
+      :help => 'GSLB Site DNS id'
+  }
+
 recipe "status", "Neutron Status"
