@@ -29,7 +29,7 @@ attribute 'erlangcookie',
     :order => 2
   }
 
-attribute 'user_1',
+attribute 'guest_user',
   :description => "Guest User",
   :required => "required",
   :default => "guest123",
@@ -39,7 +39,7 @@ attribute 'user_1',
     :order => 1
   }
 
-attribute 'password_1',
+attribute 'guest_password',
   :description => "Guest Password",
   :required => "required",
   :encrypted => true,
@@ -50,8 +50,8 @@ attribute 'password_1',
     :order => 2
   }
 
-attribute 'user_2',
-  :description => "Nova User",
+attribute 'admin_user',
+  :description => "Admin User",
   :required => "required",
   :default => "nova",
   :format => {
@@ -60,8 +60,8 @@ attribute 'user_2',
     :order => 3
   }
 
-attribute 'password_2',
-  :description => "Nova Password",
+attribute 'admin_password',
+  :description => "Admin Password",
   :required => "required",
   :encrypted => true,
   :default => "nova",

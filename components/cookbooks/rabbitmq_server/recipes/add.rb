@@ -119,17 +119,17 @@ execute "Enable Rabbitmq Management" do
   action :run
 end
 
-rabbitmq_server_user node.rabbitmq_server.user_1 do
-  password node.rabbitmq_server.password_1
+rabbitmq_server_user node.rabbitmq_server.guest_user do
+  password node.rabbitmq_server.guest_password
   action :add
 end
 
-rabbitmq_server_user node.rabbitmq_server.user_2 do
-  password node.rabbitmq_server.password_2
+rabbitmq_server_user node.rabbitmq_server.admin_user do
+  password node.rabbitmq_server.admin_password
   action :add
 end
 
-[node.rabbitmq_server.user_1, node.rabbitmq_server.user_2].each do |user|
+[node.rabbitmq_server.guest_user, node.rabbitmq_server.admin_user].each do |user|
   rabbitmq_server_user user do
     permissions "\".*\" \".*\" \".*\""
     action :set_permissions
