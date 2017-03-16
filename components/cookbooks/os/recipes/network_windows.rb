@@ -7,6 +7,7 @@ if node[:workorder][:services].has_key?("windows-domain")
   $password = '#{domain[:password]}'| ConvertTo-SecureString -asPlainText -Force
   $username = '#{domain[:domain]}\\#{domain[:username]}'
   $credential = New-Object System.Management.Automation.PSCredential($username,$password)
+  $currentname = (Get-WmiObject -Class Win32_ComputerSystem).DNSHostName
   $newname = '#{node.vmhostname}'
 
   #Generate OU path
@@ -14,9 +15,12 @@ if node[:workorder][:services].has_key?("windows-domain")
   foreach ($a in $domain.Split('.')) { $oupath += 'DC='+$a + ',' }
   $oupath = $oupath.Substring(0,$oupath.Length-1)
 
-  Rename-Computer -NewName $newname -Force 
-  try { Add-Computer -DomainName $domain -Credential $credential -Force -Options JoinWithNewName -ErrorAction Stop -OUPath $oupath }
-  catch { Add-Computer -DomainName $domain -Credential $credential -NewName $newname -Force -ErrorAction Stop -OUPath $oupath }  
+  If ($currentname -ne $newname) 
+  { Rename-Computer -NewName $newname -Force 
+    try { Add-Computer -DomainName $domain -Credential $credential -Force -Options JoinWithNewName -ErrorAction Stop -OUPath $oupath }
+    catch { Add-Computer -DomainName $domain -Credential $credential -NewName $newname -Force -ErrorAction Stop -OUPath $oupath }  }
+  Else
+  { Add-Computer -DomainName $domain -Credential $credential -Force -ErrorAction Stop -OUPath $oupath }  
   
   Start-Sleep -s 10"  
   

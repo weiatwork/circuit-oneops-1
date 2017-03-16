@@ -150,7 +150,7 @@ begin
   member_manager = MemberManager.new(tenant)
   computes = node[:workorder][:payLoad][:DependsOn].select { |d| d[:ciClassName] =~ /Compute/ }
 
-#handle changed when compute is replaced and ip of the compute changes.
+  #handle changed when compute is replaced and ip of the compute changes.
   if !config_items_changed.has_key?("listeners")
     computes.each do |compute|
       new_ip_address = compute["ciAttributes"]["private_ip"]
@@ -170,22 +170,21 @@ begin
         end
       end
     end
-    if computes[0]["rfcAction"] == "replace"
-      new_lb.listeners.each do | listener |
-      listener.pool.members.each do | member |
-        is_member_still_exist = false
-        computes = node[:workorder][:payLoad][:DependsOn].select { |d| d[:ciClassName] =~ /Compute/ }
-        computes.each do | compute |
-          if compute[:ciAttributes][:private_ip] == member.ip_address.to_s
-            is_member_still_exist = true
+     if computes[0]["rfcAction"] == "replace"
+        new_lb.listeners.each do | listener |
+        listener.pool.members.each do | member |
+          is_member_still_exist = false
+          computes.each do | compute |
+              if compute[:ciAttributes][:private_ip] == member.ip_address.to_s
+              is_member_still_exist = true
+              end
+          end
+          if is_member_still_exist == false
+            member_manager.delete_member(listener.pool.id, member.id)
           end
         end
-        if is_member_still_exist == false
-          member_manager.delete_member(listener.pool.id, member.id)
         end
-      end
-      end
-    end
+     end
   end
 
 rescue RuntimeError => ex
@@ -209,7 +208,6 @@ rescue RuntimeError => ex
   raise e
 end
 
-
 lb = lb_manager.get_loadbalancer(new_lb.id)
 node.set[:lb_dns_name] = lb.vip_address
 Chef::Log.info("VIP Address: " + lb.vip_address.to_s)
@@ -219,7 +217,7 @@ vnames = get_dc_lb_names()
 vnames[lb_name] = nil
 vnames.keys.each do |key|
   vnames[key] = lb.vip_address
-end
+ end
 
 
 puts "***RESULT:vnames=" + vnames.to_json
