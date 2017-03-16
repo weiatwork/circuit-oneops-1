@@ -43,3 +43,9 @@ Chef::Log.info("selected_ip: #{node.selected_ip}")
 Chef::Log.info("selected_cloud_id: #{node.selected_cloud_id}")
 Chef::Log.info("cloud_ids: #{cloud_ids.inspect}")
 Chef::Log.info("hostnames_with_ips: #{hostnames_with_ips.inspect}")
+
+directory "/tmp/ssh" do
+	action :create
+end
+
+include_recipe "rabbitmq_cluster::host_resolution"
