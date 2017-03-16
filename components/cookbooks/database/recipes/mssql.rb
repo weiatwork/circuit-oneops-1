@@ -17,8 +17,14 @@ powershell_script 'Create-Database' do
 end
 
 #2. Create login - TO-DO add support for domain users
-sqlcmd = "IF NOT EXISTS (SELECT 1 FROM sys.server_principals WHERE name = N'#{username}') 
+if username.include?("\\") 
+  sqlcmd = "IF NOT EXISTS (SELECT 1 FROM sys.server_principals WHERE name = N'#{username}') 
+CREATE LOGIN [#{username}] FROM WINDOWS WITH DEFAULT_DATABASE=[#{dbname}]"
+else
+  sqlcmd = "IF NOT EXISTS (SELECT 1 FROM sys.server_principals WHERE name = N'#{username}') 
 CREATE LOGIN [#{username}] WITH PASSWORD=N'#{password}',DEFAULT_DATABASE=[#{dbname}], CHECK_EXPIRATION=ON, CHECK_POLICY=ON"
+end
+
 Chef::Log.info("Create login: #{username}")
 powershell_script 'Create-Login' do
   code cmd.gsub("$QUERY$",sqlcmd)
