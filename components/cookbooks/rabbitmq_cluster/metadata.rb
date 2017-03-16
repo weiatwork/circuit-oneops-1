@@ -1,4 +1,4 @@
-name             "Rabbitmq-cluster"
+name             "Rabbitmq_cluster"
 description      "Setup/Configure Rabbitmq Cluster"
 version          "0.1"
 maintainer       "OneOps"
@@ -9,6 +9,8 @@ grouping 'default',
   :access => "global",
   :packages => [ 'base', 'mgmt.catalog', 'mgmt.manifest', 'catalog', 'manifest', 'bom' ]
 
-recipe "start", "start app"
-recipe "stop", "stop app"
-recipe "join", "join cluster"
+recipe "app_status", "app status"
+recipe "app_stop", "app stop"
+recipe "app_start", "app start"
+recipe "cluster_status", "cluster status"
+recipe "cluster_break", "cluster break"

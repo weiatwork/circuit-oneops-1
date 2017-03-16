@@ -26,13 +26,13 @@ end
 
 source = mirrors["rabbitmq-server"]
 if source.nil?
-  Chef::Log.info("rabbitmq source repository has not beed defined in cloud mirror service.. taking default #{node.rabbitmq.source}")
-  source = node.rabbitmq.source
+  Chef::Log.info("rabbitmq source repository has not beed defined in cloud mirror service.. taking default #{node.rabbitmq_server.source}")
+  source = node.rabbitmq_server.source
 else
   Chef::Log.info("using rabbitmq source repository that has been defined in cloud mirror service #{source}")
 end
 
-version = node.rabbitmq.version
+version = node.rabbitmq_server.version
 
 if node.platform_version.start_with?("6")
   file_name = "rabbitmq-server-#{version}-1.el6.noarch.rpm"
@@ -40,16 +40,10 @@ elsif node.platform_version.start_with?("7")
   file_name = "rabbitmq-server-#{version}-1.el7.noarch.rpm"
 end
 
-#chef_gem 'parallel'
-
 shared_download_http "#{source}/v#{version}/#{file_name}" do
   path "/tmp/#{file_name}"
   action :create
 end
-
-#remote_file "/tmp/#{file_name}" do
-#  source "#{source}/v#{version}/#{file_name}"
-#end
 
 bash "Install Rabbitmq" do
   code <<-EOH
@@ -62,18 +56,32 @@ service "rabbitmq-server" do
   action :stop
 end
 
-directory "/etc/rabbitmq/" do
+directory node.rabbitmq_server.config_path do
   owner "root"
   group "root"
   mode 0755
   action :create
 end
 
-template "/etc/rabbitmq/rabbitmq-env.conf" do
+template "#{node.rabbitmq_server.config_path}/rabbitmq-env.conf" do
   source "rabbitmq-env.conf.erb"
   owner "root"
   group "root"
   mode 0644
+  variables({
+    :environment_variables => JSON.parse(node.rabbitmq_server.environment_variables)
+    })
+end
+
+template "#{node.rabbitmq_server.config_path}/rabbitmq.config" do
+  source "rabbitmq.config.erb"
+  owner "root"
+  group "root"
+  mode 0644
+  variables({
+    :config_variables => JSON.parse(node.rabbitmq_server.config_variables).map { |k, v| "{#{k}, #{v}}" }.join(",")
+    })
+  not_if { JSON.parse(node.rabbitmq_server.config_variables).empty? }
 end
 
 template "/var/lib/rabbitmq/.erlang.cookie" do
@@ -87,20 +95,17 @@ execute "Remove old rabbitmq data directory" do
   command "rm -rf /var/lib/rabbitmq/mnesia"
 end
 
-directory node.workorder.rfcCi.ciAttributes.datapath do
-  owner "rabbitmq"
-  group "rabbitmq"
-  mode 0755
-  action :create
-  recursive true
-end
+data_path = JSON.parse(node.rabbitmq_server.environment_variables).has_key?("RABBITMQ_MNESIA_BASE") ? JSON.parse(node.rabbitmq_server.environment_variables)["RABBITMQ_MNESIA_BASE"] : node.rabbitmq_server.data_path
+log_path = JSON.parse(node.rabbitmq_server.environment_variables).has_key?("RABBITMQ_LOG_BASE") ? JSON.parse(node.rabbitmq_server.environment_variables)["RABBITMQ_LOG_BASE"] : node.rabbitmq_server.log_path
 
-directory "/log/rabbitmq" do
-  owner "rabbitmq"
-  group "rabbitmq"
-  mode 0755
-  action :create
-  recursive true
+[data_path, log_path].each do |dir|
+  directory dir do
+    owner "rabbitmq"
+    group "rabbitmq"
+    mode 0755
+    action :create
+    recursive true
+  end
 end
 
 service "rabbitmq-server" do
@@ -114,34 +119,22 @@ execute "Enable Rabbitmq Management" do
   action :run
 end
 
-rabbitmq_user "guest" do
-  password "guest123"
+rabbitmq_server_user node.rabbitmq_server.user_1 do
+  password node.rabbitmq_server.password_1
   action :add
 end
 
-rabbitmq_user "nova" do
-  password "sekret"
+rabbitmq_server_user node.rabbitmq_server.user_2 do
+  password node.rabbitmq_server.password_2
   action :add
 end
 
-rabbitmq_user "guest" do
-  permissions "\".*\" \".*\" \".*\""
-  action :set_permissions
-end
-
-rabbitmq_user "nova" do
-  permissions "\".*\" \".*\" \".*\""
-  action :set_permissions
-end
-
-execute "Enable Rabbitmq Management for user nova" do
-  command "/usr/sbin/rabbitmqctl set_user_tags nova administrator"
-  action :run
-end
-
-execute "Enable Rabbitmq Management for user guest" do
-  command "/usr/sbin/rabbitmqctl set_user_tags guest administrator"
-  action :run
+[node.rabbitmq_server.user_1, node.rabbitmq_server.user_2].each do |user|
+  rabbitmq_server_user user do
+    permissions "\".*\" \".*\" \".*\""
+    action :set_permissions
+  end
+  execute "/usr/sbin/rabbitmqctl set_user_tags #{user} administrator"
 end
 
 service "rabbitmq-server" do

@@ -1,10 +1,5 @@
 
-ruby_block "stop app" do
-	block do
-		execute_command "rabbitmqctl stop_app"
-	end
-	not_if { node.current_hostname == node.selected_hostname }
-end
+include_recipe "rabbitmq_cluster::app_stop" unless node.current_hostname == node.selected_hostname
 
 ruby_block "joining #{node.current_hostname} with #{node.selected_hostname}" do
 	block do
@@ -13,8 +8,4 @@ ruby_block "joining #{node.current_hostname} with #{node.selected_hostname}" do
 	not_if { node.current_hostname == node.selected_hostname }
 end
 
-ruby_block "start app" do
-	block do
-		execute_command "rabbitmqctl start_app"
-	end
-end
+include_recipe "rabbitmq_cluster::app_start"
