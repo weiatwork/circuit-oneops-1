@@ -273,51 +273,6 @@ attribute 'show_swift_properties',
               form: { 'field' => 'checkbox' }
           }
 
-attribute 'swift_url',
-          description: 'Keystone authentication hostname',
-          required: 'required',
-          default: 'keystone_auth_url',
-          format: {
-              category: '5.Swift Properties',
-              filter: { 'all' => { 'visible' => 'show_swift_properties:eq:true' } },
-              help: 'Keystone auth url',
-              order: 2
-          }
-
-attribute 'swift_username',
-          description: 'Keystone username',
-          required: 'required',
-          default: 'swift_username',
-          format: {
-              category: '5.Swift Properties',
-              filter: { 'all' => { 'visible' => 'show_swift_properties:eq:true' } },
-              help: 'Username to connect to swift service',
-              order: 3
-          }
-
-attribute 'swift_password',
-          description: 'Keystone password',
-          required: 'required',
-          encrypted: true,
-          default: 'somepassword',
-          format: {
-              category: '5.Swift Properties',
-              filter: { 'all' => { 'visible' => 'show_swift_properties:eq:true' } },
-              help: 'Password to connect to swift service',
-              order: 4
-          }
-
-attribute 'swift_tenant',
-          description: 'Swift Tenant',
-          required: 'required',
-          default: 'swift_tenant',
-          format: {
-              category: '5.Swift Properties',
-              filter: { 'all' => { 'visible' => 'show_swift_properties:eq:true' } },
-              help: 'Tenant to use for swift',
-              order: 5
-          }
-
 attribute 'swift_tmp_dir',
           description: 'hadoop.tmp.dir',
           required: 'required',
@@ -326,17 +281,7 @@ attribute 'swift_tmp_dir',
               category: '5.Swift Properties',
               filter: { 'all' => { 'visible' => 'show_swift_properties:eq:true' } },
               help: "Specify the local file system location for temporary files. Used as a base for temp directory on ephemeral HDFS as well. To override for HDFS temp, use the 'custom core-site.xml' box to set mapred.system.dir.",
-              order: 6
-          }
-
-attribute 'swift_strati_auth_endpoint_prefix',
-          description: 'fs.swift.service.strati.auth.endpoint.prefix',
-          required: 'required',
-          default: '/object_endpoint/',
-          format: {
-              category: '5.Swift Properties',
-              filter: { 'all' => { 'visible' => 'show_swift_properties:eq:true' } },
-              order: 7
+              order: 2
           }
 
 attribute 'swift_block_size',
@@ -346,7 +291,7 @@ attribute 'swift_block_size',
           format: {
               category: '5.Swift Properties',
               filter: { 'all' => { 'visible' => 'show_swift_properties:eq:true' } },
-              order: 8
+              order: 3
           }
 
 attribute 'swift_request_size',
@@ -356,7 +301,7 @@ attribute 'swift_request_size',
           format: {
               category: '5.Swift Properties',
               filter: { 'all' => { 'visible' => 'show_swift_properties:eq:true' } },
-              order: 9
+              order: 4
           }
 
 attribute 'swift_connect_timeout',
@@ -366,7 +311,7 @@ attribute 'swift_connect_timeout',
           format: {
               category: '5.Swift Properties',
               filter: { 'all' => { 'visible' => 'show_swift_properties:eq:true' } },
-              order: 10
+              order: 5
           }
 
 attribute 'swift_socket_timeout',
@@ -376,7 +321,7 @@ attribute 'swift_socket_timeout',
           format: {
               category: '5.Swift Properties',
               filter: { 'all' => { 'visible' => 'show_swift_properties:eq:true' } },
-              order: 11
+              order: 6
           }
 
 attribute 'swift_connect_retry_count',
@@ -386,7 +331,7 @@ attribute 'swift_connect_retry_count',
           format: {
               category: '5.Swift Properties',
               filter: { 'all' => { 'visible' => 'show_swift_properties:eq:true' } },
-              order: 12
+              order: 7
           }
 
 attribute 'swift_throttle_delay',
@@ -396,7 +341,7 @@ attribute 'swift_throttle_delay',
           format: {
               category: '5.Swift Properties',
               filter: { 'all' => { 'visible' => 'show_swift_properties:eq:true' } },
-              order: 13
+              order: 8
           }
 
 attribute 'swift_lazyseek',
@@ -405,18 +350,8 @@ attribute 'swift_lazyseek',
           format: {
               category: '5.Swift Properties',
               filter: { 'all' => { 'visible' => 'show_swift_properties:eq:true' } },
-              order: 14,
+              order: 9,
               form: { 'field' => 'checkbox' }
-          }
-
-attribute 'swift_region_name',
-          description: 'Swift Region Name',
-          required: 'required',
-          default: 'regionOne',
-          format: {
-              category: '5.Swift Properties',
-              filter: { 'all' => { 'visible' => 'show_swift_properties:eq:true' } },
-              order: 15
           }
 
 attribute 'swift_default_region_name',
@@ -426,7 +361,7 @@ attribute 'swift_default_region_name',
           format: {
               category: '5.Swift Properties',
               filter: { 'all' => { 'visible' => 'show_swift_properties:eq:true' } },
-              order: 16
+              order: 10
           }
 
 #         _____
