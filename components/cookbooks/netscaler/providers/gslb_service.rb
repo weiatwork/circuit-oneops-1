@@ -389,7 +389,7 @@ def create_gslb_service
     existing_monitor = resp_obj["lbmonitor"][0]
     Chef::Log.info("existing monitor: #{existing_monitor.inspect}")
     
-    if existing_monitor["type"] != monitor[:type] && !monitor_name.start_with("generic")
+    if existing_monitor["type"] != monitor[:type] && !monitor_name.start_with?("generic")
       Chef::Log.info("delete monitor due to different types: existing: #{existing_monitor['type']} current: #{monitor[:type]}")
       gslbsvc_lbmon_obj = JSON.parse(conn.request(
         :method=>:get,
