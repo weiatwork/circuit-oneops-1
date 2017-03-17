@@ -8,6 +8,55 @@ category "Worker Application"
 environment "single", {}
 environment "redundant", {}
 
+variable "drive_name",
+  :description => 'drive name',
+  :value       => 'E'
+
+variable "platform_deployment",
+  :description => 'Downloads the nuget packages',
+  :value       => 'e:\platform_deployment'
+
+chocolatey_package_configure_cmd=  <<-"EOF"
+
+package_name = node.artifact.repository
+file_extension = File.extname(node.artifact.location)
+uri = URI.parse(node.artifact.location)
+file_name = File.basename(uri.path)
+file_physical_path = ::File.join(artifact_cache_version_path, file_name)
+
+if file_extension != 'nupkg' and File.exist?(file_physical_path)
+ package_location = ::File.join(artifact_cache_version_path, "#\{package_name\}.nupkg")
+ ::File.rename(file_physical_path,package_location)
+end
+
+chocolatey_package package_name do
+  source artifact_cache_version_path
+  options "--ignore-package-exit-codes=3010"
+  action :install
+end
+
+EOF
+
+resource "chocolatey-package",
+  :cookbook      => "oneops.1.artifact",
+  :design        => true,
+  :requires      => {
+    :constraint  => "0..*",
+    :help        => "Installs chocolatey package"
+  },
+  :attributes       => {
+     :repository    => '',
+     :location      => '',
+     :version       => '',
+     :install_dir   => '$OO_LOCAL{platform_deployment}',
+     :as_user       => 'oneops',
+     :as_group      => 'oneops',
+     :should_expand => 'false',
+     :configure     => chocolatey_package_configure_cmd,
+     :migrate       => '',
+     :restart       => ''
+}
+
 resource "dotnetframework",
   :cookbook     => "oneops.1.dotnetframework",
   :design       => true,
@@ -35,8 +84,17 @@ resource "os",
   :attributes => {
     "ostype"  => "windows_2012_r2"
   }
+  
+resource "volume",
+  :requires       => {
+    :constraint   => "1..1"
+  },
+  :attributes     => {
+    "mount_point" => '$OO_LOCAL{drive_name}'
+  }
 
-[ { :from => 'dotnetframework',  :to => 'os' } ].each do |link|
+[ { :from => 'dotnetframework',  :to => 'os' },
+  { :from => 'chocolatey-package', :to => 'volume' } ].each do |link|
   relation "#{link[:from]}::depends_on::#{link[:to]}",
     :relation_name => 'DependsOn',
     :from_resource => link[:from],
@@ -44,7 +102,7 @@ resource "os",
     :attributes => { "flex" => false, "min" => 1, "max" => 1 }
 end
 
-[ 'dotnetframework'].each do |from|
+[ 'dotnetframework','chocolatey-package' ,'volume','os' ].each do |from|
   relation "#{from}::managed_via::compute",
     :except => [ '_default' ],
     :relation_name => 'ManagedVia',
