@@ -1,4 +1,4 @@
-#
+ #
 # Cookbook Name:: netscaler
 # Recipe:: add_gslb_service
 #
@@ -30,8 +30,8 @@ node.set["gslb_has_changes"] = false
 ci = node.workorder.payLoad.DependsOn[0]
 # was by cloud-level vip
 # server_ip = ci["ciAttributes"]["dns_record"]
-server_ip = node.dc_vip
 
+server_ip = node.dc_vip
 gslb_service_name = node["gslb_service_name"]
 gslb_service_state = "ENABLED"
 
@@ -144,7 +144,6 @@ end
 
 
 authoritative_servers = JSON.parse(local_cloud_service[:ciAttributes][:gslb_authoritative_servers])
-Chef::Log.info ("authoritative servers: #{authoritative_servers}")
 authoritative_servers.each do |dns_server|
   # skip if local or done already
   next if dns_server == local_cloud_service[:ciAttributes][:host]

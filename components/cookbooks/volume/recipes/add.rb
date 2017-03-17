@@ -21,7 +21,6 @@
 # create a volume group vgcreate with the name of the platform
 # create a logical volume lvcreate with the name of the resource /dev/<resource>
 # use storage dep to gen a raid and lvm ontop
-return
 if node.platform =~ /windows/
   include_recipe "volume::windows_vol_add"
   return
