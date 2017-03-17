@@ -242,6 +242,7 @@ def create_gslb_service
     binding = { :name => @new_resource.gslb_vserver, :servicename => gslb_service_name }    
   
     req = 'object= { "gslbvserver_gslbservice_binding" : '+JSON.dump(binding)+ '}'
+
     resp_obj = JSON.parse(conn.request(
       :method=>:post, 
       :path=>"/nitro/v1/config/gslbvserver_gslbservice_binding/", 
