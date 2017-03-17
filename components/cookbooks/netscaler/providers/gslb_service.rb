@@ -315,7 +315,8 @@ def create_gslb_service
   
   # Adding GSLB Health Monitors
   begin
-    ecv_map = JSON.parse(node.workorder.payLoad.DependsOn[0].ciAttributes.ecv_map)
+    lb = node.workorder.payLoad.DependsOn.select { |d| d[:ciClassName] =~ /Lb/ }.first
+    ecv_map = JSON.parse(lb['ciAttributes']['ecv_map'])    
   rescue Exception => e
     ecv_map = {}
   end
