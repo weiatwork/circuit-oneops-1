@@ -20,12 +20,8 @@ hostnames.each do |h|
 	hostnames_with_ips["#{ip}"] = h
 end
 
-ruby_block "adding hostname entries" do
-	block do
-		hostnames_with_ips.each do |ip, host|
-			execute_command "ghost modify #{host} #{ip}"
-		end
-	end
+hostnames_with_ips.each do |ip, host|
+	execute "ghost modify #{host} #{ip}"
 end
 
 node.set[:current_hostname] = node.workorder.payLoad.DependsOn.select { |c| c["ciClassName"] =~ /Os/}[0]["ciAttributes"]["hostname"]
