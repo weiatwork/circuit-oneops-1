@@ -1,6 +1,2 @@
 
-ruby_block "node reset" do
-	block do
-		Chef::Log.info (`rabbitmqctl force_reset`)
-	end
-end
+execute "rabbitmqctl force_reset"
