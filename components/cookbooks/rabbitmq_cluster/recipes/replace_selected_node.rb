@@ -10,7 +10,7 @@ node.cloud_ids.each do |id|
 				ssh_cmd = "ssh -i /tmp/ssh/key_file_#{id} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@#{ip[:ciAttributes][:private_ip]} "
 				break_cmd = "rabbitmqctl forget_cluster_node rabbit@#{node.current_hostname}"
 				execute_cmd = shell_out("#{ssh_cmd} \"#{break_cmd}\"", :live_stream => Chef::Log::logger)
-				Chef::Log.info "output: #{execute_cmd.stdout}"
+				Chef::Log.info "#{execute_cmd.stdout}"
 			end
 		end
 	end
