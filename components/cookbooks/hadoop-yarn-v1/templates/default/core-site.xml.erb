@@ -34,44 +34,6 @@
     </property>
 
     <property>
-        <name>fs.swift.service.strati.auth.endpoint.prefix</name>
-        <value><%= @cia["swift_strati_auth_endpoint_prefix"] %></value>
-    </property>
-
-    <!-- strati is the provider name, so you can change to any name, and also you can add more than one provider here -->
-    <property>
-        <name>fs.swift.service.strati.auth.url</name>
-        <value><%= @cia["swift_url"] %>
-        </value>
-    </property>
-
-    <property>
-        <name>fs.swift.service.strati.username</name>
-        <value><%= @cia["swift_username"] %></value>
-    </property>
-
-    <property>
-        <name>fs.swift.service.strati.password</name>
-        <value><%= @cia["swift_password"] %></value>
-    </property>
-
-    <!-- If public endpoint -->
-    <property>
-        <name>fs.swift.service.strati.public</name>
-        <value>false</value>
-    </property>
-
-    <property>
-        <name>fs.swift.service.strati.region</name>
-        <value><%= @cia["swift_region_name"] %></value>
-    </property>
-
-    <property>
-        <name>fs.swift.service.strati.tenant</name>
-        <value><%= @cia["swift_tenant"] %></value>
-    </property>
-
-    <property>
         <name>fs.swift.blocksize</name>
         <value><%= @cia["swift_block_size"] %></value>
     </property>
