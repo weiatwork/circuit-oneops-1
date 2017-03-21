@@ -62,6 +62,23 @@ iport_map.each_pair do |iport,protocol|
     # orig monitor name to migrate in servicegroup before binding
     orig_monitor_name  = base_monitor_name    
     base_monitor_name = "generic-" + monitor_request.gsub(' ','-').gsub('/','slash')
+  else
+    # check for non-generic bindings and add to old monitors to unbind
+    existing_bindings =    
+    resp_obj = JSON.parse(node.ns_conn.request(:method=>:get,
+      :path=>"/nitro/v1/config/servicegroup_lbmonitor_binding/#{sg_name}").body)
+    
+    if resp_obj.has_key? "servicegroup_lbmonitor_binding"
+      resp_obj['servicegroup_lbmonitor_binding'].each do |binding|
+        
+        if binding['monitor_name'] != base_monitor_name
+          old_monitor_names.push binding['monitor_name']
+          Chef::Log.info("adding to old monitors: #{binding['monitor_name']}")
+        end
+        
+      end
+    end
+  
   end
     
   monitor = {

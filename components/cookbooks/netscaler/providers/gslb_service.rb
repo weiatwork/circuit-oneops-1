@@ -342,6 +342,29 @@ def create_gslb_service
     clear_non_generic_monitor(conn, gslb_service_name, monitor_name)
     # use generic one
     monitor_name = "generic-" + ecv.downcase.gsub(' ','-').gsub('/','slash')
+  else
+    # unbind generic
+    resp_obj = JSON.parse(conn.request(:method=>:get, :path=>"/nitro/v1/config/gslbservice_lbmonitor_binding/#{gslb_service_name}").body)
+    if resp_obj.has_key?('gslbservice_lbmonitor_binding')
+      resp_obj['gslbservice_lbmonitor_binding'].each do |binding|
+        if binding['monitor_name'] =~ /generic-/
+          binding = { :monitor_name => binding['monitor_name'], :servicename => gslb_service_name }
+          Chef::Log.info("binding being deleted: #{binding.inspect}")
+          req = URI::encode('object={"params":{"action": "unbind"}, "gslbservice_lbmonitor_binding" : ' + JSON.dump(binding) + '}')
+          resp_obj = JSON.parse(conn.request(
+            :method=> :post,
+            :path=>"/nitro/v1/config/gslbservice_lbmonitor_binding/#{gslb_service_name}",
+            :body => req).body)
+  
+          if ![0,258].include?(resp_obj["errorcode"])
+            Chef::Log.error( "delete bind #{binding.inspect} resp: #{resp_obj.inspect}")
+            exit 1
+          else
+            Chef::Log.info( "delete bind  #{binding.inspect} resp: #{resp_obj.inspect}")
+          end
+        end
+      end
+    end
   end 
   
   monitor = {
