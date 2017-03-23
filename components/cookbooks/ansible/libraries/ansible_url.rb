@@ -35,7 +35,6 @@ module AnsibleUrl
 
 					if path.end_with? ".git"
 						query_hash['scm'] = 'git'
-						scheme = "git+#{scheme}"
 					end
 
 					url = "#{scheme}://#{user_info}#{host}#{port}#{path}"

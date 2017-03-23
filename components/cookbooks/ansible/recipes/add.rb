@@ -1,5 +1,6 @@
 require 'yaml'
 require 'tempfile'
+require 'mixlib/shellout'
 
 %w(python-devel openssl-devel git).each do |p|
 	package p do
@@ -59,8 +60,6 @@ roles.each do |role|
   role_h[0]['scm'] = role[:query]['scm'] if role[:query].has_key? 'scm'
   role_h[0]['version'] = role[:query].has_key?('version') ? role[:query]['version'] : 'master'
 
-  puts "***** #{role_h.to_yaml}"
-
   filename = Dir::Tmpname.make_tmpname "#{Chef::Config['file_cache_path']}/ansible_role", nil
   # ansible-galaxy is quirky that it required extension to be .yml
   filename = "#{filename}.yml"
@@ -72,5 +71,57 @@ roles.each do |role|
   ansible_galaxy "#{filename}" do
     action :install_file
   end
+end
 
+playbook_dir = Dir::Tmpname.make_tmpname "#{Chef::Config['file_cache_path']}/ansible_playbook", nil
+
+shell = Mixlib::ShellOut.new("mkdir -p #{playbook_dir}", :live_stream => STDOUT)
+shell.run_command
+shell.error!
+
+playbook_file = "#{playbook_dir}/playbook.yml"
+
+if playbook.kind_of?(Array)
+  # Currently we only support git
+  if playbook[0][:query].has_key?('scm') && playbook[0][:query]['scm'].eql?('git')
+    revision = playbook[0][:query].has_key?('branch') ? playbook[0][:query]['branch'] : 'master'
+    git "#{playbook_dir}" do
+      repository playbook[0][:url]
+      revision revision
+      action :sync
+    end
+
+    playbook_file = playbook[0][:query].has_key?('path') ? "#{playbook_dir}/#{playbook[0][:query]['path']}" : "#{playbook_dir}/playbook.yml"
+
+  elsif playbook[0][:url].end_with?(".tar.gz")
+    shell = Mixlib::ShellOut.new("cd #{playbook_dir} && curl \"#{playbook[0][:url]}\" | tar zxv")
+    shell.run_command
+    shell.error!
+    playbook_file = playbook[0][:query].has_key?('path') ? "#{playbook_dir}/#{playbook[0][:query]['path']}" : "#{playbook_dir}/playbook.yml"
+  end
+
+  # Run playbook
+  Chef::Log.info("Running playbook: #{playbook_file}")
+  ansible_galaxy "#{playbook_file}" do
+    action :run
+  end
+
+  # remove tempdir
+  directory "#{playbook_dir}" do
+    recursive true
+    action :delete
+    only_if { ::File.directory?(playbook_dir) }
+  end
+
+else
+  # handle inline yaml support
+  ansible_playbook = "#{playbook_dir}/playbook.yml"
+
+  file "#{ansible_playbook}" do
+    content playbook
+  end
+
+  ansible_galaxy "#{ansible_playbook}" do
+    action :run
+  end
 end
