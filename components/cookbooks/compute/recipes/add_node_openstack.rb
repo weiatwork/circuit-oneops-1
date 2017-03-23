@@ -365,10 +365,9 @@ ruby_block 'set node network params' do
         Chef::Log.info("checking for address by network name: #{net}")
         if server.addresses.has_key?(net)
           addrs = server.addresses[net]
-          exit_with_error "multiple ips returned" if addrs.size > 1
-          public_ip = addrs.first["addr"]
-          private_ip = public_ip
-          node.set[:ip] = public_ip
+	  # check multiple ips (exception: possible to have 2 ip entries (public, private) after initial deployment)
+	  exit_with_error "multiple ips returned" if addrs.size > 1 && rfcCi["rfcAction"] != "update"
+          private_ip = addrs.first["addr"]
           break
         end
       end
@@ -412,7 +411,7 @@ ruby_block 'set node network params' do
       Chef::Log.info("Fetching ip from workorder rfc for compute update")
     end
 
-    if node.workorder.rfcCi.ciAttributes.require_public_ip == 'true' && public_ip.empty?
+    if node.workorder.rfcCi.ciAttributes.require_public_ip == 'true'
       if compute_service[:public_network_type] == "floatingip"
         server.addresses.each_value do |addr_list|
           addr_list.each do |addr|
@@ -427,9 +426,16 @@ ruby_block 'set node network params' do
           floating_ip = conn.addresses.create
           floating_ip.server = server
           public_ip = floating_ip.ip
+	  node.set["ip"] = public_ip
         end
       end
+    end 
+    # if public_ip is still empty, use private_ip to be public_ip
+    if public_ip.empty?
+      public_ip = private_ip
+      node.set[:ip] = public_ip
     end
+
     private_ipv6 = ''
     server.addresses.each_value do |addr_list|
       addr_list.each do |addr|
