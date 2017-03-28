@@ -42,6 +42,13 @@ class LoadbalancerManager
       raise("Cannot create Loadbalancer #{loadbalancer.label.name} already exist.")
     end
 
+    lb_id = @loadbalancer_dao.get_loadbalancer_id(loadbalancer.label.name)
+    loadbalancer = @loadbalancer_dao.get_loadbalancer(lb_id)
+    if  loadbalancer.provisioning_status == "ERROR"
+      delete_loadbalancer(loadbalancer.label.name)
+      raise("Cannot create Loadbalancer #{loadbalancer.label.name} due to unknown error, deleted the lb in ERROR state.")
+    end
+
     return loadbalancer_id
   end
 

@@ -150,11 +150,15 @@ begin
   member_manager = MemberManager.new(tenant)
   computes = node[:workorder][:payLoad][:DependsOn].select { |d| d[:ciClassName] =~ /Compute/ }
 
-  #handle changed when compute is replaced and ip of the compute changes.
+  #handle change when compute is replaced and ip of the compute changes.
   if !config_items_changed.has_key?("listeners")
     computes.each do |compute|
       new_ip_address = compute["ciAttributes"]["private_ip"]
-      if compute["rfcAction"] == "replace"
+      if compute["ciAttributes"].has_key?("private_ipv6")
+        new_ip_address = compute["ciAttributes"]["private_ipv6"]
+        Chef::Log.info("ipv6 address: #{new_ip_address}")
+      end
+      if compute["rfcAction"] == "replace" || compute["rfcAction"] == "add"
         node.loadbalancers.each do |listener|
           Chef::Log.info ("listener:"+listener.inspect)
           iport = listener[:iport]
@@ -170,22 +174,27 @@ begin
         end
       end
     end
-     if computes[0]["rfcAction"] == "replace"
+
         new_lb.listeners.each do | listener |
         listener.pool.members.each do | member |
           is_member_still_exist = false
           computes.each do | compute |
-              if compute[:ciAttributes][:private_ip] == member.ip_address.to_s
+            ip_address = compute["ciAttributes"]["private_ip"]
+            if compute["ciAttributes"].has_key?("private_ipv6")
+              ip_address = compute["ciAttributes"]["private_ipv6"]
+            end
+            if ip_address == member.ip_address.to_s
               is_member_still_exist = true
-              end
+            end
           end
           if is_member_still_exist == false
+            Chef::Log.info("this compute with ip #{member.ip_address} is removed , so removing the member")
             member_manager.delete_member(listener.pool.id, member.id)
           end
         end
         end
-     end
-  end
+
+ end
 
 rescue RuntimeError => ex
 
