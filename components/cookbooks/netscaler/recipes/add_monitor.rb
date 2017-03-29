@@ -35,6 +35,9 @@ node.old_monitor_names.each do |old_monitor_name|
   end
   ssh.close
   
+  # skip deleting generic monitors
+  next if old_monitor_name =~ /generic-/
+  
   resp_obj = JSON.parse(node.ns_conn.request(:method=>:get,
   :path=>"/nitro/v1/config/lbmonitor/#{old_monitor_name}").body)
   unless resp_obj.has_key? "lbmonitor"
@@ -164,7 +167,7 @@ node.monitors.each do |mon|
       Chef::Log.info("delete monitor due to different types: existing: #{existing_monitor['type']} current: #{monitor[:type]}")
 
       binding = { :monitorname => monitor_name, :servicegroupname => sg_name }
-      Chef::Log.info("beinding being deleted: #{binding.inspect}")
+      Chef::Log.info("binding being deleted: #{binding.inspect}")
       req = 'object={"params":{"action": "unbind"}, "lbmonitor_servicegroup_binding" : ' + JSON.dump(binding) + '}'
       resp_obj = JSON.parse(node.ns_conn.request(
         :method=> :post,
