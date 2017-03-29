@@ -18,6 +18,33 @@ resource "secgroup",
              :services => "compute"
          }
 
+resource "postgres-daemon",
+         :cookbook => "oneops.1.daemon",
+         :design => true,
+         :requires => {
+             :constraint => "1..1",
+             :help => "Restarts Postgres"
+         },
+         :attributes => {
+             :service_name => 'postgresql-9.2',
+             :use_script_status => 'true',
+             :pattern => ''
+         },
+         :monitors => {
+             'postgresprocess' => {:description => 'PostgresProcess',
+                           :source => '',
+                           :chart => {'min' => '0', 'max' => '100', 'unit' => 'Percent'},
+                           :cmd => 'check_process!:::node.workorder.rfcCi.ciAttributes.service_name:::!:::node.workorder.rfcCi.ciAttributes.use_script_status:::!:::node.workorder.rfcCi.ciAttributes.pattern:::!:::node.workorder.rfcCi.ciAttributes.secondary_down:::',
+                           :cmd_line => '/opt/nagios/libexec/check_process.sh "$ARG1$" "$ARG2$" "$ARG3$" "$ARG4$"',
+                           :metrics => {
+                               'up' => metric(:unit => '%', :description => 'Percent Up'),
+                           },
+                           :thresholds => {
+                               'PostgresDaemonProcessDown' => threshold('1m', 'avg', 'up', trigger('<=', 98, 1, 1), reset('>', 95, 1, 1))
+                           }
+             }
+          }
+
 resource "postgresql",
   :cookbook => "oneops.1.postgresql",
   :design => true,
@@ -291,6 +318,30 @@ end
     :attributes    => { "propagate_to" => 'from', "flex" => false, "min" => 1, "max" => 1 } 
 end
 
+[ 'postgres-daemon'].each do |from|
+  relation "#{from}::depends_on::compute",
+    :relation_name => 'DependsOn',
+    :from_resource => from,
+    :to_resource   => 'compute',
+    :attributes    => { "propagate_to" => 'from' }
+end
+
+[ 'postgres-daemon'].each do |from|
+  relation "#{from}::depends_on::os",
+    :relation_name => 'DependsOn',
+    :from_resource => from,
+    :to_resource   => 'os',
+    :attributes    => { "flex" => false, "min" => 1, "max" => 1 }
+end
+
+[ 'postgres-daemon' ].each do |from|
+  relation "#{from}::depends_on::postgresql",
+    :relation_name => 'DependsOn',
+    :from_resource => from,
+    :to_resource   => 'postgresql',
+    :attributes    => { "flex" => false, "min" => 1, "max" => 1 }
+end
+
 [ 'database' ].each do |from|
   relation "#{from}::depends_on::postgresql",
     :relation_name => 'DependsOn',
@@ -317,7 +368,7 @@ end
 
 
 # managed_via
-[ 'postgresql','artifact' ].each do |from|
+[ 'postgresql','artifact','postgresql-9.2' ].each do |from|
   relation "#{from}::managed_via::compute",
     :except => [ '_default' ],
     :relation_name => 'ManagedVia',
