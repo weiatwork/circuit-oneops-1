@@ -368,7 +368,7 @@ end
 
 
 # managed_via
-[ 'postgresql','artifact','postgresql-9.2' ].each do |from|
+[ 'postgresql','artifact','postgres-daemon' ].each do |from|
   relation "#{from}::managed_via::compute",
     :except => [ '_default' ],
     :relation_name => 'ManagedVia',
