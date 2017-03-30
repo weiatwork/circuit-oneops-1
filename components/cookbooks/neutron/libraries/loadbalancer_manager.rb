@@ -80,6 +80,10 @@ class LoadbalancerManager
     fail ArgumentError, 'loadbalancer is nil' if loadbalancer_name.nil?
 
     loadbalancer_id = @loadbalancer_dao.get_loadbalancer_id(loadbalancer_name)
+    if loadbalancer_id == false
+      Chef::Log.warn("Loadbalancer with name #{loadbalancer_name} doesn't exist.")
+      return
+    end
     loadbalancer = get_loadbalancer(loadbalancer_id)
     loadbalancer.listeners.each do |listener|
       if !listener.pool.healthmonitor_id.nil?
