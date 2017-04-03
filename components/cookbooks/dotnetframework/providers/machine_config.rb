@@ -4,7 +4,7 @@ end
 
 def load_current_resource
   @current_resource = new_resource.class.new(new_resource.name)
-  @machine_config = OO::Dotnetframework::MachineConfig.new
+  @machine_config = OO::Dotnetframework::MachineConfig.new(new_resource.config_path)
 end
 
 action :add_or_update do
