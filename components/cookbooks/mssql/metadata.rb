@@ -21,14 +21,30 @@ attribute 'version',
     :form => { 'field' => 'select', 'options_for_select' => [ ['2014 Enterprise', 'mssql_2014_enterprise'], ['2016 Enterprise', 'mssql_2016_enterprise'] ] }
 	}
 
+attribute 'feature_list',
+  :description => 'Feature List',
+  :required => 'required',
+  :default => 'SQLENGINE,REPLICATION,SNAC_SDK,SSMS',
+  :format => {
+    :help => 'Comma-separated list of features to install',
+    :category => '1.Global',
+    :order => 2
+  }	
+	
+attribute 'sysadmins',
+  :description => 'Sysadmins',
+  :format => {
+    :help => 'Members of sysadmins server role, comma-separated',
+    :category => '2.Security',
+    :order => 1
+  }
+  
 attribute 'password',
   :description => 'sa Password',
-  :required => 'required',
   :encrypted => true,
-  :default => 'mssql',
   :format => {
-    :help => 'sa password used for administration of the MS SQL Server',
-    :category => '1.Global',
+    :help => 'Specify password for sa account',
+    :category => '2.Security',
     :order => 2
   }
 
@@ -36,7 +52,7 @@ attribute 'tempdb_data',
   :description => 'TempDB data directory',
   :format => {
     :help => 'Default directory for tempdb data files',
-    :category => '2.Directories',
+    :category => '3.Directories',
     :order => 1
   }
 
@@ -44,7 +60,7 @@ attribute 'tempdb_log',
   :description => 'TempDB log directory',
   :format => {
     :help => 'Default directory for tempdb log file',
-    :category => '2.Directories',
+    :category => '3.Directories',
     :order => 2
   }
   
@@ -52,7 +68,7 @@ attribute 'userdb_data',
   :description => 'User db data directory',
   :format => {
     :help => 'Default directory for user databases',
-    :category => '2.Directories',
+    :category => '3.Directories',
     :order => 3
   }
 
@@ -60,6 +76,6 @@ attribute 'userdb_log',
   :description => 'User db log directory',
   :format => {
     :help => 'Default directory for user database logs',
-    :category => '2.Directories',
+    :category => '3.Directories',
     :order => 4
   }  
