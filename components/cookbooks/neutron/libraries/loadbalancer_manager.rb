@@ -26,15 +26,20 @@ class LoadbalancerManager
     is_exist = @loadbalancer_dao.is_exist_loadbalancer(loadbalancer.label.name)
 
     if !is_exist
+      Chef::Log.info("Creating loadbalancer #{loadbalancer.label.name} ... ")
       loadbalancer_id = @loadbalancer_dao.create_loadbalancer(loadbalancer)
 
       if !loadbalancer_id.nil?
         loadbalancer.listeners.each do |listener|
+          Chef::Log.info("Adding listener to loadbalancer:#{loadbalancer.label.name} ... ")
           listener_id = @listener_dao.create_listener(loadbalancer_id, listener)
+          Chef::Log.info("Adding pool to listener id:#{listener_id} ... ")
           pool_id = @pool_dao.create_pool(loadbalancer_id, listener_id, listener.pool)
+          Chef::Log.info("Adding members to pool id:#{pool_id} ... ")
           listener.pool.members.each do |member|
             @member_dao.create_member(loadbalancer_id, pool_id, member)
           end
+          Chef::Log.info("Adding health monitor to pool id:#{pool_id} ... ")
           @health_monitor_dao.create_health_monitor(loadbalancer_id, pool_id, listener.pool.health_monitor)
         end
       end
