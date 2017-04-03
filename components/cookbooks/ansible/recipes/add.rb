@@ -1,89 +1,32 @@
-require 'yaml'
 require 'tempfile'
-require 'mixlib/shellout'
 
-%w(python-devel openssl-devel git).each do |p|
-	package p do
-		action :install
-	end
-end
-
-roles = parse_url(node.workorder.rfcCi.ciAttributes.roles)
-playbook = parse_url(node.workorder.rfcCi.ciAttributes.playbook)
-
-unless node.workorder.rfcCi.ciAttributes.pip_proxy_config
-  ruby_block "create pip proxy content" do
-    block do
-      Chef::Resource::RubyBlock.send(:include, Chef::Mixin::ShellOut)
-      conf = shell_out("echo \"#{node.workorder.rfcCi.ciAttributes.pip_proxy_content}\" > /etc/pip.conf")
-    end
+unless node.workorder.rfcCi.ciAttributes.pip_proxy_content.empty?
+  unless configure_pip_config(node.workorder.rfcCi.ciAttributes.pip_proxy_content)
+    puts "***FAULT:FATAL=Fail to config pip.conf file"
+    Chef::Log.fatal("Fail to configure pip.conf file")
   end
 end
 
-cookbook_file "#{Chef::Config[:file_cache_path]}/get-pip.py" do
-  source 'get-pip.py'
-  mode "0644"
-  not_if { ::File.exists?(node.python.pip_binary) }
-end
-
-execute "install-pip" do
-  cwd Chef::Config[:file_cache_path]
-  command <<-EOF
-  #{node['python']['binary']} get-pip.py
-  EOF
-  not_if { ::File.exists?(node.python.pip_binary) }
-end
-
+install_packages()
 version = node.workorder.rfcCi.ciAttributes.ansible_version
-
-ansible_pip "ansible" do
-	version version
-	action :install
-end
-
-# create ansible roles directory
-directory "/etc/ansible/roles" do
-	recursive true
-	action :create
-end
-
-template "/etc/ansible/hosts" do
-	source "hosts.erb"
-end
-
-puts "***RESULT:ansible_version=#{version}"
-
-# Let's install role
-roles.each do |role|
-  role_h = [{ 'src' => role[:url]}]
-  role_h[0]['name'] = role[:query]['name'] if role[:query].has_key? 'name'
-  role_h[0]['scm'] = role[:query]['scm'] if role[:query].has_key? 'scm'
-  role_h[0]['version'] = role[:query].has_key?('version') ? role[:query]['version'] : 'master'
-
-  filename = Dir::Tmpname.make_tmpname "#{Chef::Config['file_cache_path']}/ansible_role", nil
-  # ansible-galaxy is quirky that it required extension to be .yml
-  filename = "#{filename}.yml"
-
-  file "#{filename}" do
-    content "#{role_h.to_yaml.sub("---","")}"
-  end
-
-  ansible_galaxy "#{filename}" do
-    action :install_file
-  end
-end
+install_ansible(version)
+configure_ansible()
 
 playbook_dir = Dir::Tmpname.make_tmpname "#{Chef::Config['file_cache_path']}/ansible_playbook", nil
 
-shell = Mixlib::ShellOut.new("mkdir -p #{playbook_dir}", :live_stream => STDOUT)
-shell.run_command
-shell.error!
+unless stage_playbook_dir(playbook_dir)
+  puts "***FAULT:FATAL=Failed to configure playbook dir"
+  Chef::Log.fatal("Failed to configure playbook dir")
+end
+
+playbook = parse_url(node.workorder.rfcCi.ciAttributes.playbook)
 
 playbook_file = "#{playbook_dir}/playbook.yml"
 
 if playbook.kind_of?(Array)
   # Currently we only support git
   if playbook[0][:query].has_key?('scm') && playbook[0][:query]['scm'].eql?('git')
+    Chef::Log.info("Installing role from git repo")
     revision = playbook[0][:query].has_key?('branch') ? playbook[0][:query]['branch'] : 'master'
     git "#{playbook_dir}" do
       repository playbook[0][:url]
@@ -98,6 +41,19 @@ if playbook.kind_of?(Array)
     shell.run_command
     shell.error!
     playbook_file = playbook[0][:query].has_key?('path') ? "#{playbook_dir}/#{playbook[0][:query]['path']}" : "#{playbook_dir}/playbook.yml"
+  end
+
+  # If file is packaged with requirements.yml then install them
+  # first.
+  if ::File.exist?("{playbook_dir}/requirements.yml")
+    ansible_galaxy "{playbook_dir}/requirements.yml" do
+      action :install_file
+    end
+  else
+    # run the role loader
+    shell = Mixlib::ShellOut.new("#{node['python']['binary']} #{playbook_dir}/load_role.py -f #{playbook_file}", :live_stream => STDOUT)
+    shell.run_command
+    shell.error!
   end
 
   # Run playbook
@@ -118,10 +74,18 @@ else
   ansible_playbook = "#{playbook_dir}/playbook.yml"
 
   file "#{ansible_playbook}" do
-    content playbook
+    content node.workorder.rfcCi.ciAttributes.playbook
   end
+
+  ::File.open('/etc/pip.conf', 'w') do |file|
+    file.puts playbook
+  end
+
+  # run the role loader
+  shell = Mixlib::ShellOut.new("#{node['python']['binary']} #{playbook_dir}/load_role.py  -f #{ansible_playbook}", :live_stream => STDOUT)
+  shell.run_command
+  shell.error!
 
   ansible_galaxy "#{ansible_playbook}" do
     action :run
   end
-end

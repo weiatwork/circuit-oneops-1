@@ -24,17 +24,6 @@ attribute 'ansible_version',
             :order    => 1
           }
 
-attribute 'roles',
-          :description => 'roles',
-          :required    => 'required',
-          :data_type => "text",
-          :default     => "changeme",
-          :format      => {
-            :help     => 'Pip Config',
-            :category => '1.Ansible',
-            :order    => 2
-          }
-
 attribute 'playbook',
           :description => 'playbook',
           :required    => 'required',
@@ -42,7 +31,7 @@ attribute 'playbook',
           :default     => "changeme",
           :format      => {
             :help     => 'Playbook',
-            :category => '2.Pip',
+            :category => '1.Ansible',
             :order    => 2
           }
 
