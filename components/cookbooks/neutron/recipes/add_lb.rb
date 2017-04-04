@@ -8,8 +8,6 @@ require File.expand_path('../../libraries/loadbalancer_manager', __FILE__)
 require File.expand_path('../../libraries/network_manager', __FILE__)
 require File.expand_path('../../libraries/utils', __FILE__)
 
-
-
 #-------------------------------------------------------
 lb_attributes = node[:workorder][:rfcCi][:ciAttributes]
 cloud_name = node[:workorder][:cloud][:ciName]
@@ -60,7 +58,6 @@ Chef::Log.info("Total time to create " + total_time.to_s)
 lb = lb_manager.get_loadbalancer(loadbalancer_id)
 node.set[:lb_dns_name] = lb.vip_address
 Chef::Log.info("VIP Address: " + lb.vip_address.to_s)
-Chef::Log.info("Exiting neutron-lbaas add recipe.")
 
 vnames = get_dc_lb_names()
 vnames[lb_name] = nil
@@ -68,6 +65,7 @@ vnames.keys.each do |key|
   vnames[key] = lb.vip_address
 end
 
+Chef::Log.info("Exiting neutron-lbaas add recipe.")
 
 puts "***RESULT:vnames=" + vnames.to_json
 

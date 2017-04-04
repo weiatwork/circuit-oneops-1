@@ -32,7 +32,7 @@ class MemberManager
 
     member_list = @member_dao.get_members(pool_id)
     member_list.each do | member|
-      if member.address == ip_address
+      if member.ip_address == ip_address
         return true
       end
     end
