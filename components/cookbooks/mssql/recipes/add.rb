@@ -44,18 +44,21 @@ sql_sys_admin_list = if node['sql_server']['sysadmins'].is_a? Array
 #If URL is for ISO or zip => we need to download and unzip or mount first
 if (ext = '.zip' || ext = '.iso')
 
-  
   temp_drive = 'C'
   
   #use temp_drive (OO_LOCAL variable) if it has enough space
   if node[:workorder][:payLoad].has_key?(:OO_LOCAL_VARS)
-    local_vars = node.workorder.payLoad.OO_LOCAL_VARS
-    var_value = local_vars[local_vars.index { |resource| resource[:ciName] == 'temp_drive' }][:ciAttributes][:value]
-	cmd_out = `fsutil volume diskfree #{var_value}:`
-	free_space = cmd_out[/\d+/].to_i
-	Chef::Log.info( "Space available on #{var_value}: #{free_space} bytes")
-	if free_space >= 10000000000
-	  temp_drive = var_value 
+	local_vars = node.workorder.payLoad.OO_LOCAL_VARS
+	local_vars_index = local_vars.index { |resource| resource[:ciName] == 'temp_drive' }
+
+	if !local_vars_index.nil?
+	  var_value = local_vars[local_vars_index][:ciAttributes][:value]
+      cmd_out = `fsutil volume diskfree #{var_value}:`
+	  free_space = cmd_out[/\d+/].to_i
+	  Chef::Log.info( "Space available on #{var_value}: #{free_space} bytes")
+	  if free_space >= 10000000000
+	    temp_drive = var_value
+	  end
 	end
   end
 
