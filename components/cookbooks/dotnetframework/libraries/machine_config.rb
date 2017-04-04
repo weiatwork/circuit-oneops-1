@@ -4,12 +4,13 @@ include REXML
 module OO
   class Dotnetframework
     class MachineConfig
-      def configpath
-        `@powershell -NoProfile -ExecutionPolicy Bypass -Command [System.Runtime.InteropServices.RuntimeEnvironment]::SystemConfigurationFile`.strip
+
+      def initialize(config_path)
+        @config_path = config_path
       end
 
       def get_xdoc
-        Document.new(File.read(configpath))
+        Document.new(File.read(@config_path))
       end
 
       def app_settings_element_exists?
@@ -64,7 +65,7 @@ module OO
       end
 
       def write_to_file(doc)
-        doc.write(File.open(configpath,"w"),2)
+        doc.write(File.open(@config_path,"w"),2)
       end
     end
   end

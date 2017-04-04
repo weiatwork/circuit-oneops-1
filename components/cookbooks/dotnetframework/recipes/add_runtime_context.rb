@@ -15,8 +15,17 @@ runtime_context.tap do | env_vars_hash |
   env_vars_hash['CloudDc'] = env_vars['DATACENTER'] if env_vars.has_key?('DATACENTER')
 end
 
+machine_configs = ['C:\Windows\Microsoft.NET\Framework\v2.0.50727\CONFIG\machine.config',
+                   'C:\Windows\Microsoft.NET\Framework\v4.0.30319\Config\machine.config',
+                   'C:\Windows\Microsoft.NET\Framework64\v2.0.50727\CONFIG\machine.config',
+                   'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\Config\machine.config']
 
-dotnetframework_machine_config 'add runtime context' do
-  action :add_or_update
-  run_time_context runtime_context
+machine_configs.each do |config|
+  if ::File.exists?(config)
+    dotnetframework_machine_config 'add runtime context' do
+      action :add_or_update
+      run_time_context runtime_context
+      config_path config
+    end
+  end
 end
