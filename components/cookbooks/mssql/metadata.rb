@@ -19,7 +19,7 @@ attribute 'version',
     :category  => '1.Global',
     :order     => 1,
     :form => { 'field' => 'select', 'options_for_select' => [ ['2014 Enterprise', 'mssql_2014_enterprise'], ['2016 Enterprise', 'mssql_2016_enterprise'] ] }
-	}
+    }
 
 attribute 'feature_list',
   :description => 'Feature List',
@@ -29,8 +29,8 @@ attribute 'feature_list',
     :help => 'Comma-separated list of features to install',
     :category => '1.Global',
     :order => 2
-  }	
-	
+  }
+
 attribute 'sysadmins',
   :description => 'Sysadmins',
   :format => {
@@ -38,7 +38,7 @@ attribute 'sysadmins',
     :category => '2.Security',
     :order => 1
   }
-  
+
 attribute 'password',
   :description => 'sa Password',
   :encrypted => true,
@@ -63,7 +63,7 @@ attribute 'tempdb_log',
     :category => '3.Directories',
     :order => 2
   }
-  
+
 attribute 'userdb_data',
   :description => 'User db data directory',
   :format => {
@@ -78,4 +78,4 @@ attribute 'userdb_log',
     :help => 'Default directory for user database logs',
     :category => '3.Directories',
     :order => 4
-  }  
+  }
