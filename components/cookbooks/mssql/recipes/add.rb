@@ -40,7 +40,7 @@ sql_sys_admin_list = if node['sql_server']['sysadmins'].is_a? Array
                        %("#{node['sql_server']['sysadmins']}") # surround in quotes
                      end
 
-					 
+
 #If URL is for ISO or zip => we need to download and unzip or mount first
 if (ext = '.zip' || ext = '.iso')
 
@@ -48,18 +48,18 @@ if (ext = '.zip' || ext = '.iso')
   
   #use temp_drive (OO_LOCAL variable) if it has enough space
   if node[:workorder][:payLoad].has_key?(:OO_LOCAL_VARS)
-	local_vars = node.workorder.payLoad.OO_LOCAL_VARS
-	local_vars_index = local_vars.index { |resource| resource[:ciName] == 'temp_drive' }
+    local_vars = node.workorder.payLoad.OO_LOCAL_VARS
+    local_vars_index = local_vars.index { |resource| resource[:ciName] == 'temp_drive' }
 
-	if !local_vars_index.nil?
-	  var_value = local_vars[local_vars_index][:ciAttributes][:value]
+    if !local_vars_index.nil?
+      var_value = local_vars[local_vars_index][:ciAttributes][:value]
       cmd_out = `fsutil volume diskfree #{var_value}:`
-	  free_space = cmd_out[/\d+/].to_i
-	  Chef::Log.info( "Space available on #{var_value}: #{free_space} bytes")
-	  if free_space >= 10000000000
-	    temp_drive = var_value
-	  end
-	end
+      free_space = cmd_out[/\d+/].to_i
+      Chef::Log.info( "Space available on #{var_value}: #{free_space} bytes")
+      if free_space >= 10000000000
+        temp_drive = var_value
+      end
+    end
   end
 
   temp_location = "#{temp_drive}:/tmp/mssql"
@@ -85,11 +85,11 @@ if (ext = '.zip' || ext = '.iso')
   powershell_script 'Extract from zipfile' do
     code <<-EOH
     $ErrorActionPreference = "Stop"
-	Add-Type -assembly "system.io.compression.filesystem"
+    Add-Type -assembly "system.io.compression.filesystem"
     [io.compression.zipfile]::ExtractToDirectory("#{output_file}", "#{temp_location}/distr")
     EOH
     not_if "Test-Path '#{temp_location}/distr'"
-	only_if {ext='.zip'}
+    only_if {ext='.zip'}
   end
 
   #Find full path to setup.exe and its checksum
@@ -106,31 +106,31 @@ if (ext = '.zip' || ext = '.iso')
       cmd = powershell_out!(ps_code)
       Chef::Log.info( "Powershell returned: #{cmd.stdout}")
       
-	  new_url = cmd.stdout.split(",").first
-	  new_checksum = cmd.stdout.split(",").last.downcase
-	  
+      new_url = cmd.stdout.split(",").first
+      new_checksum = cmd.stdout.split(",").last.downcase
+      
       node.override['sql_server']['server']['url'] = new_url
-	  node.default['mssql']['setup'] = new_url
+      node.default['mssql']['setup'] = new_url
       node.override['sql_server']['server']['checksum'] = new_checksum
 
       Chef::Log.info( "Latest URL - #{node['sql_server']['server']['url']}")
       Chef::Log.info( "Latest checksum - #{node['sql_server']['server']['checksum']}")
   
-	end #block do
+    end #block do
   end #ruby_block 'Find setup.exe' do
-	  
+      
 end #if (ext = '.zip' || ext = '.iso')
 
 #Adjust the PS resource to take runtime values for parameters
 ruby_block 'Adjust PS resource' do
   block do
-	
+    
     ps_script = "#{Chef::Config[:file_cache_path]}/cookbooks/os/files/windows/Run-Script.ps1"
     cmd = "#{ps_script} -ExeFile '#{node['sql_server']['server']['url']}' -ArgList '/q /ConfigurationFile=#{config_file_path}' -Timeout #{node['sql_server']['server']['installer_timeout']}"
 
-	Chef::Log.info( "cmd - #{cmd}")
-	
-	r = run_context.resource_collection.find(:powershell_script => 'Run-Setup')
+    Chef::Log.info( "cmd - #{cmd}")
+    
+    r = run_context.resource_collection.find(:powershell_script => 'Run-Setup')
     r.code(cmd)
   end #block do
 end #ruby_block 'Adjust PS resource' do
