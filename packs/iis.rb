@@ -170,7 +170,7 @@ resource "nuget-package",
 
 resource "secgroup",
   :attributes => {
-    "inbound" => '[ "22 22 tcp 0.0.0.0/0", "3389 3389 tcp 0.0.0.0/0", "80 80 tcp 0.0.0.0/0"]'
+    "inbound" => '[ "22 22 tcp 0.0.0.0/0", "3389 3389 tcp 0.0.0.0/0", "80 80 tcp 0.0.0.0/0", "443 443 tcp 0.0.0.0/0"]'
   }
 
 resource "os",

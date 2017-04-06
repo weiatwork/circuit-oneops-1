@@ -18,6 +18,7 @@ variable 'data_drive',
   :description => 'Data Drive',
   :value       => 'F'
   
+  
 resource 'secgroup',
          :cookbook => 'oneops.1.secgroup',
          :design => true,
@@ -35,14 +36,14 @@ resource 'mssql',
   :design   => true,
   :requires => {
     :constraint => '1..1',
-	:services   => 'mirror'
+    :services   => 'mirror'
   },
   :attributes   => {
     'version' => 'mssql_2014_enterprise',
-	'tempdb_data' => '$OO_LOCAL{temp_drive}:\\MSSQL',
-	'tempdb_log' => '$OO_LOCAL{temp_drive}:\\MSSQL',
-	'userdb_data' => '$OO_LOCAL{data_drive}:\\MSSQL\\UserData',
-	'userdb_log' => '$OO_LOCAL{data_drive}:\\MSSQL\\UserLog'
+    'tempdb_data' => '$OO_LOCAL{temp_drive}:\\MSSQL',
+    'tempdb_log' => '$OO_LOCAL{temp_drive}:\\MSSQL',
+    'userdb_data' => '$OO_LOCAL{data_drive}:\\MSSQL\\UserData',
+    'userdb_log' => '$OO_LOCAL{data_drive}:\\MSSQL\\UserLog'
   }
   
 resource 'compute',
@@ -68,10 +69,10 @@ resource 'os',
   :design => true,
   :requires => { 
     :constraint => '1..1',
-	:services   => 'compute,*mirror,*ntp,*windows-domain'
-	},
-  :attributes => {
-	:ostype => 'windows_2012_r2'
+    :services   => 'compute,*mirror,*ntp,*windows-domain'
+    },
+    :attributes => {
+    :ostype => 'windows_2012_r2'
   }
 
 resource 'dotnetframework',
@@ -86,6 +87,27 @@ resource 'dotnetframework',
     :chocolatey_package_source   => 'https://chocolatey.org/api/v2/',
     :dotnet_version_package_name => '{ ".Net 4.6":"dotnet4.6", ".Net 3.5":"dotnet3.5" }'
   }  
+
+resource 'database',
+  :cookbook      => "oneops.1.database",
+  :design        => true,
+  :requires      => {
+    :constraint  => '0..*',
+    :help        => 'Installs user database'
+  }
+  
+resource 'custom-config',
+  :cookbook      => "oneops.1.artifact",
+  :design        => true,
+  :requires      => {
+    :constraint  => '0..*',
+    :help        => 'Installs custom configuration scripts'
+  },
+  :attributes       => {
+     :install_dir   => '$OO_LOCAL{temp_drive}:/mssql-config',
+     :as_user       => 'oneops',
+     :as_group      => 'Administrators'
+}
   
 [ 
   { :from => 'storage', :to => 'os' },
@@ -94,7 +116,8 @@ resource 'dotnetframework',
   { :from => 'volume', :to => 'storage' }, 
   { :from => 'mssql', :to => 'volume' } ,
   { :from => 'mssql', :to => 'dotnetframework' } ,
-  { :from => 'database', :to => 'mssql' } 
+  { :from => 'database', :to => 'mssql' } ,
+  { :from => 'custom-config', :to => 'mssql' } 
 ].each do |link|
   relation "#{link[:from]}::depends_on::#{link[:to]}",
     :relation_name => 'DependsOn',
@@ -103,7 +126,7 @@ resource 'dotnetframework',
     :attributes    => { 'flex' => false, 'min' => 1, 'max' => 1 }
 end
 
-[ 'mssql', 'dotnetframework', 'os', 'volume', 'vol-temp' ].each do |from|
+[ 'mssql', 'dotnetframework', 'os', 'volume', 'vol-temp', 'custom-config', 'database' ].each do |from|
   relation "#{from}::managed_via::compute",
     :except => [ '_default' ],
     :relation_name => 'ManagedVia',

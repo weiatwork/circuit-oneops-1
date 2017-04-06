@@ -26,20 +26,32 @@ class LoadbalancerManager
     is_exist = @loadbalancer_dao.is_exist_loadbalancer(loadbalancer.label.name)
 
     if !is_exist
+      Chef::Log.info("Creating loadbalancer #{loadbalancer.label.name} ... ")
       loadbalancer_id = @loadbalancer_dao.create_loadbalancer(loadbalancer)
 
       if !loadbalancer_id.nil?
         loadbalancer.listeners.each do |listener|
+          Chef::Log.info("Adding listener to loadbalancer:#{loadbalancer.label.name} ... ")
           listener_id = @listener_dao.create_listener(loadbalancer_id, listener)
+          Chef::Log.info("Adding pool to listener id:#{listener_id} ... ")
           pool_id = @pool_dao.create_pool(loadbalancer_id, listener_id, listener.pool)
+          Chef::Log.info("Adding members to pool id:#{pool_id} ... ")
           listener.pool.members.each do |member|
             @member_dao.create_member(loadbalancer_id, pool_id, member)
           end
+          Chef::Log.info("Adding health monitor to pool id:#{pool_id} ... ")
           @health_monitor_dao.create_health_monitor(loadbalancer_id, pool_id, listener.pool.health_monitor)
         end
       end
     else
       raise("Cannot create Loadbalancer #{loadbalancer.label.name} already exist.")
+    end
+
+    lb_id = @loadbalancer_dao.get_loadbalancer_id(loadbalancer.label.name)
+    loadbalancer = @loadbalancer_dao.get_loadbalancer(lb_id)
+    if  loadbalancer.provisioning_status == "ERROR"
+      delete_loadbalancer(loadbalancer.label.name)
+      raise("Cannot create Loadbalancer #{loadbalancer.label.name} due to unknown error, deleted the lb in ERROR state.")
     end
 
     return loadbalancer_id
@@ -73,6 +85,10 @@ class LoadbalancerManager
     fail ArgumentError, 'loadbalancer is nil' if loadbalancer_name.nil?
 
     loadbalancer_id = @loadbalancer_dao.get_loadbalancer_id(loadbalancer_name)
+    if loadbalancer_id == false
+      Chef::Log.warn("Loadbalancer with name #{loadbalancer_name} doesn't exist.")
+      return
+    end
     loadbalancer = get_loadbalancer(loadbalancer_id)
     loadbalancer.listeners.each do |listener|
       if !listener.pool.healthmonitor_id.nil?

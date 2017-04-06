@@ -307,6 +307,6 @@ end
 
 policy "vulnerable-tomcat-version",
   :description => 'Using a known vulnerable version of Tomcat',
-  :query => 'ciClassName:("bom.oneops.1.Tomcat-2") AND NOT ciAttributes.version:("8.5.9")',
+  :query => 'ciClassName:("bom.oneops.1.Tomcat-2") AND NOT ciAttributes.version:("8.5.12")',
   :docUrl => '',
   :mode => 'passive'
