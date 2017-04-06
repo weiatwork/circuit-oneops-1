@@ -10,10 +10,13 @@ node.old_monitor_names.each do |old_monitor_name|
 
   cloud_name = node[:workorder][:cloud][:ciName]
   cloud_service = node[:workorder][:services][:lb][cloud_name][:ciAttributes]
+  az = node.workorder.rfcCi.ciAttributes.availability_zone
+  az_map = JSON.parse(cloud_service[:availability_zones])
+  ns_host = az_map[az]
 
   ENV['HOME'] = '/tmp'
   require 'net/ssh'
-  ssh = Net::SSH.start(cloud_service[:host], cloud_service[:username],
+  ssh = Net::SSH.start(ns_host, cloud_service[:username],
                        :password => cloud_service[:password], :paranoid => Net::SSH::Verifiers::Null.new)
 
   lbs = [] + node.cleanup_loadbalancers + node.loadbalancers
@@ -101,7 +104,7 @@ node.monitors.each do |mon|
       :method => :get, 
       :path =>"/nitro/v1/config/lbmonitor/#{monitor_name}").body)        
     
-    if resp_obj["message"] !~ /No such resource/
+    if (resp_obj["message"] !~ /No such resource/) && !(monitor_name.start_with? 'generic')
       type = resp_obj['lbmonitor'][0]['type']
 
       Chef::Log.info("removing monitor: #{monitor_name} from previous az / netscaler.")              
