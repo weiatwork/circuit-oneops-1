@@ -26,7 +26,6 @@ resource 'secgroup',
            #
            #  null:  Ping
            #    22:  SSH
-           #  8080:  Presto HTTP communication
            #  8443:  Presto HTTPS communication
            # 60000:  For mosh
            #
@@ -34,7 +33,6 @@ resource 'secgroup',
 
                "null null 4 0.0.0.0/0",
                "22 22 tcp 0.0.0.0/0",
-               "8080 8080 tcp 0.0.0.0/0",
                "8443 8443 tcp 0.0.0.0/0",
                "60000 60100 udp 0.0.0.0/0"
            ]'
