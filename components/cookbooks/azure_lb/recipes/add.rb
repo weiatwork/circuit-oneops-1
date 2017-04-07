@@ -481,7 +481,7 @@ lb_svc = AzureNetwork::LoadBalancer.new(credentials, subscription_id)
 
 lb = nil
 begin
-  lb = lb_svc.create_update(location, resource_group_name, lb_name, lb_props, tags)
+  lb = lb_svc.create_update(location, resource_group_name, lb_name, lb_props)
 
   # update the lb with tags
   tags = Utils.get_resource_tags(node)
