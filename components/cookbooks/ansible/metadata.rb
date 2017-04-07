@@ -23,3 +23,27 @@ attribute 'ansible_version',
             :category => '1.Ansible',
             :order    => 1
           }
+
+attribute 'pip_config',
+          :description => 'pip_config',
+          :required => 'required',
+          :default => 'false',
+          :format => {
+            :help => 'Pip config',
+            :category => '2.Pip',
+            :form => { 'field' => 'checkbox' },
+            :order => 1
+          }
+
+attribute 'pip_config_content',
+          :description => 'pip_config',
+          :data_type => "text",
+          :default     => "[global]
+index-url = https://pypi.python.org/simple",
+          :format      => {
+            :help     => 'Pip Config',
+            :filter => {"all" => {"visible" => "pip_config:eq:true"}},
+            :category => '2.Pip',
+            :order    => 2
+          }
+          

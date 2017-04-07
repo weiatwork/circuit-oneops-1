@@ -50,11 +50,17 @@ listeners.each do |l|
   gslb_port = lb_attrs[1]
   break if gslb_protocol == "HTTP"
 end
-
+dnsrecordtype = ''
+if node.workorder.payLoad.lb[0][:ciAttributes][:dns_record] =~ Resolv::IPv6::Regex
+  dnsrecordtype = "AAAA"
+else
+  dnsrecordtype = "A"
+end
+Chef::Log.info ("dnsrecordtype: #{dnsrecordtype}")
 # create gslb_server and bind domain if platform is active
 n = netscaler_gslb_vserver node.gslb_vserver_name do
   servicetype gslb_protocol
-  dnsrecordtype "A"
+  dnsrecordtype dnsrecordtype
   lbmethod lbmethod
   domain node.gslb_domain
   connection node.ns_conn  
@@ -93,7 +99,7 @@ remote_sites.each do |cloud_service|
   # create gslb_vserver and binding
   n = netscaler_gslb_vserver node.gslb_vserver_name do
     servicetype gslb_protocol
-    dnsrecordtype "A"
+    dnsrecordtype dnsrecordtype
     lbmethod lbmethod
     domain node.gslb_domain
     connection conn  
@@ -129,7 +135,7 @@ authoritative_servers.each do |dns_server|
   # create gslb_vserver and binding
   n = netscaler_gslb_vserver node.gslb_vserver_name do
     servicetype gslb_protocol
-    dnsrecordtype "A"
+    dnsrecordtype dnsrecordtype
     lbmethod lbmethod
     domain node.gslb_domain
     connection conn  

@@ -32,7 +32,6 @@ class PoolRequest < BaseRequest
     optional_parameters.select{ |o| options.key?(o) }.each do |key|
       data['pool'][key] = options[key]
     end
-
     request(
         :body     => Fog::JSON.encode(data),
         :expects  => 200,
@@ -52,7 +51,7 @@ class PoolRequest < BaseRequest
 
   def get_lbaas_pool(pool_id)
     request(
-        :expects => 200,
+        :expects => [200,404],
         :method  => 'GET',
         :path    => "/lbaas/pools/#{pool_id}"
     )

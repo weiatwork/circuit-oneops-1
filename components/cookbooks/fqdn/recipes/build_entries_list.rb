@@ -146,7 +146,7 @@ if node.workorder.rfcCi.ciAttributes.has_key?("ptr_enabled") &&
   end
 
   values.each do |ip|
-    next unless ip =~ /^\d+\.\d+\.\d+\.\d+$/
+    next unless ip =~ /^\d+\.\d+\.\d+\.\d+$/ || ip =~ Resolv::IPv6::Regex
     ptr = {:name => ip, :values => ptr_value.downcase}
     Chef::Log.info("ptr: #{ptr.inspect}")
     entries.push(ptr)
@@ -180,7 +180,7 @@ else
   
   is_a_record = false
   value_array.each do |val|
-    if val =~ /^\d+\.\d+\.\d+\.\d+$/
+    if val =~ /^\d+\.\d+\.\d+\.\d+$/ || val =~ Resolv::IPv6::Regex
       is_a_record = true
     end
   end
