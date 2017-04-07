@@ -25,8 +25,5 @@ include_recipe "shared::set_provider"
 if storage != nil
   include_recipe "volume::add"
 else
-  if node.platform =~ /windows/
-    include_recipe "volume::delete"
-  end
   include_recipe "volume::add"
 end
