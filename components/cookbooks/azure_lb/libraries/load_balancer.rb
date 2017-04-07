@@ -8,6 +8,7 @@ module AzureNetwork
     attr_reader :client, :subscription_id
 
     def initialize(credentials, subscription_id)
+      @creds = credentials
       @client = Azure::ARM::Network::NetworkResourceProviderClient.new(credentials)
       @client.subscription_id = subscription_id
       @subscription_id = subscription_id
@@ -74,7 +75,7 @@ module AzureNetwork
       end
     end
 
-    def create_update(location, resource_group_name, load_balancer_name, lb_props)
+    def create_update(location, resource_group_name, load_balancer_name, lb_props, tags)
       begin
         lb = Azure::ARM::Network::Models::LoadBalancer.new
         lb.location = location
@@ -85,6 +86,8 @@ module AzureNetwork
         promise = @client.load_balancers.create_or_update(resource_group_name, load_balancer_name, lb)
         response = promise.value!
         result = response.body
+        # add resource tags
+        Utils.update_resource_tags(@creds, @subscription_id, resource_group_name, result, tags)
         end_time = Time.now.to_i
         duration = end_time - start_time
         puts("operation took #{duration} seconds")
