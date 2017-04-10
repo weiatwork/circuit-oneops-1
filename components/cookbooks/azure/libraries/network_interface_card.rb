@@ -108,7 +108,7 @@ module AzureNetwork
 
     # this manages building the network profile in preperation of creating
     # the vm.
-    def build_network_profile(express_route_enabled, master_rg, pre_vnet, network_address, subnet_address_list, dns_list, ip_type, security_group_name)
+    def build_network_profile(express_route_enabled, master_rg, pre_vnet, network_address, subnet_address_list, dns_list, ip_type, security_group_name, tags)
       # get the objects needed to build the profile
       virtual_network = AzureNetwork::VirtualNetwork.new(creds, subscription)
       virtual_network.location = @location
@@ -167,6 +167,9 @@ module AzureNetwork
 
       # create the nic
       nic = create_update(network_interface)
+
+      # update the nic with tags
+      Utils.update_resource_tags(@creds, @subscription, @rg_name, nic, tags)
 
       # retrieve and set the private ip
       @private_ip =
