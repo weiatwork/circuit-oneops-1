@@ -63,7 +63,7 @@ resource "dotnetframework",
   :requires     => {
     :constraint => "1..1",
     :help       => "Installs .net frameworks",
-    :services   => '*mirror'
+    :services   => 'compute,*mirror'
   },
   :attributes   => {
     "chocolatey_package_source" => 'https://chocolatey.org/api/v2/'
