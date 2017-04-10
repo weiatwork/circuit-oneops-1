@@ -73,12 +73,8 @@ else
   # handle inline yaml support
   ansible_playbook = "#{playbook_dir}/playbook.yml"
 
-  file "#{ansible_playbook}" do
-    content node.workorder.rfcCi.ciAttributes.playbook
-  end
-
-  ::File.open('/etc/pip.conf', 'w') do |file|
-    file.puts playbook
+  ::File.open("#{ansible_playbook}", 'w') do |file|
+    file.puts node.workorder.rfcCi.ciAttributes.playbook
   end
 
   # run the role loader
@@ -89,3 +85,12 @@ else
   ansible_galaxy "#{ansible_playbook}" do
     action :run
   end
+
+  # remove tempdir
+  directory "#{playbook_dir}" do
+    recursive true
+    action :delete
+    only_if { ::File.directory?(playbook_dir) }
+  end
+
+end
