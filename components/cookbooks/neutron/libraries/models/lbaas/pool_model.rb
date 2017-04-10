@@ -2,6 +2,7 @@ require File.expand_path('../base_model', __FILE__)
 require File.expand_path('../label_model', __FILE__)
 require File.expand_path('../session_persistence_model', __FILE__)
 
+
 class PoolModel < BaseModel
   module Protocol
     HTTP = 'HTTP'
@@ -80,11 +81,19 @@ class PoolModel < BaseModel
   end
   private :validate_protocol
 
+  def underscore(input_string)
+    input_string.gsub(/::/, '/').
+          gsub(/([A-Z]+)([A-Z][a-z])/,'\1_\2').
+          gsub(/([a-z\d])([A-Z])/,'\1_\2').
+          tr("-", "_").
+          downcase
+  end
+
   def validate_lb_algorithm(lb_algorithm)
     two_word_pascalcase = '([A-Z][a-z0-9]+){2,}'
 
     if lb_algorithm.match(two_word_pascalcase)
-      lb_algorithm_upcase = lb_algorithm.underscore.upcase
+      lb_algorithm_upcase = underscore(lb_algorithm).upcase
     elsif lb_algorithm.count(' ') > 0
       lb_algorithm_upcase = lb_algorithm.tr(' ', '_').upcase
     elsif lb_algorithm.include? 'round'
@@ -103,6 +112,8 @@ class PoolModel < BaseModel
       fail ArgumentError, 'lb_algorithm is invalid'
     end
   end
+
+
   private :validate_lb_algorithm
 
 end
