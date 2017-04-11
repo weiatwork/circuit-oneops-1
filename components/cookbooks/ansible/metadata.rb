@@ -24,26 +24,24 @@ attribute 'ansible_version',
             :order    => 1
           }
 
-attribute 'pip_config',
-          :description => 'pip_config',
-          :required => 'required',
-          :default => 'false',
-          :format => {
-            :help => 'Pip config',
-            :category => '2.Pip',
-            :form => { 'field' => 'checkbox' },
-            :order => 1
+attribute 'playbook',
+          :description => 'playbook',
+          :required    => 'required',
+          :data_type => "text",
+          :default     => "changeme",
+          :format      => {
+            :help     => 'Playbook',
+            :category => '1.Ansible',
+            :order    => 2
           }
 
-attribute 'pip_config_content',
-          :description => 'pip_config',
+attribute 'pip_proxy_content',
+          :description => 'Pip Proxy Content',
           :data_type => "text",
-          :default     => "[global]
-index-url = https://pypi.python.org/simple",
+          :default     => "$OO_CLOUD{PIP_PROXY_CONFIG}",
           :format      => {
-            :help     => 'Pip Config',
-            :filter => {"all" => {"visible" => "pip_config:eq:true"}},
+            :help     => 'Pip ',
             :category => '2.Pip',
-            :order    => 2
+            :order    => 1
           }
           
