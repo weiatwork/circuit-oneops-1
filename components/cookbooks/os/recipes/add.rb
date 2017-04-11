@@ -51,6 +51,7 @@ puts "***RESULT:hostname=#{node.vmhostname}"
 
 #Perform windows-specific recipes and exit
 if ostype =~ /windows/
+  `sed -i 's/.*StrictModes .*/StrictModes no/' /etc/sshd_config`
   include_recipe "os::logrotate_windows"
   include_recipe "os::network_windows"
   return true
