@@ -50,6 +50,7 @@ def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-f', '--file', help="specify playbook filename")
 	args = parser.parse_args()
+	log.info("Processing file {0}".format(args.file))
 	load_playbook(args.file)
 	log.info('Ended')
 if __name__ == "__main__":
