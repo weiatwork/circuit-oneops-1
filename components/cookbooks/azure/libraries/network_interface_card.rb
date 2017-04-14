@@ -1,5 +1,6 @@
 #TODO: add checks in each method for rg_name
 require File.expand_path('../../../azuresecgroup/libraries/network_security_group.rb', __FILE__)
+require File.expand_path('../../../azure_base/libraries/custom_exceptions.rb', __FILE__)
 # module to contain classes for dealing with the Azure Network features.
 module AzureNetwork
 
@@ -100,7 +101,12 @@ module AzureNetwork
         OOLog.info("NIC '#{network_interface.name}' was updated in #{duration} seconds")
         result
       rescue MsRestAzure::AzureOperationError => e
-        OOLog.fatal("Error creating/updating NIC.  Exception: #{e.body}")
+        error_msg = e.body.to_s
+        if error_msg.include? "\"code\"=>\"SubnetIsFull\""
+          raise AzureBase::CustomExceptions::SubnetIsFullError, error_msg
+        else
+          OOLog.fatal("Error creating/updating NIC.  Exception: #{e.body}")
+        end
       rescue => ex
         OOLog.fatal("Error creating/updating NIC.  Exception: #{ex.message}")
       end
@@ -147,26 +153,47 @@ module AzureNetwork
       end
 
       subnetlist = network.body.properties.subnets
-      # get the subnet to use for the network
-      subnet =
-          subnet_cls.get_subnet_with_available_ips(subnetlist,
-                                                   express_route_enabled)
 
-      # define the NIC ip config object
-      nic_ip_config = define_nic_ip_config(ip_type, subnet)
+      #ips from gatewaysubnet should not be used to create NICs
+      subnetlist.delete_if{|s| s.name.downcase == 'gatewaysubnet'}
 
-      # define the nic
-      network_interface = define_network_interface(nic_ip_config)
+      begin
+        # get the subnet to use for the network
+        subnet =
+            subnet_cls.get_subnet_with_available_ips(subnetlist,
+                                                     express_route_enabled)
 
-      #include the network securtiry group to the network interface
-      nsg = AzureNetwork::NetworkSecurityGroup.new(creds, subscription)
-      network_security_group = nsg.get(@rg_name, security_group_name)
-      if !network_security_group.nil?
-        network_interface.properties.network_security_group = network_security_group
+        # define the NIC ip config object
+        nic_ip_config = define_nic_ip_config(ip_type, subnet)
+
+        # define the nic
+        network_interface = define_network_interface(nic_ip_config)
+
+        #include the network securtiry group to the network interface
+        nsg = AzureNetwork::NetworkSecurityGroup.new(creds, subscription)
+        network_security_group = nsg.get(@rg_name, security_group_name)
+        if !network_security_group.nil?
+          network_interface.properties.network_security_group = network_security_group
+        end
+
+        # create the nic
+        nic = create_update(network_interface)
+
+      rescue AzureBase::CustomExceptions::SubnetIsFullError => e
+        OOLog.info("subnet is full: #{subnet.name}")
+        #Azure already said that this subnet doesn't have available ips. take it out from list and look for next available subnet
+        subnetlist.delete_if{|s| s.name == subnet.name}
+
+        if(subnetlist.empty?)
+          #No more subnets to try
+          OOLog.fatal('No subnets with available ip addresses are found')
+        else
+          #retry creating NIC with next available subnet
+          retry
+        end
+      rescue => ex
+        OOLog.fatal("Error in build_network_profile.  Exception: #{ex.message}")
       end
-
-      # create the nic
-      nic = create_update(network_interface)
 
       # update the nic with tags
       Utils.update_resource_tags(@creds, @subscription, @rg_name, nic, tags)
