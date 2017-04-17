@@ -190,6 +190,7 @@ service "hive-metastore" do
     else
         action [:disable, :stop]
     end
+    provider Chef::Provider::Service::Init
     supports :restart => true, :reload => true
 end
 
