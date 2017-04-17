@@ -56,6 +56,13 @@ end
   end
 end
 
+ruby_block "installing dependency" do
+  block do
+    `yum --assumeyes install rsyslog-mmjsonparse`
+  end
+  only_if { node.platform_version.start_with?("7") }
+end
+
 %w{glusterfs-client glusterfs-server glusterfs-common glusterfs-devel}.each do |p|
   bash "installing package #{p}" do
     code <<-EOH
