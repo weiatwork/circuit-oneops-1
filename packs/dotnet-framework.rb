@@ -92,7 +92,7 @@ resource "windowsservice",
     "service_display_name"     => '',
     "path"                     => '',
     "cmd_path"                 => '$OO_LOCAL{app_directory}',
-    "user_account"             => 'LocalSystem',
+    "user_account"             => '',
     "username"                 => '',
     "password"                 => '',
   }
