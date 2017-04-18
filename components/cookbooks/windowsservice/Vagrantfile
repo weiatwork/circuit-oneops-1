@@ -1,0 +1,83 @@
+#VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure("2") do |config|
+  config.vm.box = 'windows2016'
+  config.vm.guest = :windows
+
+  config.vm.provider "virtualbox" do |v|
+    v.gui = false
+  end
+
+  config.vm.communicator = "winrm"
+  config.winrm.timeout = 24000
+  config.winrm.max_tries = 20
+
+  config.winrm.host = '127.0.0.1'
+  config.winrm.username = 'vagrant'
+  config.winrm.password = 'vagrant'
+
+  config.vm.provision :chef_solo do |chef|
+    chef.log_level         = :info
+    chef.cookbooks_path = [".."]
+    chef.add_recipe("windowsservice::add")
+    chef.json = {
+      "windowsservice": {
+        "package_name": "TimeWriter",
+        "service_name": "TimeWriter",
+        "cmd_path": "C:\\code\\gurvinder\\new_file",
+        "path": "TimeWriter.exe",
+        "service_display_name": "",
+        "startup_type": "auto start",
+        "username": "gsingh",
+        "password": "Walmart1",
+        "user_account": "LocalSystem",
+        "version": 'latest',
+        "repository_url": "http://repo.wal-mart.com/service/local/nuget/nuget-walmart/",
+      },
+      "workorder": {
+        "rfcCi": {
+          "rfcAction": "update"
+          },
+          "payLoad": {
+            "OO_GLOBAL_VARS": [
+              {
+                "ciAttributes": {
+                  "value": "dev2"
+                },
+                "ciBaseAttributes": {},
+                "ciAttrProps": {},
+                "rfcId": 0,
+                "releaseId": 0,
+                "ciId": 0,
+                "ciClassName": "manifest.Globalvar",
+                "ciName": "env_name",
+                "execOrder": 0,
+                "isActiveInRelease": false
+              }
+            ],
+          }
+      }
+    }
+  end
+end
+
+
+=begin
+require 'rubygems'
+require 'win32/service'
+include Win32
+service = Service.config_info(service_name)
+
+Service.create({ service_name: service_attributes['service_name'],
+                 host: nil,
+                 service_type: Service::WIN32_OWN_PROCESS,
+                 description: service_attributes['service_description'],
+                 start_type: WINDOWS_SERVICE_STARTUP_TYPE[service_attributes['startup_type']],
+                 error_control: Service::ERROR_NORMAL,
+                 binary_path_name: service_attributes['path'],
+                 load_order_group: 'Network',
+                 dependencies: nil,
+                 display_name: service_attributes['service_display_name']
+              })
+=end
+#good documentation - http://www.rubydoc.info/gems/win32-service/0.8.6/Win32/Service
