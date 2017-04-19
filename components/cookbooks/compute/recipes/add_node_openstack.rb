@@ -44,17 +44,35 @@ ostype = node.workorder.payLoad.os[0].ciAttributes["ostype"]
 #Set server create counter based on location
 if node.workorder.cloud.ciAttributes.has_key?("location") && !node.workorder.cloud.ciAttributes[:location].empty?
 
-      if node.workorder.cloud.ciAttributes[:location] =~ /(openstack.*ironic)/
-         server_create_counter = 360
-         node.set["max_retry_count_add"] = 2
-      else
-         server_create_counter = 30
-         node.set["max_retry_count_add"] = 30
-      end
+  if node.workorder.cloud.ciAttributes[:location] =~ /(openstack.*ironic)/
+    server_create_counter = 360
+    node.set["max_retry_count_add"] = 2
+  else
+    server_create_counter = 30
+    node.set["max_retry_count_add"] = 30
+  end
 
-      Chef::Log.debug("server_create_counter: #{server_create_counter}")
-      Chef::Log.info("server_create_counter => SET")
+  Chef::Log.debug("server_create_counter: #{server_create_counter}")
+  Chef::Log.info("server_create_counter => SET")
+  Chef::Log.debug("max_retry_count_add: #{node[:max_retry_count_add]}")
+  Chef::Log.info("max_retry_count_add => SET")
 end
+
+#Set max_wait_for_initialize_value and wait_for_initialization boolean
+if node[:ostype] =~ /windows/
+    wait_for_initialization = true
+    max_wait_for_initialize_value = 1
+elsif node.workorder.cloud.ciAttributes[:location] =~ /(openstack.*ironic)/
+    wait_for_initialization = true
+    max_wait_for_initialize_value = 5
+else
+    wait_for_initialization = false
+    max_wait_for_initialize_value = 0
+end
+Chef::Log.debug("wait_for_initialization: #{wait_for_initialization}")
+Chef::Log.info("wait_for_initialization => SET")
+Chef::Log.debug("max_wait_for_initialize_value: #{max_wait_for_initialize_value}")
+Chef::Log.info("max_wait_for_initialize_value => SET")
 
 if compute_service.has_key?("initial_user") && !compute_service[:initial_user].empty?
   node.set["use_initial_user"] = true
@@ -512,12 +530,15 @@ ruby_block 'catch errors/faults' do
   end
 end
 
-#give windows some time to initialize - 4 min
-ruby_block 'wait for windows initialization' do
+#give some time to initialize - max_wait_for_initialize_value min
+ruby_block 'wait for initialization' do
   block do
-      sleep 60
+      Chef::Log.debug("Wait to initialize -  #{max_wait_for_initialize_value} min")
+      (1..max_wait_for_initialize_value).each do |i|
+         sleep 60
+      end
   end
-end if node[:ostype] =~ /windows/
+end if wait_for_initialization == true
 
 include_recipe "compute::ssh_port_wait"
 
