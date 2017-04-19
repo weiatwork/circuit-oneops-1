@@ -34,4 +34,4 @@ windowsservice windows_service.service_name do
   password windows_service.password
 end
 
-include_recipe 'windowsservice::start_service'
+include_recipe 'windowsservice::restart_service'

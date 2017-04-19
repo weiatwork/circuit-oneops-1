@@ -93,6 +93,15 @@ attribute 'startup_type',
                     }
   }
 
+attribute 'arguments',
+  :description => 'Start parameters',
+  :data_type   => 'array',
+  :format      => {
+    :help      => 'You can specify the start parameters that apply when you start the service',
+    :category  => '2.General',
+    :order     => 6
+  }
+
 attribute 'user_account',
   :description => 'User Account',
   :required    => 'required',

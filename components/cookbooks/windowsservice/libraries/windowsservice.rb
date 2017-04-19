@@ -34,5 +34,9 @@ module OO
     def service_status(service_name)
       Service.status(service_name)['current_state']
     end
+
+    def start_service(service_name, arguments)
+      Service.start(service_name, nil, *arguments)
+    end
   end
 end

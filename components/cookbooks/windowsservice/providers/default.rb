@@ -59,9 +59,7 @@ end
 action :start do
   if @current_resource.exists
     if @current_resource.status != 'running'
-      windows_service new_resource.service_name do
-        action :start
-      end
+      @service_windows.start_service(new_resource.service_name, new_resource.arguments)
       new_resource.updated_by_last_action(true)
     else
       Chef::Log.info "#{new_resource.service_name} is already runnings. Nothing to do."
