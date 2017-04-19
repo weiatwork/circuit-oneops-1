@@ -41,19 +41,19 @@ customer_domain = node["customer_domain"]
 owner = node.workorder.payLoad.Assembly[0].ciAttributes["owner"] || "na"
 ostype = node.workorder.payLoad.os[0].ciAttributes["ostype"]
 
-#Set server create counter based on location
+#Set max server create value based on location
 if node.workorder.cloud.ciAttributes.has_key?("location") && !node.workorder.cloud.ciAttributes[:location].empty?
 
   if node.workorder.cloud.ciAttributes[:location] =~ /(openstack.*ironic)/
-    server_create_counter = 360
+    max_server_create_value = 360
     node.set["max_retry_count_add"] = 2
   else
-    server_create_counter = 30
+    max_server_create_value = 30
     node.set["max_retry_count_add"] = 30
   end
 
-  Chef::Log.debug("server_create_counter: #{server_create_counter}")
-  Chef::Log.info("server_create_counter => SET")
+  Chef::Log.debug("max_server_create_value: #{max_server_create_value}")
+  Chef::Log.info("max_server_create_value => SET")
   Chef::Log.debug("max_retry_count_add: #{node[:max_retry_count_add]}")
   Chef::Log.info("max_retry_count_add => SET")
 end
@@ -297,7 +297,7 @@ ruby_block 'create server' do
         sleep_count = 0
 
         # wait for server to be ready or fail within 5min or an hour.
-        while (!server.ready? && server.fault.nil? && sleep_count < server_create_counter) do
+        while (!server.ready? && server.fault.nil? && sleep_count < max_server_create_value) do
           sleep 10
           sleep_count += 1
           server.reload
