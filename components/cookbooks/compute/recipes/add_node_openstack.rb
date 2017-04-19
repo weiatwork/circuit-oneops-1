@@ -39,7 +39,6 @@ rfcCi = node["workorder"]["rfcCi"]
 nsPathParts = rfcCi["nsPath"].split("/")
 customer_domain = node["customer_domain"]
 owner = node.workorder.payLoad.Assembly[0].ciAttributes["owner"] || "na"
-node.set["max_retry_count_add"] = 30
 ostype = node.workorder.payLoad.os[0].ciAttributes["ostype"]
 
 #Set server create counter based on location
@@ -47,8 +46,10 @@ if node.workorder.cloud.ciAttributes.has_key?("location") && !node.workorder.clo
 
       if node.workorder.cloud.ciAttributes[:location] =~ /(openstack.*ironic)/
          server_create_counter = 360
+         node.set["max_retry_count_add"] = 2
       else
          server_create_counter = 30
+         node.set["max_retry_count_add"] = 30
       end
 
       Chef::Log.debug("server_create_counter: #{server_create_counter}")
@@ -110,9 +111,9 @@ ruby_block 'set flavor/image/availability_zone' do
       Chef::Log.info("using required_availability_zone: #{availability_zone}")
     end
 
-    if rfcCi['rfcAction'] != 'replace' && 
-      !rfcCi['ciAttributes']['instance_id'].nil? && 
-      !rfcCi['ciAttributes']['instance_id'].empty?      
+    if rfcCi['rfcAction'] != 'replace' &&
+      !rfcCi['ciAttributes']['instance_id'].nil? &&
+      !rfcCi['ciAttributes']['instance_id'].empty?
         server = conn.servers.get(rfcCi['ciAttributes']['instance_id'])
     else
       conn.servers.all.each do |i|
@@ -286,8 +287,8 @@ ruby_block 'create server' do
 
         if !server.fault.nil? && server.fault.has_key?('message')
           raise Exception.new(server.fault['message'])
-        end        
-        
+        end
+
         rescue Exception =>e
           message = ""
           case e.message
@@ -297,7 +298,7 @@ ruby_block 'create server' do
             server.destroy
             sleep 5
             retry
-                        
+
           when /Request Entity Too Large/,/Quota exceeded/
             limits = conn.get_limits.body["limits"]
             Chef::Log.info("limits: "+limits["absolute"].inspect)
@@ -386,7 +387,7 @@ ruby_block 'set node network params' do
         end
       end
     end
-      
+
     # specific network
     if !compute_service[:subnet].empty?
       network_name = compute_service[:subnet]
@@ -443,7 +444,7 @@ ruby_block 'set node network params' do
 	  node.set["ip"] = public_ip
         end
       end
-    end 
+    end
     # if public_ip is still empty, use private_ip to be public_ip
     if public_ip.empty?
       public_ip = private_ip
