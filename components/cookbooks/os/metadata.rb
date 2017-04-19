@@ -132,7 +132,7 @@ attribute 'proxy_map',
 
 attribute 'dhclient',
           :description => "Keep long running dhclient after boot (not recommended if dhcp server issues)",
-          :default     => 'true',
+          :default     => 'false',
           :format      => {
             :help     => 'When selected enables long running dhclient which will manage periodic IP Address renewals. When not selected, dhclient will be stopped and IP Address will behave as if static.',
             :category => '4.Networking',
