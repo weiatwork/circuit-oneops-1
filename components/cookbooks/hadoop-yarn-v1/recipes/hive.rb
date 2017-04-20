@@ -190,6 +190,7 @@ service "hive-metastore" do
     else
         action [:disable, :stop]
     end
+    provider Chef::Provider::Service::Init
     supports :restart => true, :reload => true
 end
 
@@ -254,6 +255,7 @@ if toBool(cia["enable_hiveserver2"])
 
     # add hiveserver2 to chkconfig and start service
     service "hive-hiveserver2" do
+        provider Chef::Provider::Service::Init
         action [:enable, :start]
         supports :restart => true, :reload => true
     end

@@ -341,7 +341,10 @@ def create_gslb_service
     # remove old one
     clear_non_generic_monitor(conn, gslb_service_name, monitor_name)
     # use generic one
-    monitor_name = "generic-" + ecv.downcase.gsub(' ','-').gsub('/','slash')
+    monitor_name = "generic-" + ecv.downcase.gsub(' ','-').gsub('/',vprotocol)
+    if ['tcp', 'udp'].include?(vprotocol)
+	monitor_name = "generic-" + vprotocol
+    end
   else
     # unbind generic
     resp_obj = JSON.parse(conn.request(:method=>:get, :path=>"/nitro/v1/config/gslbservice_lbmonitor_binding/#{gslb_service_name}").body)

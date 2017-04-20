@@ -63,6 +63,8 @@ end
 
 OOLog.info('ip_type: ' + ip_type)
 
+tags = Utils.get_resource_tags(node)
+
 # get the credentials needed to call Azure SDK
 creds =
   Utils.get_credentials(compute_service[:tenant_id],
@@ -142,7 +144,8 @@ begin
                                                 subnet_address_list,
                                                 dns_list,
                                                 ip_type,
-                                                secgroup_name)
+                                                secgroup_name,
+                                                tags)
 rescue => ex
   OOLog.fatal("Error getting network profile: #{ex.message}")
 end
@@ -179,6 +182,8 @@ begin
   # create the VM in the platform resource group
   vm_promise = client.virtual_machines.create_or_update(resource_group_name, server_name, params)
   my_new_vm = vm_promise.value!
+  Utils.update_resource_tags(creds, subscription, resource_group_name, my_new_vm.body, tags)
+
   end_time = Time.now.to_i
   duration = end_time - start_time
   OOLog.info("Azure VM created in #{duration} seconds")
