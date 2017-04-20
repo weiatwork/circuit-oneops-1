@@ -16,6 +16,14 @@ variable "platform_deployment",
   :description => 'Downloads the nuget packages',
   :value       => 'e:\platform_deployment'
 
+variable "app_directory",
+  :description => 'Application directory',
+  :value       => 'e:\apps'
+
+variable "nuget_exe",
+  :description => 'Nuget exe path',
+  :value       => 'C:\ProgramData\chocolatey\lib\NuGet.CommandLine\tools\NuGet.exe'
+
 chocolatey_package_configure_cmd=  <<-"EOF"
 
 package_name = node.artifact.repository
@@ -69,6 +77,26 @@ resource "dotnetframework",
     "chocolatey_package_source" => 'https://chocolatey.org/api/v2/'
   }
 
+resource "windowsservice",
+  :cookbook     => "oneops.1.windowsservice",
+  :design       => true,
+  :requires     => {
+    :constraint => "0..*",
+    :help       => "Installing a service in windows"
+  },
+  :attributes   => {
+    "package_name"             => '',
+    "repository_url"           => '',
+    "version"                  => 'latest',
+    "service_name"             => '',
+    "service_display_name"     => '',
+    "path"                     => '',
+    "cmd_path"                 => '$OO_LOCAL{app_directory}',
+    "user_account"             => '',
+    "username"                 => '',
+    "password"                 => '',
+  }
+
 resource "secgroup",
   :attributes => {
     "inbound" => '[ "22 22 tcp 0.0.0.0/0", "3389 3389 tcp 0.0.0.0/0" ]'
@@ -84,7 +112,7 @@ resource "os",
   :attributes => {
     "ostype"  => "windows_2012_r2"
   }
-  
+
 resource "volume",
   :requires       => {
     :constraint   => "1..1"
@@ -93,7 +121,8 @@ resource "volume",
     "mount_point" => '$OO_LOCAL{drive_name}'
   }
 
-[ { :from => 'dotnetframework',  :to => 'os' },
+[ { :from => 'windowsservice',  :to => 'volume' },
+  { :from => 'dotnetframework',  :to => 'os' },
   { :from => 'chocolatey-package', :to => 'volume' } ].each do |link|
   relation "#{link[:from]}::depends_on::#{link[:to]}",
     :relation_name => 'DependsOn',
@@ -102,7 +131,7 @@ resource "volume",
     :attributes => { "flex" => false, "min" => 1, "max" => 1 }
 end
 
-[ 'dotnetframework','chocolatey-package' ,'volume','os' ].each do |from|
+[ 'windowsservice','dotnetframework','chocolatey-package' ,'volume','os' ].each do |from|
   relation "#{from}::managed_via::compute",
     :except => [ '_default' ],
     :relation_name => 'ManagedVia',
