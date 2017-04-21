@@ -3,7 +3,7 @@ include_pack "genericlb"
 name "custom-centrify-vb1"
 description "Custom with Centrify (Beta 1)"
 type "Platform"
-category "Developer Test"
+category "Other"
 
 platform :attributes => {'autoreplace' => 'false'}
 

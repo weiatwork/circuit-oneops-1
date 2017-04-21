@@ -1,6 +1,6 @@
 name             'Centrify-vb1'
 maintainer       '@WalmartLabs'
-maintainer_email 'bfd@walmartlabs.com'
+maintainer_email 'paas@email.wal-mart.com'
 license          'All rights reserved'
 description      'Centrify Component (Beta1 build)'
 long_description 'Beta 1'

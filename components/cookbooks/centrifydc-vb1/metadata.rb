@@ -1,6 +1,6 @@
 name             "Centrifydc-vb1"
 maintainer       '@WalmartLabs'
-maintainer_email 'bfd@walmartlabs.com'
+maintainer_email 'paas@email.wal-mart.com'
 license          'All rights reserved'
 description      'CentrifyDC Service (Beta 1)'
 long_description 'Beta 1'
