@@ -8,6 +8,8 @@ category "Worker Application"
 environment "single", {}
 environment "redundant", {}
 
+platform :attributes => {'autocomply' => 'true'}
+
 variable "drive_name",
   :description => 'drive name',
   :value       => 'E'

@@ -6,7 +6,7 @@ type 'Platform'
 category 'Database Relational SQL'
 ignore false
 
-platform :attributes => {'autoreplace' => 'false'}
+platform :attributes => {'autoreplace' => 'false', 'autocomply' => 'true'}
 
 environment 'single', {}
 
@@ -17,8 +17,8 @@ variable 'temp_drive',
 variable 'data_drive',
   :description => 'Data Drive',
   :value       => 'F'
-  
-  
+
+
 resource 'secgroup',
          :cookbook => 'oneops.1.secgroup',
          :design => true,
@@ -45,7 +45,7 @@ resource 'mssql',
     'userdb_data' => '$OO_LOCAL{data_drive}:\\MSSQL\\UserData',
     'userdb_log' => '$OO_LOCAL{data_drive}:\\MSSQL\\UserLog'
   }
-  
+
 resource 'compute',
   :cookbook => 'oneops.1.compute',
   :attributes => { 'size'    => 'M-WIN' }
@@ -53,17 +53,17 @@ resource 'compute',
 resource 'storage',
   :cookbook => 'oneops.1.storage',
   :requires => { 'constraint' => '1..1', 'services' => 'storage' }
-  
+
 resource 'volume',
   :cookbook => 'oneops.1.volume',
-  :requires => {'constraint' => '1..1', 'services' => 'compute,storage'}, 
+  :requires => {'constraint' => '1..1', 'services' => 'compute,storage'},
   :attributes => { 'mount_point'    => '$OO_LOCAL{data_drive}' }
-  
+
 resource 'vol-temp',
   :cookbook => 'oneops.1.volume',
-  :requires => { 'constraint' => '1..1', 'services' => 'compute' },  
+  :requires => { 'constraint' => '1..1', 'services' => 'compute' },
   :attributes => { 'mount_point'    => '$OO_LOCAL{temp_drive}' }
-  
+
 resource 'os',
   :cookbook => 'oneops.1.os',
   :design => true,
@@ -95,7 +95,7 @@ resource 'database',
     :constraint  => '0..*',
     :help        => 'Installs user database'
   }
-  
+
 resource 'custom-config',
   :cookbook      => "oneops.1.artifact",
   :design        => true,
@@ -108,7 +108,7 @@ resource 'custom-config',
      :as_user       => 'oneops',
      :as_group      => 'Administrators'
 }
-  
+
 [ 
   { :from => 'storage', :to => 'os' },
   { :from => 'vol-temp', :to => 'os' },

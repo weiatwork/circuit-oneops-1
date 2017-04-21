@@ -8,6 +8,8 @@ category "Web Application"
 environment "single", {}
 environment "redundant", {}
 
+platform :attributes => {'autocomply' => 'true'}
+
 variable "platform_deployment",
   :description => 'Downloads the nuget packages',
   :value       => 'e:\platform_deployment'
