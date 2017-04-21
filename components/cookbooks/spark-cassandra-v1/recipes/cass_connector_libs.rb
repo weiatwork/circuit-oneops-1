@@ -112,8 +112,10 @@ else
     not_if { spark_version == "custom" }
   end
 
-  execute "get_connector_libs" do
-    command "#{spark_dir}/get_connector_libs.sh &> #{results_file}"
+  bash "get_connector_libs" do
+    code <<-EOF
+    #{spark_dir}/get_connector_libs.sh &> #{results_file}
+    EOF
     not_if { spark_version == "custom" }
   end
 
@@ -123,6 +125,17 @@ else
     only_if { ::File.exists?(results_file) }
     block do
       print File.read(results_file) + "\n"
+
+      jar_count=Dir["#{connector_dir}/*.jar"].length
+
+      if jar_count == 0
+        puts "***FAULT:FATAL=The Spark Cassandra connector driver files could not be found and downloaded.  Please check the log for details."
+
+        # Raise an exception
+        e = Exception.new("no backtrace")
+        e.set_backtrace("")
+        raise e
+      end
     end
     notifies :delete, "file[#{results_file}]", :immediately
   end
