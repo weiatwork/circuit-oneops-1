@@ -97,15 +97,15 @@ if ( $chocoRepo -ne "" -and $chocoRepo -ne $null ) {
 
 try {
   Write-Output "Installing ruby ..."
-  choco install -y ruby
+  choco install -y --no-progress --source=internal ruby
   $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
 
   Write-Output "Installing nuget.commandline ..."
-  choco install -y nuget.commandline
+  choco install -y --no-progress nuget.commandline
   $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
 
   Write-Output "Installing ruby2.devKit ..."
-  choco install -y ruby2.devkit
+  choco install -y --no-progress ruby2.devkit
   $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
 }
 catch {
