@@ -17,14 +17,14 @@ spark_dir = "#{spark_base}/spark"
 
 connector_dir = "#{spark_dir}/connector"
 
-# Delete the connector directory
-directory connector_dir do
-  action    :delete
-  recursive true
+directory cache_path do
+  owner 'root'
+  group 'root'
+  mode  '0755'
 end
 
-# Delete the cache directory
-directory cache_path do
+# Delete the connector directory
+directory connector_dir do
   action    :delete
   recursive true
 end
@@ -70,4 +70,10 @@ ruby_block "remove_libraries" do
     `#{spark_dir}/fix_spark_defaults.sh driver; #{spark_dir}/fix_spark_defaults.sh executor; chown spark:spark #{spark_dir}/conf/spark-defaults.conf; chmod 644 #{spark_dir}/conf/spark-defaults.conf`
   end
   notifies :delete, "file[#{ssh_key_file}]", :delayed
+end
+
+# Delete the cache directory
+directory cache_path do
+  action    :delete
+  recursive true
 end
