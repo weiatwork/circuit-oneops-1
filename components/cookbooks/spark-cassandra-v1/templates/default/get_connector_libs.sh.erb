@@ -27,6 +27,13 @@ CONNECTOR_LIBS_15="
   com/google/guava/guava/16.0.1/guava-16.0.1.jar
   com/twitter/jsr166e/1.1.0/jsr166e-1.1.0.jar"
 
+CONNECTOR_LIBS_20="
+  com/datastax/spark/spark-cassandra-connector_2.11/2.0.1/spark-cassandra-connector_2.11-2.0.1.jar
+  joda-time/joda-time/2.3/joda-time-2.3.jar
+  org/joda/joda-convert/1.2/joda-convert-1.2.jar
+  com/google/guava/guava/16.0.1/guava-16.0.1.jar
+  com/twitter/jsr166e/1.1.0/jsr166e-1.1.0.jar"
+
 SPARK_VERSION_FULL="<%= @spark_version %>"
 
 if [[ "$SPARK_VERSION_FULL" == "auto" ]]; then
@@ -40,9 +47,8 @@ SPARK_VERSION=`IFS='.' read -ra SPARK_VERS <<< "$SPARK_VERSION_FULL"; echo ${SPA
 
 echo "Spark Version: $SPARK_VERSION"
 
-if [[ "$SPARK_VERSION" == "2.0" ]]; then
-  # No connector libraries yet
-  CONNECTOR_LIBS=""
+if [[ "$SPARK_VERSION" =~ 2.[0-1] ]]; then
+  CONNECTOR_LIBS=$CONNECTOR_LIBS_20
 elif [[ "$SPARK_VERSION" == "1.6" ]]; then
   # Use 1.5 libraries
   CONNECTOR_LIBS=$CONNECTOR_LIBS_15
@@ -51,8 +57,8 @@ elif [[ "$SPARK_VERSION" == "1.5" ]]; then
 elif [[ "$SPARK_VERSION" == "1.4" ]]; then
   CONNECTOR_LIBS=$CONNECTOR_LIBS_14
 else
-  echo "Invalid Spark version found ($SPARK_VERSION)."
-  exit 1
+  echo "***FAULT:FATAL=Invalid Spark version found ($SPARK_VERSION)."
+  #exit 1
 fi
 
 # Make sure a connector dir is specified.
