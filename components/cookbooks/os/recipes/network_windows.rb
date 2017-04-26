@@ -20,19 +20,19 @@ if node[:workorder][:services].has_key?("windows-domain")
     try { Add-Computer -DomainName $domain -Credential $credential -Force -Options JoinWithNewName -ErrorAction Stop -OUPath $oupath }
     catch { Add-Computer -DomainName $domain -Credential $credential -NewName $newname -Force -ErrorAction Stop -OUPath $oupath }  }
   Else
-  { Add-Computer -DomainName $domain -Credential $credential -Force -ErrorAction Stop -OUPath $oupath }  
+  { Add-Computer -DomainName $domain -Credential $credential -Force -ErrorAction Stop -OUPath $oupath }
   
-  Start-Sleep -s 10"  
-  
+  Start-Sleep -s 10"
+
   execute 'mkpasswd-oneops' do
     command 'mkpasswd -l -u oneops > /etc/passwd'
-	action :nothing
+    action :nothing
   end
-  
+
   powershell_script 'Join-Domain' do
     code ps_code
     not_if '(gwmi win32_computersystem).partofdomain'
-	notifies :run, 'execute[mkpasswd-oneops]', :before
+    notifies :run, 'execute[mkpasswd-oneops]', :before
   end
 else
   #rename windows VM
@@ -49,11 +49,11 @@ ruby_block 'declare-restart' do
     puts "***REBOOT_FLAG***"
   end
   action :nothing
-  subscribes :run, 'powershell_script[Rename-Computer]', :delayed
-  subscribes :run, 'powershell_script[Join-Domain]', :delayed
+  subscribes :run, 'powershell_script[Rename-Computer]', :immediately
+  subscribes :run, 'powershell_script[Join-Domain]', :immediately
 end
-  
+
 reboot 'perform-restart' do
   action :nothing
-  subscribes :request_reboot, 'ruby_block[declare-restart]'
+  subscribes :reboot_now, 'ruby_block[declare-restart]', :immediately
 end

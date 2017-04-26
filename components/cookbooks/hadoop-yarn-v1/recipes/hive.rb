@@ -186,9 +186,9 @@ end
 # enale hive metastore service only if specified
 service "hive-metastore" do
     if toBool(cia["enable_thrift_metastore"])
-        action [:enable, :start]
+        action [:start]
     else
-        action [:disable, :stop]
+        action [:stop]
     end
     provider Chef::Provider::Service::Init
     supports :restart => true, :reload => true
@@ -256,7 +256,7 @@ if toBool(cia["enable_hiveserver2"])
     # add hiveserver2 to chkconfig and start service
     service "hive-hiveserver2" do
         provider Chef::Provider::Service::Init
-        action [:enable, :start]
+        action [:start]
         supports :restart => true, :reload => true
     end
 
