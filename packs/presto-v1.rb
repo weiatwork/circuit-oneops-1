@@ -516,6 +516,38 @@ resource 'presto_coordinator',
                }
              ]
            }'
+         },
+         # primaryCloud - All clouds included in the deployment
+         #                Path: Coordinator definition (starting point)
+         #                      -> requires (Platform)
+         #                      -> consumes cloud (Clouds) [filtered by priority = '1']
+         'primaryCloud' => {
+           'description' => 'Primary Clouds in Deployment',
+           'definition' => '{
+             "returnObject": false,
+             "returnRelation": false,
+             "relationName": "base.RealizedAs",
+             "direction": "to",
+             "targetClassName": "manifest.oneops.1.Presto-coordinator-v1",
+             "relations": [
+               { "returnObject": false,
+                 "returnRelation": false,
+                 "relationName": "manifest.Requires",
+                 "direction": "to",
+                 "targetClassName": "manifest.Platform",
+                 "relations": [
+                   { "returnObject": true,
+                     "returnRelation": false,
+                     "relationName": "base.Consumes",
+                     "relationAttrs":[{"attributeName":"priority", "condition":"eq", "avalue":"1"},
+                                      {"attributeName":"adminstatus", "condition":"eq", "avalue":"active"}],
+                     "direction": "from",
+                     "targetClassName": "account.Cloud"
+                   }
+                 ]
+               }
+             ]
+           }'
          }
        }
 
@@ -721,6 +753,64 @@ resource 'presto_coordinator_worker',
                          ]
                        }
                      ]
+                   }
+                 ]
+               }
+             ]
+           }'
+         },
+         # primaryCloud - All clouds included in the deployment
+         #                Path: Coordinator definition (starting point)
+         #                      -> requires (Platform)
+         #                      -> consumes cloud (Clouds) [filtered by priority = '1']
+         'primaryCloud' => {
+           'description' => 'Primary Clouds in Deployment',
+           'definition' => '{
+             "returnObject": false,
+             "returnRelation": false,
+             "relationName": "base.RealizedAs",
+             "direction": "to",
+             "targetClassName": "manifest.oneops.1.Presto-coordinator-v1",
+             "relations": [
+               { "returnObject": false,
+                 "returnRelation": false,
+                 "relationName": "manifest.Requires",
+                 "direction": "to",
+                 "targetClassName": "manifest.Platform",
+                 "relations": [
+                   { "returnObject": true,
+                     "returnRelation": false,
+                     "relationName": "base.Consumes",
+                     "relationAttrs":[{"attributeName":"priority", "condition":"eq", "avalue":"1"},
+                                      {"attributeName":"adminstatus", "condition":"eq", "avalue":"active"}],
+                     "direction": "from",
+                     "targetClassName": "account.Cloud"
+                   }
+                 ]
+               }
+             ]
+           }'
+         },
+         'coordConfig' => {
+           'description' => 'Presto Coordinator Configuration',
+           'definition' => '{
+             "returnObject": false,
+             "returnRelation": false,
+             "relationName": "base.RealizedAs",
+             "direction": "to",
+             "targetClassName": "manifest.oneops.1.Presto-coordinator-v1",
+             "relations": [
+               { "returnObject": false,
+                 "returnRelation": false,
+                 "relationName": "manifest.DependsOn",
+                 "direction": "from",
+                 "targetClassName": "manifest.oneops.1.Presto-v1",
+                 "relations": [
+                   { "returnObject": true,
+                     "returnRelation": false,
+                     "relationName": "manifest.DependsOn",
+                     "direction": "from",
+                     "targetClassName": "manifest.oneops.1.Presto-v1"
                    }
                  ]
                }

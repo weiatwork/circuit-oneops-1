@@ -14,6 +14,11 @@ configNode = node[configName]
 thisCiName = node.workorder.rfcCi.ciName
 thisCloudId = cloudid_from_name(thisCiName)
 
+# Validate the clouds
+validate_clouds()
+
+primaryCloudId = get_primary_cloud_id()
+
 # Find the IP address of the coordinator
 clusterCoord = nil
 if node.workorder.payLoad.has_key?("coord1")
@@ -26,12 +31,22 @@ coordIP = nil
 
 if !clusterCoord.nil?
   clusterCoord.each do |thisCoord|
-    next if thisCoord[:ciAttributes][:private_ip].nil? || thisCoord[:ciAttributes][:private_ip].empty? || (thisCloudId != cloudid_from_name(thisCoord.ciName))
+    next if thisCoord[:ciAttributes][:private_ip].nil? || thisCoord[:ciAttributes][:private_ip].empty?
 
-    # This is the coordinator for this cloud
-    coordIP = thisCoord[:ciAttributes][:private_ip]
-    Chef::Log.debug("Found coordinator IP: #{coordIP}")
+    if primaryCloudId == cloudid_from_name(thisCoord.ciName)
+      # This is the coordinator for this cloud
+      coordIP = thisCoord[:ciAttributes][:private_ip]
+      Chef::Log.debug("Found coordinator IP: #{coordIP}")
+    end
   end
+end
+
+coordinator = is_coord_compute()
+
+if coordinator
+  # When the compute is a coordinator compute, the local IP address
+  # is always the coordinator IP
+  coordIP = node.ipaddress
 end
 
 Chef::Log.info("Coordinator IP will be #{coordIP} with node ip of #{node.ipaddress}")
@@ -54,13 +69,6 @@ coordinator_fqdn="#{platformName}.#{subdomain}.#{zone_domain}"
 certificate_dns=coordinator_fqdn
 
 Chef::Log.info("Coordinator FQDN: #{coordinator_fqdn}")
-
-coordinator = node.ipaddress == coordIP
-
-if ( coordinator )
-    coordinator_fqdn = "localhost"
-    Chef::Log.info("Node is the coordinator changing FQDN to #{coordinator_fqdn}")
-end
 
 thisCiClass = "bom.oneops.1." + configName.slice(0,1).capitalize + configName.slice(1..-1)
 dependentCiClass = thisCiClass.sub('Presto-coordinator', 'Presto')
