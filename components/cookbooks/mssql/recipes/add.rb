@@ -8,6 +8,7 @@ require 'uri'
 version_full = node['mssql']['version']
 cloud_name = node[:workorder][:cloud][:ciName]
 services = node[:workorder][:services]
+ps_script = "#{Chef::Config[:file_cache_path]}/cookbooks/os/files/windows/Run-Script.ps1"
 
 Chef::Log.info( "Installing MS SQL Server edition: #{version_full}")
 
@@ -125,33 +126,60 @@ end #if (ext = '.zip' || ext = '.iso')
 ruby_block 'Adjust PS resource' do
   block do
     
-    ps_script = "#{Chef::Config[:file_cache_path]}/cookbooks/os/files/windows/Run-Script.ps1"
     cmd = "#{ps_script} -ExeFile '#{node['sql_server']['server']['url']}' -ArgList '/q /ConfigurationFile=#{config_file_path}' -Timeout #{node['sql_server']['server']['installer_timeout']}"
-
-    Chef::Log.info( "cmd - #{cmd}")
-    
     r = run_context.resource_collection.find(:powershell_script => 'Run-Setup')
     r.code(cmd)
+
   end #block do
 end #ruby_block 'Adjust PS resource' do
 
 
+features_install = nil
+features_uninstall = nil
+if !(::Win32::Service.exists?(node['sql_server']['instance_name']))
+  Chef::Log.info( "Service does not exist - installing")
+  features_install = node['mssql']['feature_list']
+else
+  if node[:workorder][:rfcCi][:ciBaseAttributes].has_key?('feature_list')
+    Chef::Log.info( "Service exists and feature_list changed - updating")
+    arr_features_base = node[:workorder][:rfcCi][:ciBaseAttributes]['feature_list'].split(',')
+    arr_features_new = node[:workorder][:rfcCi][:ciAttributes]['feature_list'].split(',')
 
-#Generate config file from a template
+    features_install = (arr_features_new - arr_features_base).join(',')
+    features_uninstall = (arr_features_base - arr_features_new).join(',')
+  end
+end #if !(::Win32::Service.exists?(node['sql_server']['instance_name'])
+
+Chef::Log.info( "Features to install: #{features_install}")
+Chef::Log.info( "Features to uninstall: #{features_uninstall}")
+
+#Install features
 template config_file_path do
   cookbook 'mssql'
   source 'ConfigurationFile.ini.erb'
   variables(
-    sqlSysAdminList: sql_sys_admin_list
+    sqlSysAdminList: sql_sys_admin_list,
+    action: 'Install',
+    feature_list: features_install
   )
+  not_if {features_install.nil? || features_install.size == 0}
+end
+
+powershell_script 'Run-Setup' do
+  code "Throw 'Placeholder! Should not have run!'"
+  not_if {features_install.nil? || features_install.size == 0}
+end
+
+#Uninstall features
+setup_file = "#{node['sql_server']['install_dir']}\\#{node['sql_server']['version_num']}\\Setup Bootstrap\\SQLServer#{node['sql_server']['version']}\\setup.exe"
+cmd = "#{ps_script} -ExeFile '#{setup_file}' -ArgList '/Action=Uninstall /Features=#{features_uninstall} /Instancename=#{node['sql_server']['instance_name']} /QUIET=\"True\"' -Timeout #{node['sql_server']['server']['installer_timeout']}"
+powershell_script 'Run-Setup-Uninstall' do
+  code cmd
+  not_if {features_uninstall.nil? || features_uninstall.size == 0}
 end
 
 #TO-DO Add password options to setup command string
 
 #declare a resource to run setup command
-powershell_script 'Run-Setup' do
-  code "Throw 'Placeholder! Should not have run!'"
-  not_if "get-service '#{node['sql_server']['instance_name']}'"
-end
 
 include_recipe 'mssql::configure'
