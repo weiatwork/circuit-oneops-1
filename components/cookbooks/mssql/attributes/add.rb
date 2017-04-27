@@ -39,9 +39,15 @@ end
 default['sql_server']['server_sa_password'] = password
 
 default['sql_server']['version'] = version
+default['sql_server']['version_num'] = case version.to_s
+  when '2008' then '100'
+  when '2012' then '110'
+  when '2014' then '120'
+  when '2016' then '130'
+end
+
 default['sql_server']['instance_name']  = 'MSSQLSERVER'
 default['sql_server']['server']['package_name'] = "Microsoft SQL Server #{version} (64-bit)"
-default['sql_server']['feature_list'] = node['mssql']['feature_list']
 default['sql_server']['sql_temp_db_dir']   = node['mssql']['tempdb_data']
 default['sql_server']['sql_temp_db_log_dir']   = node['mssql']['tempdb_log']
 default['sql_server']['sql_user_db_dir']   = node['mssql']['userdb_data']
