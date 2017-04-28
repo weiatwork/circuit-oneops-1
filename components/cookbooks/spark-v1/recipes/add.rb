@@ -150,7 +150,7 @@ ruby_block "check_spark_archive" do
   end
 end
 
-bash "extrack_spark" do
+bash "extract_spark" do
     user "root"
     code <<-EOF
       NEW_DIR=`tar -tf #{dest_file} |head -n 1 |sed 's|/||'`
@@ -311,6 +311,14 @@ template "/opt/nagios/libexec/check_spark_log.sh" do
   variables ({
     :spark_log_dir => "#{spark_tmp_dir}/logs"
   })
+end
+
+# Create the Spark run directory
+directory "#{spark_tmp_dir}/run" do
+  owner 'spark'
+  group 'spark'
+  mode  '0755'
+  action :create
 end
 
 # Create the Spark service directory
