@@ -31,7 +31,7 @@ assembly_name = JSON.parse(compute_metadata)["assembly"]
 # Pull the config values
 zone_name = serviceConfig[:zone_name]
 
-local_zone = configNode['zone_name']
+local_zone = configNode['centrify_zone']
 if !local_zone.nil? && local_zone != ''
   zone_name = local_zone
 end
