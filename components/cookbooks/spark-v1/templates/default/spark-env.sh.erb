@@ -85,3 +85,4 @@ export SPARK_DAEMON_JAVA_OPTS="-Dspark.deploy.recoveryMode=ZOOKEEPER -Dspark.dep
 <% end %>
 
 export SPARK_LOCAL_DIRS="<%= configNode['spark_tmp_dir'] %>"
+export SPARK_WORKER_DIR="<%= configNode['spark_tmp_dir'] %>/run"
