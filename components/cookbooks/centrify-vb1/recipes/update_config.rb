@@ -25,6 +25,15 @@ bash "backup_config" do
     not_if "/bin/ls #{centrify_config_orig_file}"
 end
 
+# This override file is used to ensure that all users are
+# using bash for their shell
+file "/etc/centrifydc/passwd.ovr" do
+  content "+:::::::/bin/bash"
+  mode    '0644'
+  owner   'root'
+  group   'root'
+end
+
 # Create the configuration from the original settings.
 bash "generate_config" do
   user    "root"
@@ -46,5 +55,7 @@ bash "generate_config" do
   echo "adclient.clients.threads.max 1000" >> "#{centrify_config_file}"
   echo "adclient.use.all.cpus true" >> "#{centrify_config_file}"
   echo "adclient.clients.listen.backlog 500" >> "#{centrify_config_file}"
+
+  echo "nss.group.override /etc/centrifydc/passwd.ovr" >> "#{centrify_config_file}"
   EOF
 end
