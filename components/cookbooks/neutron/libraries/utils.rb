@@ -1,3 +1,4 @@
+
 def initialize_health_monitor(iprotocol, ecv_map, lb_name, iport)
   fail ArgumentError, 'ecv_map is invalid' if ecv_map.nil? || ecv_map.empty?
 
@@ -22,7 +23,7 @@ def initialize_members(subnet_id, protocol_port)
   computes = node[:workorder][:payLoad][:DependsOn].select { |d| d[:ciClassName] =~ /Compute/ }
   computes.each do |compute|
     ip_address = compute["ciAttributes"]["private_ip"]
-    if compute["ciAttributes"].has_key?("private_ipv6")
+    if compute["ciAttributes"].has_key?("private_ipv6") && !compute["ciAttributes"]["private_ipv6"].nil? && !compute["ciAttributes"]["private_ipv6"].empty?
       ip_address = compute["ciAttributes"]["private_ipv6"]
       Chef::Log.info("ipv6 address: #{ip_address}")
     end
