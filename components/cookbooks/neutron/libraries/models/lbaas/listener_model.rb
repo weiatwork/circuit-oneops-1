@@ -6,9 +6,11 @@ class ListenerModel < BaseModel
     HTTP = 'HTTP'
     HTTPS = 'HTTPS'
     TCP = 'TCP'
+    TERMINATED_HTTPS = 'TERMINATED_HTTPS'
+
   end
 
-  def initialize(protocol, protocol_port, tenant_id = nil, loadbalancer_id = nil, id = nil, default_pool_id = nil, provisioning_status = nil, operating_status = nil)
+  def initialize(protocol, protocol_port, tenant_id = nil, loadbalancer_id = nil, id = nil, default_pool_id = nil, provisioning_status = nil, operating_status = nil, default_tls_container_ref = nil)
     fail ArgumentError, 'protocol is invalid' if protocol.nil? || protocol.empty? || !is_valid_protocol(protocol)
     fail ArgumentError, 'protocol_port is invalid' if protocol_port.nil? || !is_valid_port(protocol_port)
 
@@ -23,10 +25,11 @@ class ListenerModel < BaseModel
     @operating_status = operating_status
     @connection_limit = -1
     @label = LabelModel.new
+    @default_tls_container_ref = default_tls_container_ref
   end
 
   attr_reader :tenant_id, :protocol, :protocol_port, :loadbalancer_id, :id, :default_pool_id,
-              :provisioning_status, :operating_status, :connection_limit, :pool
+              :provisioning_status, :operating_status, :connection_limit, :pool, :default_tls_container_ref
 
   def protocol_port=(protocol_port)
     if is_valid_port(protocol_port)
@@ -46,12 +49,17 @@ class ListenerModel < BaseModel
     @pool = pool
   end
 
+  def tls_container=(tls_container)
+    @default_tls_container_ref = tls_container
+  end
+
   def serialize_optional_parameters
     options = {}
     options[:name] = @label.name
     options[:description] = @label.description
     options[:admin_state_up] = @admin_state_up
     options[:connection_limit] = @connection_limit
+    options[:default_tls_container_ref] = @default_tls_container_ref
     if !@tenant_id.nil? then options[:tenant_id] = @tenant_id end
 
     return options
@@ -59,7 +67,7 @@ class ListenerModel < BaseModel
 
   def is_valid_protocol(protocol)
     protocol_upcase = protocol.upcase
-    if protocol_upcase == Protocol::HTTP || protocol_upcase == Protocol::HTTPS || protocol_upcase == Protocol::TCP
+    if protocol_upcase == Protocol::HTTP || protocol_upcase == Protocol::HTTPS || protocol_upcase == Protocol::TCP || protocol_upcase == Protocol::TERMINATED_HTTPS
       true
     else
       fail ArgumentError, 'protocol is invalid'

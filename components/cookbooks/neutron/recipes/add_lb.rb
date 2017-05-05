@@ -7,7 +7,8 @@ require File.expand_path('../../libraries/models/tenant_model', __FILE__)
 require File.expand_path('../../libraries/loadbalancer_manager', __FILE__)
 require File.expand_path('../../libraries/network_manager', __FILE__)
 require File.expand_path('../../libraries/utils', __FILE__)
-
+require File.expand_path('../../../barbican/libraries/barbican_utils', __FILE__)
+require File.expand_path('../../../barbican/libraries/secret_manager', __FILE__)
 #-------------------------------------------------------
 lb_attributes = node[:workorder][:rfcCi][:ciAttributes]
 cloud_name = node[:workorder][:cloud][:ciName]
@@ -21,6 +22,7 @@ persistence_type = lb_attributes[:persistence_type]
 subnet_name = service_lb_attributes[:subnet_name]
 network_manager = NetworkManager.new(tenant)
 subnet_id = network_manager.get_subnet_id(subnet_name)
+barbican_container_name = get_barbican_container_name()
 
 
 include_recipe "neutron::build_lb_name"
@@ -42,7 +44,13 @@ node.loadbalancers.each do |loadbalancer|
 
   members = initialize_members(subnet_id, iport)
   pool = initialize_pool(iprotocol, lb_attributes[:lbmethod], lb_name, members, health_monitor, stickiness, persistence_type)
-  listeners.push(initialize_listener(vprotocol, vport, lb_name, pool))
+  if !barbican_container_name.nil? && !barbican_container_name.empty?
+    secret_manager = SecretManager.new(service_lb_attributes[:endpoint], service_lb_attributes[:username],service_lb_attributes[:password], service_lb_attributes[:tenant] )
+    container_ref = secret_manager.get_container(barbican_container_name)
+    Chef::Log.info("Container_ref : #{container_ref}")
+  end
+
+  listeners.push(initialize_listener(vprotocol, vport, lb_name, pool, container_ref))
 end
 loadbalancer = initialize_loadbalancer(subnet_id, service_lb_attributes[:provider], lb_name, listeners)
 
