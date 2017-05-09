@@ -106,10 +106,9 @@ def process_url(playbook = nil, playbook_dir = nil)
       content node['workorder']['rfcCi']['ciAttributes']['playbook']
     end
   end
+
   # copy a local version of load_role to workspace
-  remote_file "#{playbook_dir}/load_role.py" do
-    source 'file:///etc/ansible/script/load_role.py'
-  end
+  execute "cp /etc/ansible/script/load_role.py #{playbook_dir}/load_role.py"
 
   ruby_block 'install missing role' do
     block do
