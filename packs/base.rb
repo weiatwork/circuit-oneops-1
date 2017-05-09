@@ -85,7 +85,7 @@ resource "os",
   :cookbook => "oneops.1.os",
   :design => true,
   :requires => { "constraint" => "1..1", "services" => "compute,dns,*mirror,*ntp,*windows-domain" },
-  :attributes => { "ostype"  => "centos-7.0",
+  :attributes => { "ostype"  => "centos-7.2",
                    "dhclient"  => 'true'
                  },
   :monitors => {
