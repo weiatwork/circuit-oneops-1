@@ -22,7 +22,7 @@ def initialize_members(subnet_id, protocol_port)
   computes = node[:workorder][:payLoad][:DependsOn].select { |d| d[:ciClassName] =~ /Compute/ }
   computes.each do |compute|
     ip_address = compute["ciAttributes"]["private_ip"]
-    if compute["ciAttributes"].has_key?("private_ipv6")
+    if compute["ciAttributes"].has_key?("private_ipv6") && !compute["ciAttributes"]["private_ipv6"].nil? && !compute["ciAttributes"]["private_ipv6"].empty?
       ip_address = compute["ciAttributes"]["private_ipv6"]
       Chef::Log.info("ipv6 address: #{ip_address}")
     end
@@ -47,11 +47,10 @@ def initialize_pool(iprotocol, lb_algorithm, lb_name, members, health_monitor, s
   return pool
 end
 
-def initialize_listener(vprotocol, vprotocol_port, lb_name, pool)
-  listener = ListenerModel.new(vprotocol, vprotocol_port)
+def initialize_listener(vprotocol, vprotocol_port, lb_name, pool, default_container_ref=nil)
+  listener = ListenerModel.new(vprotocol, vprotocol_port,default_tls_container_ref=default_container_ref)
   listener.label.name=lb_name + '-listener'
   listener.pool=pool
-
   return listener
 end
 
@@ -104,5 +103,14 @@ def get_dc_lb_names()
   end
 
   return vnames
+end
+
+def get_barbican_container_name()
+  certs = node.workorder.payLoad.DependsOn.select { |d| d["ciClassName"] =~ /Certificate/ }
+  certs.each do |cert|
+    cert_name =  cert[:ciId].to_s + "_tls_cert_container"
+    Chef::Log.info("tls cert name : #{cert_name}")
+    return cert_name
+  end
 end
 

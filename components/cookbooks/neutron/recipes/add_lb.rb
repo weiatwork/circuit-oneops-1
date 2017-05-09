@@ -48,9 +48,11 @@ node.loadbalancers.each do |loadbalancer|
     secret_manager = SecretManager.new(service_lb_attributes[:endpoint], service_lb_attributes[:username],service_lb_attributes[:password], service_lb_attributes[:tenant] )
     container_ref = secret_manager.get_container(barbican_container_name)
     Chef::Log.info("Container_ref : #{container_ref}")
+    listeners.push(initialize_listener(vprotocol, vport, lb_name, pool, container_ref))
+  else
+    listeners.push(initialize_listener(vprotocol, vport, lb_name, pool))
   end
 
-  listeners.push(initialize_listener(vprotocol, vport, lb_name, pool, container_ref))
 end
 loadbalancer = initialize_loadbalancer(subnet_id, service_lb_attributes[:provider], lb_name, listeners)
 

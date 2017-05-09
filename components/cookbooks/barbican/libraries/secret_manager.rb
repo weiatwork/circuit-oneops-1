@@ -7,8 +7,6 @@ require 'fog/openstack'
 require 'fog/core'
 require 'fog/openstack/core'
 
-#require '/Users/kpalan1/.rvm/gems/ruby-2.0.0-p647/gems/fog-openstack-0.1.20/lib/fog/openstack/core.rb'
-#require '/Users/kpalan1/.rvm/gems/ruby-2.0.0-p647/gems/fog-openstack-0.1.20/lib/fog/openstack.rb'
 require 'json'
 require 'excon'
 
@@ -32,7 +30,6 @@ class SecretManager
   def create(secret)
     fail ArgumentError, 'secret is nil' if secret.nil?
     key_manager = Fog::KeyManager::OpenStack.new(@connection_params)
-    Chef::Log.info secret.inspect
 
     if get_secret(secret['name']) == false #check whether the secret with same name exist before creating new
       response = key_manager.create_secret  payload_content_type: secret['payload_content_type'],
@@ -43,10 +40,8 @@ class SecretManager
                                               bit_length: 256
 
       secret_ref = (response.data[:body])['secret_ref']
-
       # Make fog call to create secrets
       if !secret_ref.nil?
-        Chef::Log.info "secret_ref : #{secret_ref}"
         return secret_ref
       else
         return false
@@ -61,12 +56,9 @@ class SecretManager
     response = (key_manager.list_secrets())
     secrets_list= Array.new
     secrets_list = (response.data[:body])['secrets']
-    Chef::Log.info("secret_name : #{secret_name}")
-
     if !secrets_list.nil?
       secrets_list.each do |secret|
         if secret['name'] == secret_name
-          Chef::Log.info("#{secret['name']} == #{secret_name}")
           return secret['secret_ref']
         end
       end
@@ -170,7 +162,6 @@ class SecretManager
         end
 
       else
-        cleanup_all(certificate,private_key,passphrase,intermediates)
         raise "Cannot create container, container with name #{container_name} already exists."
       end
       else
@@ -178,7 +169,6 @@ class SecretManager
 
       end
     rescue Exception => e
-      cleanup_all(certificate,private_key,passphrase,intermediates)
       raise e.inspect
     end
   end
@@ -211,8 +201,6 @@ class SecretManager
   def get_container(container_name)
     key_manager = Fog::KeyManager::OpenStack.new(@connection_params)
     response = key_manager.list_containers()
-    Chef::Log.info ("response:")
-    Chef::Log.info(response.inspect)
     container_list = (response.data[:body])['containers']
     if !container_list.nil?
       container_list.each do |container|
@@ -227,17 +215,11 @@ class SecretManager
   end
 
   def cleanup_all(certificate,private_key,passphrase,intermediates)
-    #delete(certificate.split('/').last)
-   # delete(private_key.split('/').last)
-   # delete(intermediates.split('/').last)
-   # delete(passphrase.split('/').last)
+    delete(certificate.split('/').last)
+    delete(private_key.split('/').last)
+    delete(intermediates.split('/').last)
+    delete(passphrase.split('/').last)
   end
 
-  def cleanup(secret_name)
-    ref=get_secret(secret_name)
-    if ref != false
-     # delete(ref.split('/').last)
-    end
-  end
 
 end

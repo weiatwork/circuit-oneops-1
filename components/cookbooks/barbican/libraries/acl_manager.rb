@@ -7,8 +7,6 @@ require 'fog/openstack'
 require 'fog/core'
 require 'fog/openstack/core'
 
-#require '/Users/kpalan1/.rvm/gems/ruby-2.0.0-p647/gems/fog-openstack-0.1.20/lib/fog/openstack/core.rb'
-#require '/Users/kpalan1/.rvm/gems/ruby-2.0.0-p647/gems/fog-openstack-0.1.20/lib/fog/openstack.rb'
 require 'json'
 require 'excon'
 
@@ -21,7 +19,6 @@ class ACLManager
         openstack_username:     "#{username}",
         openstack_api_key:      "#{password}",
         openstack_project_name: "#{tenantname}",
-        #openstack_tenant:       "#{tenantname}",
         openstack_domain_id:    "default"
 
     }
@@ -35,30 +32,33 @@ class ACLManager
     if !acl_obj.nil?
       return acl_obj
     end
-
-
-
-
   end
 
   def replace_secret_acl(secret_uuid, user_id_list)
     key_manager = Fog::KeyManager::OpenStack.new(@connection_params)
-    user_uuid = Array.new
-
+    uuid_list = get_uuid_list(user_id_list)
     data = {
         'read' => {
-            'users'  => user_id_list,
+            'users'  => uuid_list,
             'project-access' => true
         }
     }
-
-    response = key_manager.replace_secret_acl("17ca49d9-0804-4ba7-b931-d34cabaa1f04",
+    response = key_manager.replace_secret_acl(secret_uuid,
                                               data)
     return response.data
-
-
   end
 
+  def get_uuid_list(user_id_list)
+    identity_manager = Fog::Identity::OpenStack.new(@connection_params)
+    uuid_list = Array.new
+    user_id_list.each do | user_name |
+      response = identity_manager.get_user_by_name(user_name)
+      data = response.data[:body]
+      user_list = data['users']
+      uuid_list.push(user_list[0]['id'])
+    end
+    uuid_list
+  end
 
   def delete_secret_acl(secret_ref)
     key_manager = Fog::KeyManager::OpenStack.new(@connection_params)
@@ -68,33 +68,26 @@ class ACLManager
 
 
   def get_container_acl(secret_ref)
-
     key_manager = Fog::KeyManager::OpenStack.new(@connection_params)
     acl_obj = key_manager.get_container_acl(secret_ref.split("/").last)
     if !acl_obj.nil?
       return acl_obj
     end
-
-
-
-
   end
 
 
-  def replace_container_acl(secret_ref, user_id_list)
+  def replace_container_acl(secret_uuid, user_id_list)
     key_manager = Fog::KeyManager::OpenStack.new(@connection_params)
+    uuid_list = get_uuid_list(user_id_list)
     data = {
         'read' => {
-            'users'  => user_id_list,
+            'users'  => uuid_list,
             'project-access' => true
         }
     }
-
-    response = key_manager.replace_container_acl(secret_ref.split("/").last,
+    response = key_manager.replace_container_acl(secret_uuid,
                                                  data)
     return response.data
-
-
   end
 
 
