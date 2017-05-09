@@ -1,5 +1,4 @@
 require 'date'
-#raise "certificate::add stopping ..."
 cloud_name = node[:workorder][:cloud][:ciName]
 provider = ""
 auto_provision = node.workorder.rfcCi.ciAttributes.auto_provision

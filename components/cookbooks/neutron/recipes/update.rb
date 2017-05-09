@@ -165,7 +165,7 @@ begin
   if !config_items_changed.has_key?("listeners")
     computes.each do |compute|
       new_ip_address = compute["ciAttributes"]["private_ip"]
-      if compute["ciAttributes"].has_key?("private_ipv6")
+      if compute["ciAttributes"].has_key?("private_ipv6") && !compute["ciAttributes"]["private_ipv6"].nil? && !compute["ciAttributes"]["private_ipv6"].empty?
         new_ip_address = compute["ciAttributes"]["private_ipv6"]
         Chef::Log.info("ipv6 address: #{new_ip_address}")
       end
@@ -191,7 +191,7 @@ begin
           is_member_still_exist = false
           computes.each do | compute |
             ip_address = compute["ciAttributes"]["private_ip"]
-            if compute["ciAttributes"].has_key?("private_ipv6")
+            if compute["ciAttributes"].has_key?("private_ipv6") && !compute["ciAttributes"]["private_ipv6"].nil? && !compute["ciAttributes"]["private_ipv6"].empty?
               ip_address = compute["ciAttributes"]["private_ipv6"]
             end
             if ip_address == member.ip_address.to_s

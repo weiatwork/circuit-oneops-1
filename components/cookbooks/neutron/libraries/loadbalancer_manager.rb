@@ -30,7 +30,6 @@ class LoadbalancerManager
       loadbalancer_id = @loadbalancer_dao.create_loadbalancer(loadbalancer)
 
       if !loadbalancer_id.nil?
-        begin
         loadbalancer.listeners.each do |listener|
           Chef::Log.info("Adding listener to loadbalancer:#{loadbalancer.label.name} ... ")
           listener_id = @listener_dao.create_listener(loadbalancer_id, listener)
@@ -43,15 +42,18 @@ class LoadbalancerManager
           Chef::Log.info("Adding health monitor to pool id:#{pool_id} ... ")
           @health_monitor_dao.create_health_monitor(loadbalancer_id, pool_id, listener.pool.health_monitor)
         end
-        rescue Exception => e
-          Chef::Log.warn(e.inspect)
-          cleanup_and_raise_exception(loadbalancer.label.name)
-        end
-        end
+      end
     else
       raise("Cannot create Loadbalancer #{loadbalancer.label.name} already exist.")
     end
-    cleanup_and_raise_exception(loadbalancer.label.name)
+
+    lb_id = @loadbalancer_dao.get_loadbalancer_id(loadbalancer.label.name)
+    loadbalancer = @loadbalancer_dao.get_loadbalancer(lb_id)
+    if  loadbalancer.provisioning_status == "ERROR"
+      delete_loadbalancer(loadbalancer.label.name)
+      raise("Cannot create Loadbalancer #{loadbalancer.label.name} due to unknown error, deleted the lb in ERROR state.")
+    end
+
     return loadbalancer_id
   end
 
@@ -105,20 +107,4 @@ class LoadbalancerManager
     return true
   end
 
-  def cleanup_and_raise_exception(lb_name)
-    lb_id = @loadbalancer_dao.get_loadbalancer_id(lb_name)
-    loadbalancer = @loadbalancer_dao.get_loadbalancer(lb_id)
-    if  loadbalancer.provisioning_status == "ERROR"
-      delete_loadbalancer(lb_name)
-      raise("Cannot create Loadbalancer #{lb_name} due to unknown error, cleaned up the lb in ERROR state.")
-     elsif  loadbalancer.provisioning_status == "ACTIVE" #sometimes lb will be in active state ,but exceptions may cause listener addition to fail. this will cleanup the lb created in such scenarios
-        delete_loadbalancer(lb_name)
-        raise("Loadbalancer #{lb_name} creation could not be completed due to unknown exception, cleaned up the lb")
-      end
-  end
-
 end
-
-
-
-
