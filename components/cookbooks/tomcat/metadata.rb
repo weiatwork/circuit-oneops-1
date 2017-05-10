@@ -35,7 +35,7 @@ attribute 'tomcat_install_dir',
           }
 
 attribute 'mirrors',
-          :description => "Depracated - Binary distribution mirrors",
+          :description => "Deprecated - Binary distribution mirrors",
           :data_type => 'array',
           #:default => '["http://archive.apache.org/dist","http://apache.cs.utah.edu" ]',
           :format => {
@@ -53,7 +53,7 @@ attribute 'version',
               :help => 'Version of Tomcat',
               :category => '1.Global',
               :order => 4,
-              :form => {'field' => 'select', 'options_for_select' => [['6.0 - Depracated', '6.0'], ['7.0 - Depracated', '7.0'], ['7.0.75', '7.0.75'], ['8.5.12', '8.5.12']]},
+              :form => {'field' => 'select', 'options_for_select' => [['6.0 - Deprecated', '6.0'], ['7.0 - Deprecated', '7.0'], ['7.0.75', '7.0.75'], ['8.5.12', '8.5.12']]},
               :pattern => "[0-9\.]+"
           }
 
