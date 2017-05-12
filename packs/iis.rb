@@ -31,7 +31,7 @@ variable "drive_name",
   :value       => 'E'
 
 resource "compute",
-         :attributes => {"size" => "M-WIN"}
+  :attributes => {"size" => "M-WIN"}
 
 resource "iis-website",
   :cookbook     => "oneops.1.iis-website",
@@ -44,7 +44,8 @@ resource "iis-website",
     "physical_path" => '$OO_LOCAL{app_directory}',
     "log_file_directory" => '$OO_LOCAL{log_directory}',
     "dc_file_directory" => '$OO_LOCAL{log_directory}\\IISTemporaryCompressedFiles',
-    "sc_file_directory" => '$OO_LOCAL{log_directory}\\IISTemporaryCompressedFiles'
+    "sc_file_directory" => '$OO_LOCAL{log_directory}\\IISTemporaryCompressedFiles',
+    "windows_authentication" => 'false'
   }
 
 resource "dotnetframework",
@@ -170,6 +171,25 @@ resource "nuget-package",
     }
   }
 
+resource "windowsservice",
+  :cookbook     => "oneops.1.windowsservice",
+  :design       => true,
+  :requires     => {
+    :constraint => "0..*",
+    :help       => "Installing a service in windows"
+  },
+  :attributes   => {
+    "service_name"             => '',
+    "path"                     => '',
+    "cmd_path"                 => '$OO_LOCAL{app_directory}',
+    "user_account"             => 'NT AUTHORITY\LocalService'
+  }
+
+resource "lb",
+  :attributes => {
+    "listeners" => "[\"http 80 http 80\"]",
+  }
+
 resource "secgroup",
   :attributes => {
     "inbound" => '[ "22 22 tcp 0.0.0.0/0", "3389 3389 tcp 0.0.0.0/0", "80 80 tcp 0.0.0.0/0", "443 443 tcp 0.0.0.0/0"]'
@@ -189,6 +209,8 @@ resource "volume",
   }
 
 [ { :from => 'iis-website', :to => 'dotnetframework' },
+  { :from => 'iis-website', :to => 'volume' },
+  { :from => 'windowsservice', :to => 'iis-website' },
   { :from => 'dotnetframework', :to => 'os' },
   { :from => 'chocolatey-package', :to => 'volume' },
   { :from => 'nuget-package', :to => 'iis-website' } ].each do |link|
@@ -205,7 +227,7 @@ relation "iis-website::depends_on::certificate",
   :to_resource => 'certificate',
   :attributes => {"propagate_to" => "from", "flex" => false, "min" => 1, "max" => 1}
 
-[ 'iis-website', 'nuget-package', 'dotnetframework', 'chocolatey-package' , 'volume', 'os' ].each do |from|
+[ 'iis-website', 'nuget-package', 'dotnetframework', 'windowsservice' , 'chocolatey-package' , 'volume', 'os' ].each do |from|
   relation "#{from}::managed_via::compute",
     :except => [ '_default' ],
     :relation_name => 'ManagedVia',
