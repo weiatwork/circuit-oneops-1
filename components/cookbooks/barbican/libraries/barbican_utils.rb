@@ -1,6 +1,4 @@
-#module BarbicanUtils
-
-  def get_service_info(manager_class)
+ def get_service_info(manager_class)
     service_hash = {}
 
     cloud_name = node[:workorder][:cloud][:ciName]
@@ -28,27 +26,40 @@
     certificate_attributes = node[:workorder][:rfcCi][:ciAttributes]
     ciID = (node[:workorder][:rfcCi][:ciId]).to_s
     cert_hash = {}
-    cert_hash[:content] = node[:workorder][:rfcCi][:ciAttributes][:cert]
-    cert_hash[:secret_name] = ciID + "_certificate"
-    secrets.push(cert_hash)
+    if !node[:workorder][:rfcCi][:ciAttributes][:cert].nil? && !node[:workorder][:rfcCi][:ciAttributes][:cert].empty?
+      cert_hash[:content] = node[:workorder][:rfcCi][:ciAttributes][:cert]
+      cert_hash[:secret_name] = ciID + "_certificate"
+      secrets.push(cert_hash)
+    else
+      raise "configuration error: certificate content is empty"
+    end
 
     chain_hash = {}
-    chain_hash[:content] = node[:workorder][:rfcCi][:ciAttributes][:cacertkey]
-    chain_hash[:secret_name] = ciID + "_intermediates"
-
-    secrets.push(chain_hash)
+    if !node[:workorder][:rfcCi][:ciAttributes][:cacertkey].nil? && !node[:workorder][:rfcCi][:ciAttributes][:cacertkey].empty?
+      chain_hash[:content] = node[:workorder][:rfcCi][:ciAttributes][:cacertkey]
+      chain_hash[:secret_name] = ciID + "_intermediates"
+      secrets.push(chain_hash)
+    else
+      raise "configuration error: intermediate certificate chain is empty"
+    end
 
 
     key_hash = {}
-    key_hash[:content] = node[:workorder][:rfcCi][:ciAttributes][:key]
-    key_hash[:secret_name] = ciID +"_privatekey"
+    if !node[:workorder][:rfcCi][:ciAttributes][:key].nil? && !node[:workorder][:rfcCi][:ciAttributes][:key].empty?
+      key_hash[:content] = node[:workorder][:rfcCi][:ciAttributes][:key]
+      key_hash[:secret_name] = ciID +"_privatekey"
+      secrets.push(key_hash)
+    else
+      raise "configuration error: private key is empty"
+    end
 
-    secrets.push(key_hash)
     passphrase_hash = {}
-    passphrase_hash[:content] = node[:workorder][:rfcCi][:ciAttributes][:passphrase]
-    passphrase_hash[:secret_name] = ciID + "_privatekey_passphrase"
+    if !node[:workorder][:rfcCi][:ciAttributes][:passphrase].nil? && !node[:workorder][:rfcCi][:ciAttributes][:passphrase].empty?
+     passphrase_hash[:content] = node[:workorder][:rfcCi][:ciAttributes][:passphrase]
+      passphrase_hash[:secret_name] = ciID + "_privatekey_passphrase"
+      secrets.push(passphrase_hash)
+    end
 
-    secrets.push(passphrase_hash)
     node.set["secrets_hash"] =  secrets
     node.set["cert_container_name"] = ciID + "_tls_cert_container"
     secrets
@@ -114,7 +125,7 @@
     rescue => ex
       Chef::Log.error(ex.inspect)
       actual_err = "An error of type #{ex.class} happened, message is #{ex.message}"
-      msg = "Exception deleting secret #{@new_resource.secret_name} through Barbican API , " + actual_err
+      msg = "Exception deleting secret #{secret_name} through Barbican API , " + actual_err
       puts "***FAULT:FATAL=#{msg}"
       e = Exception.new(msg)
       raise e
@@ -126,7 +137,6 @@
         raise Exception.new("cert_ref  is required") if cert_name.nil?
         raise Exception.new("private_key_ref  is required") if private_key_name.nil?
         raise Exception.new("intermediates_ref  is required") if intermediates_name.nil?
-        raise Exception.new("private_key_passphrase_ref is required") if private_key_passphrase_name.nil?
         raise Exception.new("container_name is required") if container_name.nil?
         raise Exception.new("type is required") if container_type.nil?
 
@@ -164,8 +174,3 @@
       raise e
     end
   end
-
-
- # module_function :get_service_info, :get_secrets_wo, :add_secret, :delete_secret, :create_container, :delete_container, :replace_acl
-
-#end

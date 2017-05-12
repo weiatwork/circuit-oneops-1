@@ -98,7 +98,6 @@ class SecretManager
     fail ArgumentError, 'certificate is nil' if certificate.nil? || certificate.empty?
     fail ArgumentError, 'private_key is nil' if private_key.nil? || private_key.empty?
     fail ArgumentError, 'intermediates is nil' if intermediates.nil? || intermediates.empty?
-    fail ArgumentError, 'passphrase is nil' if passphrase.nil? || passphrase.empty?
 
     begin
       Chef::Log.info("certificate: #{certificate}")
@@ -115,10 +114,8 @@ class SecretManager
       intermediates_ref = get_secret(intermediates)
       Chef::Log.info("intermediates_ref:#{intermediates_ref}")
 
-      private_key_passphrase_ref = get_secret(passphrase)
-      Chef::Log.info("private_key_passphrase_ref:#{private_key_passphrase_ref}")
 
-      if cert_ref != false && private_key_ref != false && intermediates_ref != false && private_key_passphrase_ref != false
+      if cert_ref != false && private_key_ref != false && intermediates_ref != false
 
         certificate_hash ={
             name: "certificate",
@@ -130,10 +127,7 @@ class SecretManager
             secret_ref: private_key_ref
         }
 
-        private_key_passphrase_hash ={
-            name: "private_key_passphrase",
-            secret_ref: private_key_passphrase_ref
-        }
+
 
         intermediates_hash ={
             name: "intermediates",
@@ -143,10 +137,20 @@ class SecretManager
         secret_refs = Array.new
         secret_refs.push(certificate_hash)
         secret_refs.push(private_key_hash)
-        secret_refs.push(private_key_passphrase_hash)
         secret_refs.push(intermediates_hash)
 
-      if get_container(container_name) == false
+        if !passphrase.nil?
+          private_key_passphrase_ref = get_secret(passphrase)
+          Chef::Log.info("private_key_passphrase_ref:#{private_key_passphrase_ref}")
+          private_key_passphrase_hash ={
+              name: "private_key_passphrase",
+              secret_ref: private_key_passphrase_ref
+          }
+          secret_refs.push(private_key_passphrase_hash)
+        end
+
+
+        if get_container(container_name) == false
         key_manager = Fog::KeyManager::OpenStack.new(@connection_params)
         response = key_manager.create_container name: container_name,
                                                       type: type,
@@ -165,6 +169,7 @@ class SecretManager
         raise "Cannot create container, container with name #{container_name} already exists."
       end
       else
+
         raise "Cannot create container, one of the secret is missing"
 
       end
