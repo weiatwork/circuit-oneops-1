@@ -48,9 +48,12 @@ def initialize_pool(iprotocol, lb_algorithm, lb_name, members, health_monitor, s
 end
 
 def initialize_listener(vprotocol, vprotocol_port, lb_name, pool, default_container_ref=nil)
-  listener = ListenerModel.new(vprotocol, vprotocol_port,default_tls_container_ref=default_container_ref)
+  listener = ListenerModel.new(vprotocol, vprotocol_port)
   listener.label.name=lb_name + '-listener'
   listener.pool=pool
+  if !default_container_ref.nil?
+    listener.tls_container=default_container_ref
+  end
   return listener
 end
 
