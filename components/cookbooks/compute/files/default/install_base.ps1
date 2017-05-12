@@ -91,7 +91,7 @@ if ( $proxy -ne "" -and $proxy -ne $null) {
 }
 
 if ( $chocoRepo -ne "" -and $chocoRepo -ne $null ) {
-  #choco source disable -y --name="chocolatey"
+  choco source disable -y --name="chocolatey"
   choco source add -y --name='internal' --source=$chocoRepo --priority=1
 }
 
@@ -160,7 +160,7 @@ Set-Content C:\cygwin64\opt\oneops\rubygems_proxy $gemRepo
 
 #grant full access on Cygwin folders to oneops user
 @("\var\lib", "\var\cache", "\var\run", "\etc", "\opt") | % {takeown /F C:\Cygwin64$_ /D Y /R}
-@("\var\lib", "\var\cache", "\var\run", "\etc", "\opt") | % {icacls C:\Cygwin64$_ /grant oneops:`(OI`)`(CI`)F /T /C}
+@("\var\lib", "\var\cache", "\var\run", "\etc", "\opt") | % {icacls C:\Cygwin64$_ /grant oneops:`(OI`)`(CI`)F /T /C /q}
 
 Set-Location "C:\"
 Write-Output "End of windows install_base script"
