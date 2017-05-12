@@ -8,9 +8,16 @@ identity_type = site.identity_type
 binding_type = site.binding_type
 binding_port = site.binding_port
 physical_path = site.physical_path
+log_directory_path = site.log_file_directory
+sc_directory_path = site.sc_file_directory
+dc_directory_path = site.dc_file_directory
 
 site_bindings = [{ 'protocol' => binding_type,
                    'binding_information' => "*:#{binding_port}:" }]
+
+powershell_script "Allow Port #{binding_port}" do
+  code "netsh advfirewall firewall add rule name=\"Allow port #{binding_port}\" dir=in action=allow protocol=TCP localport=#{binding_port}"
+end
 
 website_physical_path = ::File.join(physical_path, platform_name)
 
@@ -35,8 +42,10 @@ certs.each do |cert|
   end
 end
 
-directory physical_path do
-  recursive true
+%W( #{physical_path} #{sc_directory_path} #{dc_directory_path} #{log_directory_path}).each do | path |
+  directory path do
+    recursive true
+  end
 end
 
 iis_app_pool platform_name do
@@ -81,8 +90,8 @@ include_recipe 'iis::disable_ssl'
 include_recipe 'iis::enable_tls'
 
 iis_log_location 'setting log location' do
-  central_w3c_log_file_directory site.log_file_directory
-  central_binary_log_file_directory site.log_file_directory
+  central_w3c_log_file_directory log_directory_path
+  central_binary_log_file_directory log_directory_path
 end
 
 iis_urlcompression 'configure url compression and parameters' do
@@ -95,7 +104,7 @@ end
 iis_compression 'configure compression parameters' do
   max_disk_usage site.compression_max_disk_usage.to_i
   min_file_size_to_compress site.compresion_min_file_size.to_i
-  directory site.sc_file_directory
+  directory sc_directory_path
   only_if { site.enable_static_compression.to_bool }
 end
 
@@ -104,7 +113,7 @@ iis_staticcompression 'configure static compression paramters' do
   mime_types site.sc_mime_types.to_h
   cpu_usage_to_disable site.sc_cpu_usage_to_disable.to_i
   cpu_usage_to_reenable site.sc_cpu_usage_to_reenable.to_i
-  directory site.sc_file_directory
+  directory sc_directory_path
   only_if { site.enable_static_compression.to_bool }
 end
 
@@ -113,7 +122,7 @@ iis_dynamiccompression 'configure dynamic compression paramters' do
   mime_types site.dc_mime_types.to_h
   cpu_usage_to_disable site.dc_cpu_usage_to_disable.to_i
   cpu_usage_to_reenable site.dc_cpu_usage_to_reenable.to_i
-  directory site.dc_file_directory
+  directory dc_directory_path
   only_if { site.enable_dynamic_compression.to_bool }
 end
 
