@@ -53,7 +53,7 @@ class SecretManager
 
   def get_secret(secret_name)
     key_manager = Fog::KeyManager::OpenStack.new(@connection_params)
-    response = (key_manager.list_secrets())
+    response = (key_manager.list_secrets(limit: 10000000))
     secrets_list= Array.new
     secrets_list = (response.data[:body])['secrets']
     if !secrets_list.nil?

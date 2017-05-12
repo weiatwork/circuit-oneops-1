@@ -23,7 +23,7 @@ elsif secrets.count == 3
 end
 
 user_list = Array.new
-user_list.push("octavia")
+user_list.push("neutron")
 
 replace_acl(container_name,user_list,"container")
 
