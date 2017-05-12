@@ -17,7 +17,7 @@ Function Get-RandomPassword ($length = 14)
   {
     $pos = Get-Random -Count 1 -Input ($al_index)
     $al_value[$pos] = [char](Get-Random -Count 1 -Input ($group))
-	$al_index.Remove($pos)
+    $al_index.Remove($pos)
   }
   
   [string]$sPassword = -Join $al_value
@@ -41,4 +41,6 @@ New-Item "C:\cygwin64\home\$username\.ssh" -ItemType Directory
 Copy-Item "C:\Users\$cloudbase_user\.ssh\*" "C:\cygwin64\home\$username\.ssh\"
 
 #Make this user an owner of home dir
-Invoke-Command -ScriptBlock {icacls "C:\cygwin64\home\$username" /setowner $username /T /C} 
+Invoke-Command -ScriptBlock {icacls "C:\cygwin64\home\$username" /setowner $username /T /C /q} 
+
+Invoke-Command -ScriptBlock {net user Administrator /logonpasswordchg:yes}
