@@ -44,7 +44,7 @@ node.loadbalancers.each do |loadbalancer|
 
   members = initialize_members(subnet_id, iport)
   pool = initialize_pool(iprotocol, lb_attributes[:lbmethod], lb_name, members, health_monitor, stickiness, persistence_type)
-  if !barbican_container_name.nil? && !barbican_container_name.empty?
+  if !barbican_container_name.nil? && !barbican_container_name.empty? && vprotocol == 'TERMINATED_HTTPS'
     secret_manager = SecretManager.new(service_lb_attributes[:endpoint], service_lb_attributes[:username],service_lb_attributes[:password], service_lb_attributes[:tenant] )
     container_ref = secret_manager.get_container(barbican_container_name)
     Chef::Log.info("Container_ref : #{container_ref}")
