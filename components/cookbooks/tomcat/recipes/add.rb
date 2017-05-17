@@ -90,6 +90,8 @@ if ( node.workorder.rfcCi.ciBaseAttributes.has_key?("version") &&
   include_recipe "tomcat::cleanup"
 end
 
+
+
 case node.tomcat.install_type
 when "repository"
   include_recipe "tomcat::add_repo"
@@ -161,6 +163,7 @@ end
     not_if "test -d #{dir_name}"
   end
   execute "chown -R #{node.tomcat_owner}:#{node.tomcat_group} #{dir_name}"
+  execute "chmod -R 0755 #{dir_name}"
 end
 
 link node['tomcat']['webapp_install_dir'] do
