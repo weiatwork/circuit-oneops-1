@@ -73,7 +73,8 @@ describe 'Utils' do
       health_monitor = initialize_health_monitor("http", "{\"8080\":\"GET /\"}", "lb_name", "8080")
       members=MemberModel.new('123.123.123.123', 80, 'subnet_id')
       pool = initialize_pool("http","Round Robin", "lb_name", members, health_monitor, true, "COOKIE")
-      listener = initialize_listener("http", 80, "lb_name", pool)
+      container_ref = 'https://test.com:9311/v1/containers/a4622ffb-6312-4625-ae95-d40b407384c4'
+      listener = initialize_listener("http", 80, "lb_name", pool, container_ref)
 
       expect(listener.serialize_optional_parameters).to include(:name)
     end
@@ -82,16 +83,19 @@ describe 'Utils' do
       health_monitor = initialize_health_monitor("http", "{\"8080\":\"GET /\"}", "lb_name", "8080")
       members=MemberModel.new('123.123.123.123', 80, 'subnet_id')
       pool = initialize_pool("http","Round Robin", "lb_name", members, health_monitor, true, "COOKIE")
+      container_ref = 'https://test.com:9311/v1/containers/a4622ffb-6312-4625-ae95-d40b407384c4'
 
-      expect{initialize_listener("httpsssss", 80, "lb_name", pool)}.to raise_error("protocol is invalid")
+      expect{initialize_listener("httpsssss", 80, "lb_name", pool, container_ref)}.to raise_error("protocol is invalid")
     end
 
     it 'should raise exception for invalid vport' do
       health_monitor = initialize_health_monitor("http", "{\"8080\":\"GET /\"}", "lb_name", "8080")
       members=MemberModel.new('123.123.123.123', 80, 'subnet_id')
+      container_ref = 'https://test.com:9311/v1/containers/a4622ffb-6312-4625-ae95-d40b407384c4'
+
       pool = initialize_pool("http","Round Robin", "lb_name", members, health_monitor, true, "COOKIE")
 
-      expect{initialize_listener("https", 29090909, "lb_name", pool)}.to raise_error("protocol_port is invalid")
+      expect{initialize_listener("https", 29090909, "lb_name", pool, container_ref)}.to raise_error("protocol_port is invalid")
     end
 
   end
@@ -103,7 +107,9 @@ describe 'Utils' do
       members=MemberModel.new('123.123.123.123', 80, 'subnet_id')
       health_monitor = initialize_health_monitor("http", "{\"8080\":\"GET /\"}", "lb_name", "8080")
       pool = initialize_pool("http","Round Robin", "lb_name", members, health_monitor, true, "COOKIE")
-      listener = initialize_listener("http", 80, "lb_name", pool)
+      container_ref = 'https://test.com:9311/v1/containers/a4622ffb-6312-4625-ae95-d40b407384c4'
+
+      listener = initialize_listener("http", 80, "lb_name", pool, container_ref)
       lb =  initialize_loadbalancer("subnet_id","octavia","lb_name",listener)
 
       expect(listener.serialize_optional_parameters).to include(:name)
@@ -114,7 +120,9 @@ describe 'Utils' do
       health_monitor = initialize_health_monitor("http", "{\"8080\":\"GET /\"}", "lb_name", "8080")
 
       pool = initialize_pool("http","Round Robin", "lb_name", members, health_monitor, true, "COOKIE")
-      listener = initialize_listener("http", 80, "lb_name", pool)
+      container_ref = 'https://test.com:9311/v1/containers/a4622ffb-6312-4625-ae95-d40b407384c4'
+
+      listener = initialize_listener("http", 80, "lb_name", pool, container_ref)
       lb =  initialize_loadbalancer("subnet_id","octavia","lb_name",listener)
 
       expect{initialize_loadbalancer("subnet_id","octavia",nil,listener)}.to raise_error(StandardError)
@@ -125,7 +133,9 @@ describe 'Utils' do
       health_monitor = initialize_health_monitor("http", "{\"8080\":\"GET /\"}", "lb_name", "8080")
 
       pool = initialize_pool("http","Round Robin", "lb_name", members, health_monitor, true, "COOKIE")
-      listener = initialize_listener("http", 80, "lb_name", pool)
+      container_ref = 'https://test.com:9311/v1/containers/a4622ffb-6312-4625-ae95-d40b407384c4'
+
+      listener = initialize_listener("http", 80, "lb_name", pool, container_ref)
       lb =  initialize_loadbalancer("subnet_id","octavia","lb_name",listener)
 
       expect(initialize_loadbalancer("subnet_id","octavia","lb_name",nil).serialize_optional_parameters).to include(:name)
