@@ -117,7 +117,7 @@
 }'
 
       stub_request(:post, "http://10.0.2.15:9696/v2.0/lbaas/listeners").
-          with(:body => "{\"listener\":{\"loadbalancer_id\":\"8e5aee5f-5dda-43bc-809c-fd5ee2a191e4\",\"protocol\":\"HTTP\",\"protocol_port\":\"80\",\"name\":\"unit-test-lb-http-listener\",\"description\":\"\",\"admin_state_up\":true,\"connection_limit\":-1}}",
+          with(:body => "{\"listener\":{\"loadbalancer_id\":\"8e5aee5f-5dda-43bc-809c-fd5ee2a191e4\",\"protocol\":\"HTTP\",\"protocol_port\":\"80\",\"name\":\"unit-test-lb-http-listener\",\"description\":\"\",\"admin_state_up\":true,\"connection_limit\":-1,\"default_tls_container_ref\":\"https://test.com:9311/v1/containers/a4622ffb-6312-4625-ae95-d40b407384c4\" }}",
                :headers => {'Accept'=>'application/json', 'Content-Type'=>'application/json', 'Host'=>'10.0.2.15:9696', 'User-Agent'=>'fog-core/1.43.0', 'X-Auth-Token'=>'cbc36478b0bd8e67e89469c7749d4127'}).
           to_return(:status => 201, :body => listener_json, :headers => {})
 
@@ -439,7 +439,8 @@
         end
 
         pool = initialize_pool(iprotocol, "round-robin", lb_name, members, health_monitor, stickiness, persistence_type)
-        listeners.push(initialize_listener(vprotocol, vport, lb_name, pool))
+        container_ref = "https://test.com:9311/v1/containers/a4622ffb-6312-4625-ae95-d40b407384c4"
+        listeners.push(initialize_listener(vprotocol, vport, lb_name, pool,nil))
       end
       loadbalancer = initialize_loadbalancer(subnet_id, "octavia", lb_name, listeners)
 
@@ -450,6 +451,11 @@
     class Fake_class
 
       def info(logmessage)
+
+      end
+
+
+      def warn(logmessage)
 
       end
     end

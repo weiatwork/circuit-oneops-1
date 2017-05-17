@@ -48,11 +48,13 @@ def initialize_pool(iprotocol, lb_algorithm, lb_name, members, health_monitor, s
   return pool
 end
 
-def initialize_listener(vprotocol, vprotocol_port, lb_name, pool)
+def initialize_listener(vprotocol, vprotocol_port, lb_name, pool, default_container_ref=nil)
   listener = ListenerModel.new(vprotocol, vprotocol_port)
   listener.label.name=lb_name + '-listener'
   listener.pool=pool
-
+  if !default_container_ref.nil?
+    listener.tls_container=default_container_ref
+  end
   return listener
 end
 
@@ -105,5 +107,14 @@ def get_dc_lb_names()
   end
 
   return vnames
+end
+
+def get_barbican_container_name()
+  certs = node.workorder.payLoad.DependsOn.select { |d| d["ciClassName"] =~ /Certificate/ }
+  certs.each do |cert|
+    cert_name =  cert[:ciId].to_s + "_tls_cert_container"
+    Chef::Log.info("tls cert name : #{cert_name}")
+    return cert_name
+  end
 end
 

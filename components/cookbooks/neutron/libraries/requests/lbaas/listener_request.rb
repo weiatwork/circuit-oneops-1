@@ -12,11 +12,10 @@ class ListenerRequest < BaseRequest
         }
     }
 
-    optional_parameters = [:name, :description, :admin_state_up, :connection_limit, :tenant_id]
+    optional_parameters = [:name, :description, :admin_state_up, :connection_limit, :tenant_id, :default_tls_container_ref]
     optional_parameters.select{ |o| options.key?(o) }.each do |key|
       data['listener'][key] = options[key]
     end
-
     request(
         :body    => Fog::JSON.encode(data),
         :expects => [201],

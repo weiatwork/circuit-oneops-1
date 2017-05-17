@@ -108,7 +108,3 @@ class LoadbalancerManager
   end
 
 end
-
-
-
-
