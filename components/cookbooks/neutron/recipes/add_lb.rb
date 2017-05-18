@@ -23,7 +23,8 @@ subnet_name = service_lb_attributes[:subnet_name]
 network_manager = NetworkManager.new(tenant)
 subnet_id = network_manager.get_subnet_id(subnet_name)
 barbican_container_name = get_barbican_container_name()
-
+connection_limit = lb_attributes[:connection_limit]
+Chef::Log.info("connection_limit : #{connection_limit}")
 
 include_recipe "neutron::build_lb_name"
 lb_name = node[:lb_name]
@@ -48,9 +49,9 @@ node.loadbalancers.each do |loadbalancer|
     secret_manager = SecretManager.new(service_lb_attributes[:endpoint], service_lb_attributes[:username],service_lb_attributes[:password], service_lb_attributes[:tenant] )
     container_ref = secret_manager.get_container(barbican_container_name)
     Chef::Log.info("Container_ref : #{container_ref}")
-    listeners.push(initialize_listener(vprotocol, vport, lb_name, pool, container_ref))
+    listeners.push(initialize_listener(vprotocol, vport, lb_name, pool, connection_limit, container_ref))
   else
-    listeners.push(initialize_listener(vprotocol, vport, lb_name, pool))
+    listeners.push(initialize_listener(vprotocol, vport, lb_name, pool, connection_limit))
   end
 
 end

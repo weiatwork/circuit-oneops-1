@@ -48,4 +48,8 @@ class ListenerManager
       end
     end
   end
+
+  def update_listener(loadbalancer_id, listener)
+    @listener_dao.update_listener(loadbalancer_id, listener.id, listener)
+  end
 end

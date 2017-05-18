@@ -26,6 +26,8 @@ subnet_name = service_lb_attributes[:subnet_name]
 network_manager = NetworkManager.new(tenant)
 subnet_id = network_manager.get_subnet_id(subnet_name)
 barbican_container_name = get_barbican_container_name()
+connection_limit = lb_attributes[:connection_limit]
+Chef::Log.info("connection_limit : #{connection_limit}")
 
 include_recipe "neutron::build_lb_name"
 lb_name = node[:lb_name]
@@ -88,9 +90,9 @@ begin
           secret_manager = SecretManager.new(service_lb_attributes[:endpoint], service_lb_attributes[:username],service_lb_attributes[:password], service_lb_attributes[:tenant] )
           container_ref = secret_manager.get_container(barbican_container_name)
           Chef::Log.info("Container_ref : #{container_ref}")
-          new_listener = initialize_listener(vprotocol, vport, lb_name, pool, container_ref)
+          new_listener = initialize_listener(vprotocol, vport, lb_name, pool, connection_limit, container_ref)
         else
-          new_listener = initialize_listener(vprotocol, vport, lb_name, pool)
+          new_listener = initialize_listener(vprotocol, vport, lb_name, pool, connection_limit)
         end
         existing_lb = lb_manager.get_loadbalancer(lb_name)
         is_protocol_port_exist = false
@@ -156,6 +158,17 @@ begin
         pool_manager.update_pool(new_lb.id, listener.id, listener.pool.id, listener.pool)
       end
     end
+
+    #handle changes in connection_limit attribute only
+    if config_items_changed.has_key?("connection_limit") && !config_items_changed.has_key?("listeners")
+      secret_manager = SecretManager.new(service_lb_attributes[:endpoint], service_lb_attributes[:username],service_lb_attributes[:password], service_lb_attributes[:tenant] )
+      existing_lb = lb_manager.get_loadbalancer(lb_name)
+      existing_lb.listeners.each do |existing_listener|
+        existing_listener.connection_limit=connection_limit.to_i
+        Chef::Log.info("Updating listener #{existing_lb.label} with connection limit #{existing_listener.connection_limit}...")
+        listeners_manager.update_listener(existing_lb.id, existing_listener)
+      end
+    end
   end
 
   member_manager = MemberManager.new(tenant)
@@ -204,7 +217,7 @@ begin
           end
         end
         end
-
+    raise "stop"
  end
 
 rescue RuntimeError => ex
