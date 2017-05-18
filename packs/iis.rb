@@ -41,6 +41,9 @@ resource "iis-website",
     :help       => "Installs/Configure IIS"
   },
   :attributes   => {
+    "package_name"  => '',
+    "repository_url" => '',
+    "version" => 'latest',
     "physical_path" => '$OO_LOCAL{app_directory}',
     "log_file_directory" => '$OO_LOCAL{log_directory}',
     "dc_file_directory" => '$OO_LOCAL{log_directory}\\IISTemporaryCompressedFiles',
@@ -60,36 +63,6 @@ resource "dotnetframework",
     "chocolatey_package_source" => 'https://chocolatey.org/api/v2/',
     "dotnet_version_package_name" => '{ ".Net 4.6":"dotnet4.6", ".Net 3.5":"dotnet3.5" }'
   }
-
-nuget_package_configure_cmd=  <<-"EOF"
-
-nuget = '$OO_LOCAL{nuget_exe}'
-package_name = node.artifact.repository
-depends_on = node.workorder.payLoad.DependsOn.select {|c| c[:ciClassName] =~ /website/ }
-physical_path = depends_on.first[:ciAttributes][:physical_path]
-site_name = node.workorder.box.ciName
-package_physical_path = ::File.join(physical_path, package_name)
-website_physical_path = ::File.join(physical_path, site_name)
-
-[package_physical_path, website_physical_path].each do |path|
-  directory path do
-    action :delete
-    recursive true
-  end
-end
-
-powershell_script "Install package #\{package_name\}" do
-  code "#\{nuget\} install #\{package_name\} -Source #\{artifact_cache_version_path\} -outputdirectory #\{physical_path\} -ExcludeVersion -NoCache"
-end
-
-powershell_script "Renaming package folder #\{package_physical_path\} to #\{site_name\}" do
-  guard_interpreter :powershell_script
-  code "Rename-Item #\{package_physical_path\} #\{site_name\}"
-  not_if "Test-Path #\{website_physical_path\}"
-end
-
-
-EOF
 
 chocolatey_package_configure_cmd=  <<-"EOF"
 
@@ -131,12 +104,11 @@ resource "chocolatey-package",
      :restart       => ''
 }
 
-
 resource "nuget-package",
   :cookbook      => "oneops.1.artifact",
   :design        => true,
   :requires      => {
-    :constraint  => "1..*",
+    :constraint  => "0..*",
     :help        => "Installs nuget package"
   },
   :attributes       => {
@@ -146,7 +118,7 @@ resource "nuget-package",
      :as_user       => 'oneops',
      :as_group      => 'oneops',
      :should_expand => 'true',
-     :configure     => nuget_package_configure_cmd,
+     :configure     => '',
      :migrate       => '',
      :restart       => ''
   },
@@ -210,10 +182,10 @@ resource "volume",
 
 [ { :from => 'iis-website', :to => 'dotnetframework' },
   { :from => 'iis-website', :to => 'volume' },
+  { :from => 'nuget-package', :to => 'iis-website' },
   { :from => 'windowsservice', :to => 'iis-website' },
   { :from => 'dotnetframework', :to => 'os' },
-  { :from => 'chocolatey-package', :to => 'volume' },
-  { :from => 'nuget-package', :to => 'iis-website' } ].each do |link|
+  { :from => 'chocolatey-package', :to => 'iis-website' } ].each do |link|
   relation "#{link[:from]}::depends_on::#{link[:to]}",
     :relation_name => 'DependsOn',
     :from_resource => link[:from],
@@ -227,7 +199,7 @@ relation "iis-website::depends_on::certificate",
   :to_resource => 'certificate',
   :attributes => {"propagate_to" => "from", "flex" => false, "min" => 1, "max" => 1}
 
-[ 'iis-website', 'nuget-package', 'dotnetframework', 'windowsservice' , 'chocolatey-package' , 'volume', 'os' ].each do |from|
+[ 'iis-website', 'dotnetframework', 'nuget-package', 'windowsservice' , 'chocolatey-package' , 'volume', 'os' ].each do |from|
   relation "#{from}::managed_via::compute",
     :except => [ '_default' ],
     :relation_name => 'ManagedVia',

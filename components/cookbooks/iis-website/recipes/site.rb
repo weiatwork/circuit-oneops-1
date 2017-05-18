@@ -7,7 +7,8 @@ identity_type = site.identity_type
 
 binding_type = site.binding_type
 binding_port = site.binding_port
-physical_path = site.physical_path
+physical_path = "#{site.physical_path}/#{site.package_name}/#{node['workorder']['rfcCi']['ciAttributes']['package_version']}"
+
 log_directory_path = site.log_file_directory
 sc_directory_path = site.sc_file_directory
 dc_directory_path = site.dc_file_directory
@@ -19,7 +20,7 @@ powershell_script "Allow Port #{binding_port}" do
   code "netsh advfirewall firewall add rule name=\"Allow port #{binding_port}\" dir=in action=allow protocol=TCP localport=#{binding_port}"
 end
 
-website_physical_path = ::File.join(physical_path, platform_name)
+website_physical_path = physical_path
 
 certs = node.workorder.payLoad.DependsOn.select { |d| d[:ciClassName] =~ /Certificate/ }
 ssl_certificate_exists = false
@@ -146,4 +147,13 @@ iis_sessionstate 'configure session state parameters' do
   cookieless site.session_state_cookieless
   cookiename site.session_state_cookie_name
   time_out site.session_time_out.to_i
+end
+
+iis_logging 'configure logging parameters' do
+  site_name     platform_name
+  logFormat     site.logformat
+  directory     log_directory_path
+  enabled       site.enabled.to_bool
+  period        site.period
+  logTargetW3C  site.logtargetw3c.to_i
 end
