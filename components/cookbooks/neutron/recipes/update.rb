@@ -217,7 +217,6 @@ begin
           end
         end
         end
-    raise "stop"
  end
 
 rescue RuntimeError => ex
