@@ -23,7 +23,7 @@ subnet_name = service_lb_attributes[:subnet_name]
 network_manager = NetworkManager.new(tenant)
 subnet_id = network_manager.get_subnet_id(subnet_name)
 barbican_container_name = get_barbican_container_name()
-connection_limit = lb_attributes[:connection_limit]
+connection_limit = (lb_attributes[:connection_limit]).to_i
 Chef::Log.info("connection_limit : #{connection_limit}")
 
 include_recipe "neutron::build_lb_name"
@@ -79,4 +79,3 @@ end
 Chef::Log.info("Exiting neutron-lbaas add recipe.")
 
 puts "***RESULT:vnames=" + vnames.to_json
-
