@@ -146,13 +146,12 @@ attribute 'required_availability_zone',
   }
 
 attribute 'connection_limit',
-          :description => "maximum number of connections per second allowed for the vip.",
+          :description => "Connection Limit",
           :default => "-1",
           :format => {
               :help => 'The maximum number of connections per second allowed for the vip. Valid values: a positive integer or -1 for unlimited (default).',
               :category => '1.Global',
-              :order => 11
-          }
+    }
 
 
 attribute 'ecv_map',
