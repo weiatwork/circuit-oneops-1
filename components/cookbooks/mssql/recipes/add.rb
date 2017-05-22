@@ -126,10 +126,9 @@ end #if (ext = '.zip' || ext = '.iso')
 ruby_block 'Adjust PS resource' do
   block do
     
-    cmd = "#{ps_script} -ExeFile '#{node['sql_server']['server']['url']}' -ArgList '/q /ConfigurationFile=#{config_file_path}' -Timeout #{node['sql_server']['server']['installer_timeout']}"
-    r = run_context.resource_collection.find(:powershell_script => 'Run-Setup')
-    r.code(cmd)
-
+    arglist = "-sql_version_num #{node['sql_server']['version_num']} -setup_file '#{node['sql_server']['server']['url']}' -arg_list '/q /ConfigurationFile=#{config_file_path}'"
+    r = run_context.resource_collection.find(:elevated_script => 'Install-Mssql-Features')
+    r.arglist(arglist)
   end #block do
 end #ruby_block 'Adjust PS resource' do
 
@@ -165,18 +164,27 @@ template config_file_path do
   not_if {features_install.nil? || features_install.size == 0}
 end
 
-powershell_script 'Run-Setup' do
-  code "Throw 'Placeholder! Should not have run!'"
+
+ps_script = "#{Chef::Config[:file_cache_path]}\\cookbooks\\mssql\\files\\windows\\Install-Mssql.ps1" 
+elevated_script 'Install-Mssql-Features' do
+  script ps_script
+  timeout 1800
+  arglist ''
   not_if {features_install.nil? || features_install.size == 0}
 end
 
 #Uninstall features
 setup_file = "#{node['sql_server']['install_dir']}\\#{node['sql_server']['version_num']}\\Setup Bootstrap\\SQLServer#{node['sql_server']['version']}\\setup.exe"
-cmd = "#{ps_script} -ExeFile '#{setup_file}' -ArgList '/Action=Uninstall /Features=#{features_uninstall} /Instancename=#{node['sql_server']['instance_name']} /QUIET=\"True\"' -Timeout #{node['sql_server']['server']['installer_timeout']}"
-powershell_script 'Run-Setup-Uninstall' do
-  code cmd
+arglist = "-sql_version_num #{node['sql_server']['version_num']} -setup_file '#{setup_file}' "
+arglist += "-arg_list '/Action=Uninstall /Features=#{features_uninstall} /Instancename=#{node['sql_server']['instance_name']} /QUIET=\"True\"'"
+
+elevated_script 'Uninstall-Mssql-Features' do
+  script ps_script
+  timeout 1800
+  arglist arglist
   not_if {features_uninstall.nil? || features_uninstall.size == 0}
 end
+
 
 #TO-DO Add password options to setup command string
 
