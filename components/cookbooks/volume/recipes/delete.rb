@@ -49,7 +49,7 @@ if rfcAttrs.has_key?("mount_point") && !rfcAttrs["mount_point"].empty?
       only_if { has_mounted }
     end
 
-    execute "umount -f #{mount_point}" do
+    execute "umount -Rf #{mount_point}" do
       only_if { has_mounted }
     end
 
