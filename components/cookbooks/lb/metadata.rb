@@ -145,6 +145,14 @@ attribute 'required_availability_zone',
     :order => 10
   }
 
+attribute 'connection_limit',
+          :description => "Connection Limit",
+          :default => "-1",
+          :format => {
+              :help => 'Applicable only for software loadbalancers. The maximum number of connections per second allowed for the vip. Valid values: a positive integer or -1 for unlimited (default).',
+              :category => '1.Global',
+    }
+
 
 attribute 'ecv_map',
   :description => "ECV",
