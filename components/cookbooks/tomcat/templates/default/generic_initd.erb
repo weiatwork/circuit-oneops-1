@@ -1,8 +1,8 @@
 #!/bin/bash
-# description: Tomcat Start Stop Restart
+# description: Tomcat Start Stop Restart  
 # processname: tomcat<%=node[:tomcat][:version][0,1]%>
-# chkconfig: 234 20 80
-
+# chkconfig: 234 20 80  
+ 
 #set for using non-default java
 #export JAVA_HOME=/usr/lib/jvm/java-6-sun
 
@@ -49,7 +49,7 @@ NUMBER_OF_TIMES_TO_CHECK_IF_APP_STARTED=10
 SKIP_PRE_SHUTDOWN=0
 
 function get_tomcat_pid() {
-    pid=$($SU $TOMCAT_USER pgrep -f "org.apache.catalina.startup.Bootstrap" -u $TOMCAT_USER)
+    pid=$(pgrep -f "org.apache.catalina.startup.Bootstrap")
     return $pid
 }
 
@@ -87,23 +87,23 @@ function stop_tomcat(){
         echo "Tomcat failed to shut down , forcing the tomcat to shutdown"
         eval "$SHUTDOWN_COMMAND -force"
         get_tomcat_pid
-        if [ -n "$pid" ]; then
+        if [ -n "$pid" ]; then 
             kill -9 "$pid"
-            $SU $TOMCAT_USER rm -f "$CATALINA_PID"
+            rm -f "$CATALINA_PID"
             sleep 5
             get_tomcat_pid
             if [ -n "$pid" ] ; then
                 echo "Could not stop tomcat."
             else
-                $SU $TOMCAT_USER rm -f   "/var/lock/subsys/$TOMCAT_SERVICE_NAME"
+                rm -f   "/var/lock/subsys/$TOMCAT_SERVICE_NAME"
                 echo "Tomcat stopped"
             fi
         else
-            $SU $TOMCAT_USER rm -f   "/var/lock/subsys/$TOMCAT_SERVICE_NAME"
+            rm -f   "/var/lock/subsys/$TOMCAT_SERVICE_NAME"
             echo "Tomcat stopped"
-        fi
+        fi   
     else
-      $SU $TOMCAT_USER rm -f   "/var/lock/subsys/$TOMCAT_SERVICE_NAME"
+      rm -f   "/var/lock/subsys/$TOMCAT_SERVICE_NAME"
       echo "Tomcat stopped."
     fi
 
@@ -142,9 +142,8 @@ function start_tomcat(){
     if [ $? != 0 ]; then
         exit 1
     else
-        $SU $TOMCAT_USER touch "/var/lock/subsys/$TOMCAT_SERVICE_NAME"
+        touch "/var/lock/subsys/$TOMCAT_SERVICE_NAME"
     fi
-    $SU $TOMCAT_USER chmod 0644 $CATALINA_PID
     if [ -s "$POST_STARTUP_COMMAND_CONTENTS" ];then
         if [ -n "$NUMBER_OF_TIMES_TO_CHECK_IF_APP_STARTED" ];  then
             echo "Executing post start up command every $TIME_BETWEEN_APP_START_CHECK second for $NUMBER_OF_TIMES_TO_CHECK_IF_APP_STARTED times."
@@ -153,7 +152,7 @@ function start_tomcat(){
                     eval "$POST_STARTUP_COMMAND"
                     STATUS_OF_POST_START_UP_COMMAND=$?
                     if [ $STATUS_OF_POST_START_UP_COMMAND -eq 1 ]; then
-                        sleep $TIME_BETWEEN_APP_START_CHECK
+                        sleep $TIME_BETWEEN_APP_START_CHECK 
                         echo "PostStartUpCommand failed;retrying  $i of $NUMBER_OF_TIMES_TO_CHECK_IF_APP_STARTED "
                         continue
                     else
@@ -175,7 +174,7 @@ function start_tomcat(){
         SKIP_PRE_SHUTDOWN=1
         stop_tomcat
         exit 1
-    fi
+    fi    
 
 }
 
@@ -199,16 +198,16 @@ status)
 
 start)
 	start_tomcat  ;;
-
-stop)
+ 
+stop) 
  stop_tomcat
  ;;
 restart)
-
+ 	
    stop_tomcat
    start_tomcat
-
+ 
   ;;
 esac
-
+    
 exit 0
