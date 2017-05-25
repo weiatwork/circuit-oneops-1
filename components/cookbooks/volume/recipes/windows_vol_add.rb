@@ -4,7 +4,7 @@ device_maps = nil
 node.workorder.payLoad[:DependsOn].each do |dep|
   if dep['ciClassName'] =~ /Storage/
     storage = dep
-	device_maps = storage['ciAttributes']['device_map'].split(" ")
+    device_maps = storage['ciAttributes']['device_map'].split(" ")
     break
   end
 end
@@ -61,28 +61,28 @@ else
     Chef::Log.info("vol_id: "+vol_id)
     Chef::Log.info("dev_id: "+dev_id)
 
-	vol = nil
+    vol = nil
     vol = storage_provider.volumes.get vol_id
 
     Chef::Log.info("vol: "+ vol.inspect.gsub("\n"," ").gsub("<","").gsub(">","") )
 
     #Attempt to attach
-	begin
+    begin
 
       case token_class
         #ibm
-		when /ibm/
+        when /ibm/
           unless vol.attached?
-		    compute.attach(vol.id)
+            compute.attach(vol.id)
           end
-		#openstack
-		when /openstack/
+        #openstack
+        when /openstack/
           if vol.status == 'available'
-		    vol.attach instance_id, dev_id
+            vol.attach instance_id, dev_id
           end
-		#rackspace
-		when /rackspace/
-		  rackspace_dev_id = dev_id.gsub(/\d+/,"")
+        #rackspace
+        when /rackspace/
+          rackspace_dev_id = dev_id.gsub(/\d+/,"")
           is_attached = false
           compute.attachments.each do |a|
             is_attached = true if a.volume_id = vol.id
@@ -91,14 +91,14 @@ else
             compute.attach_volume vol.id, rackspace_dev_id
           end
 
-		#ec2
-		when /ec2/
+        #ec2
+        when /ec2/
           vol.device = dev_id.gsub("xvd","sd")
           vol.server = compute
 
-	  end #case token_class
+      end #case token_class
 
-	rescue Fog::Compute::AWS::Error=>e
+    rescue Fog::Compute::AWS::Error=>e
       if e.message =~ /VolumeInUse/
         Chef::Log.info("already added")
       else
@@ -106,14 +106,14 @@ else
       end
     end
 
-	#Wait until storage is attached
-	fin = false
+    #Wait until storage is attached
+    fin = false
     max_retry = 10
     retry_count = 0
 
-	while !fin && retry_count<max_retry do
+    while !fin && retry_count<max_retry do
       fin = true
-	  vol = nil
+      vol = nil
       vol_state = ''
       vol = storage_provider.volumes.get vol_id
       if token_class =~ /openstack/
@@ -124,16 +124,16 @@ else
 
       Chef::Log.info("Attempt: #{retry_count}, volume: #{vol_id}, state: #{vol_state}")
 
-	  if vol_state.downcase !~ /attached|in-use/
+      if vol_state.downcase !~ /attached|in-use/
         fin = false
         sleep 30
       end
-        
-	  retry_count +=1
+
+      retry_count +=1
     end #while !fin && retry_count<max_retry do
 
     if !fin
-      exit_with_error("max retry count of "+max_retry_count.to_s+" hit, volume #{vol_id} is still not attached. Status: #{vol_state}")
+      exit_with_error("max retry count of "+max_retry.to_s+" hit, volume #{vol_id} is still not attached. Status: #{vol_state}")
     end
 
   end  #device_maps.each do |dev_vol|
@@ -147,7 +147,7 @@ end #if storage_provider =~ /azure/
 device_maps.each do |dev_vol|
   vol_id = dev_vol.split(":")[0]
   Chef::Log.info("vol_id: "+vol_id)
-	
+
   vol = nil
   vol = storage_provider.volumes.get vol_id
 

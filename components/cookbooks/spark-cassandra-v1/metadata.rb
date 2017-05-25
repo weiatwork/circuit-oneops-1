@@ -29,6 +29,8 @@ attribute 'spark_version',
               # List of predefined known versions.
               ['Auto Detect','auto'],
               ['Custom','custom'],
+              ['Spark 2.1','2.1'],
+              ['Spark 2.0','2.0'],
               ['Spark 1.6','1.6'],
               ['Spark 1.5','1.5'],
               ['Spark 1.4','1.4'] ]

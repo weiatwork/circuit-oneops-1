@@ -39,21 +39,8 @@ rfcCi = node["workorder"]["rfcCi"]
 nsPathParts = rfcCi["nsPath"].split("/")
 customer_domain = node["customer_domain"]
 owner = node.workorder.payLoad.Assembly[0].ciAttributes["owner"] || "na"
-node.set["max_retry_count_add"] = 30
 ostype = node.workorder.payLoad.os[0].ciAttributes["ostype"]
 
-#Set server create counter based on location
-if node.workorder.cloud.ciAttributes.has_key?("location") && !node.workorder.cloud.ciAttributes[:location].empty?
-
-      if node.workorder.cloud.ciAttributes[:location] =~ /(openstack.*ironic)/
-         server_create_counter = 360
-      else
-         server_create_counter = 30
-      end
-
-      Chef::Log.debug("server_create_counter: #{server_create_counter}")
-      Chef::Log.info("server_create_counter => SET")
-end
 
 if compute_service.has_key?("initial_user") && !compute_service[:initial_user].empty?
   node.set["use_initial_user"] = true
@@ -73,6 +60,13 @@ Chef::Log.debug("Initial USER: #{initial_user}")
 Chef::Log.info("compute::add -- name: "+node.server_name+" domain: "+customer_domain+" provider: "+cloud_name)
 Chef::Log.debug("rfcCi attrs:"+rfcCi["ciAttributes"].inspect.gsub("\n"," "))
 
+compute_type_hash = {}
+compute_type_hash["image_compute_type"] = ""
+compute_type_hash["flavor_compute_type"] = ""
+compute_type = ""
+max_server_create_value = 30
+wait_for_initialization = false
+max_wait_for_initialize_value = 0
 
 flavor = ""
 image = ""
@@ -110,9 +104,9 @@ ruby_block 'set flavor/image/availability_zone' do
       Chef::Log.info("using required_availability_zone: #{availability_zone}")
     end
 
-    if rfcCi['rfcAction'] != 'replace' && 
-      !rfcCi['ciAttributes']['instance_id'].nil? && 
-      !rfcCi['ciAttributes']['instance_id'].empty?      
+    if rfcCi['rfcAction'] != 'replace' &&
+      !rfcCi['ciAttributes']['instance_id'].nil? &&
+      !rfcCi['ciAttributes']['instance_id'].empty?
         server = conn.servers.get(rfcCi['ciAttributes']['instance_id'])
     else
       conn.servers.all.each do |i|
@@ -135,6 +129,51 @@ ruby_block 'set flavor/image/availability_zone' do
 
       exit_with_error "Invalid compute size provided #{node.size_id} .. Please specify different Compute size." if flavor.nil?
       exit_with_error "Invalid compute image provided #{node.image_id} .. Please specify different OS type." if image.nil?
+
+      if image.name.downcase =~ /baremetal/
+        compute_type_hash["image_compute_type"] = "baremetal"
+      end
+
+      if flavor.name.downcase =~ /baremetal/
+         compute_type_hash["flavor_compute_type"] = "baremetal"
+      end
+
+      if (compute_type_hash.values | compute_type_hash.values ).count  <= 1
+        if compute_type_hash.values[0] == "baremetal"
+           compute_type = "baremetal"
+        end
+      else
+        exit_with_error "Image and flavor selected do not match for compute request."
+      end
+
+      #Set max server create value based on compute_type
+      if compute_type == "baremetal"
+        max_server_create_value = 360
+        node.set["max_retry_count_add"] = 2
+      else
+        max_server_create_value = 30
+        node.set["max_retry_count_add"] = 30
+      end
+      Chef::Log.debug("max_server_create_value: #{max_server_create_value}")
+      Chef::Log.info("max_server_create_value => SET")
+      Chef::Log.debug("max_retry_count_add: #{node[:max_retry_count_add]}")
+      Chef::Log.info("max_retry_count_add => SET")
+
+      #Set max_wait_for_initialize_value and wait_for_initialization boolean
+      if node[:ostype] =~ /windows/
+          wait_for_initialization = true
+          max_wait_for_initialize_value = 1
+      elsif compute_type == "baremetal"
+          wait_for_initialization = true
+          max_wait_for_initialize_value = 5
+      else
+          wait_for_initialization = false
+          max_wait_for_initialize_value = 0
+      end
+      Chef::Log.debug("wait_for_initialization: #{wait_for_initialization}")
+      Chef::Log.info("wait_for_initialization => SET")
+      Chef::Log.debug("max_wait_for_initialize_value: #{max_wait_for_initialize_value}")
+      Chef::Log.info("max_wait_for_initialize_value => SET")
 
     elsif ["BUILD","ERROR"].include?(server.state)
       msg = "vm #{server.id} is stuck in #{server.state} state"
@@ -278,7 +317,7 @@ ruby_block 'create server' do
         sleep_count = 0
 
         # wait for server to be ready or fail within 5min or an hour.
-        while (!server.ready? && server.fault.nil? && sleep_count < server_create_counter) do
+        while (!server.ready? && server.fault.nil? && sleep_count < max_server_create_value) do
           sleep 10
           sleep_count += 1
           server.reload
@@ -286,8 +325,8 @@ ruby_block 'create server' do
 
         if !server.fault.nil? && server.fault.has_key?('message')
           raise Exception.new(server.fault['message'])
-        end        
-        
+        end
+
         rescue Exception =>e
           message = ""
           case e.message
@@ -297,7 +336,7 @@ ruby_block 'create server' do
             server.destroy
             sleep 5
             retry
-                        
+
           when /Request Entity Too Large/,/Quota exceeded/
             limits = conn.get_limits.body["limits"]
             Chef::Log.info("limits: "+limits["absolute"].inspect)
@@ -386,7 +425,7 @@ ruby_block 'set node network params' do
         end
       end
     end
-      
+
     # specific network
     if !compute_service[:subnet].empty?
       network_name = compute_service[:subnet]
@@ -440,10 +479,10 @@ ruby_block 'set node network params' do
           floating_ip = conn.addresses.create
           floating_ip.server = server
           public_ip = floating_ip.ip
-	  node.set["ip"] = public_ip
+          node.set["ip"] = public_ip
         end
       end
-    end 
+    end
     # if public_ip is still empty, use private_ip to be public_ip
     if public_ip.empty?
       public_ip = private_ip
@@ -511,12 +550,15 @@ ruby_block 'catch errors/faults' do
   end
 end
 
-#give windows some time to initialize - 4 min
-ruby_block 'wait for windows initialization' do
+#give some time to initialize - max_wait_for_initialize_value min
+ruby_block 'wait for initialization' do
   block do
-      sleep 60
+      Chef::Log.debug("Wait to initialize -  #{max_wait_for_initialize_value} min")
+      (1..max_wait_for_initialize_value).each do |i|
+         sleep 60
+      end
   end
-end if node[:ostype] =~ /windows/
+end if wait_for_initialization == true
 
 include_recipe "compute::ssh_port_wait"
 

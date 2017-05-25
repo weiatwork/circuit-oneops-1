@@ -88,8 +88,8 @@ attribute 'enabled_networks',
     :help => 'Enabled Network List is optional for placement of compute instances',
     :category => '2.Placement',
     :order => 4
-  }  
-  
+  }
+
 attribute 'public_network_type',
   :description => "Public Network Type",
   :default => "flat",
@@ -122,7 +122,7 @@ attribute 'sizemap',
     :category => '3.Mappings',
     :order => 1
   }
-  
+
 attribute 'flavormap',
   :description => "Flavor Map",
   :data_type => "hash",
@@ -131,25 +131,28 @@ attribute 'flavormap',
      :help => 'Map of generic flavors to number of vcpus/ram/ephermal disk size',
      :category => '3.Mappings',
      :order => 2
-  }  
+  }
 
 attribute 'imagemap',
   :description => "Images Map",
   :data_type => "hash",
-  :default => '{"ubuntu-14.04":"",
+  :default => '{"ubuntu-16.04":"",
+                "ubuntu-14.04":"",
                 "ubuntu-13.10":"",
                 "ubuntu-13.04":"",
                 "ubuntu-12.10":"",
                 "ubuntu-12.04":"",
                 "ubuntu-10.04":"",
                 "redhat-7.0":"",
-		"redhat-6.6":"",
+		            "redhat-6.6":"",
                 "redhat-6.5":"",
                 "redhat-6.4":"",
                 "redhat-6.2":"",
                 "redhat-5.9":"",
+                "centos-7.3":"",
+                "centos-7.2":"",
                 "centos-7.0":"",
-		"centos-6.6":"",
+		            "centos-6.6":"",
                 "centos-6.5":"",
                 "centos-6.4":"",
                 "fedora-20":"",
@@ -192,6 +195,7 @@ attribute 'ostype',
     :category => '4.Operating System',
     :order => 4,
     :form => { 'field' => 'select', 'options_for_select' => [
+      ['Ubuntu 16.04 (xenial)','ubuntu-16.04'],
       ['Ubuntu 14.04.1 (trusty)','ubuntu-14.04'],
       ['Ubuntu 13.10 (saucy)','ubuntu-13.10'],
       ['Ubuntu 13.04 (raring)','ubuntu-13.04'],
@@ -204,6 +208,8 @@ attribute 'ostype',
       ['RedHat 6.4','redhat-6.4'],
       ['RedHat 6.2','redhat-6.2'],
       ['RedHat 5.9','redhat-5.9'],
+      ['CentOS 7.3','centos-7.3'],
+      ['CentOS 7.2','centos-7.2'],
       ['CentOS 7.0','centos-7.0'],
       ['CentOS 6.6','centos-6.6'],
       ['CentOS 6.5','centos-6.5'],

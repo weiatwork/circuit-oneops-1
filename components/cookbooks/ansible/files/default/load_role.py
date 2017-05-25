@@ -28,7 +28,7 @@ def install_role(role=None):
 @retry(stop_max_attempt_number=5)
 def load_playbook(playbook=None):
 	try:
-		pb = Playbook.load("java.yml",loader=ansible.parsing.dataloader.DataLoader())
+		pb = Playbook.load(playbook,loader=ansible.parsing.dataloader.DataLoader())
 	except ansible.errors.AnsibleError, e:
 		p = re.compile("the role '(.*)' was not found")
 		m = p.search(str(e))

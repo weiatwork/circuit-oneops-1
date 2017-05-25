@@ -1,3 +1,4 @@
+
 def initialize_health_monitor(iprotocol, ecv_map, lb_name, iport)
   fail ArgumentError, 'ecv_map is invalid' if ecv_map.nil? || ecv_map.empty?
 
@@ -47,10 +48,11 @@ def initialize_pool(iprotocol, lb_algorithm, lb_name, members, health_monitor, s
   return pool
 end
 
-def initialize_listener(vprotocol, vprotocol_port, lb_name, pool, default_container_ref=nil)
+def initialize_listener(vprotocol, vprotocol_port, lb_name, pool, connection_limit, default_container_ref=nil)
   listener = ListenerModel.new(vprotocol, vprotocol_port)
   listener.label.name=lb_name + '-listener'
   listener.pool=pool
+  listener.connection_limit=connection_limit
   if !default_container_ref.nil?
     listener.tls_container=default_container_ref
   end

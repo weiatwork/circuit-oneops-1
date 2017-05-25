@@ -5,7 +5,7 @@ license          'Apache License, Version 2.0'
 description      'Installs/configures Microsoft SQL Server'
 version          '0.1.0'
 
-depends 'os'
+depends 'windows-utils'
 
 grouping 'default',
   :access   => 'global',
