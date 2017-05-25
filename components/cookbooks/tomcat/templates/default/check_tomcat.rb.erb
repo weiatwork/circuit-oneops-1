@@ -19,10 +19,10 @@ perf = nil
 
 <%
 # default tomcat
-connector_name = "http-#{node.tomcat.port}"
+connector_name = '"http-nio-'+node.tomcat.port+'"'
 
 case node.tomcat.version
-when "7.0"
+when "7.0.75"
 	connector_name = '"http-bio-'+node.tomcat.port+'"'
 end
 %>
