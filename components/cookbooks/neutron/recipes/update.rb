@@ -171,6 +171,18 @@ begin
     end
   end
 
+  if (!barbican_container_name.nil? && !barbican_container_name.empty?) && !config_items_changed.has_key?("listeners")
+    secret_manager = SecretManager.new(service_lb_attributes[:endpoint], service_lb_attributes[:username],service_lb_attributes[:password], service_lb_attributes[:tenant] )
+    existing_lb = lb_manager.get_loadbalancer(lb_name)
+    container_ref = secret_manager.get_container(barbican_container_name)
+    Chef::Log.info("Container_ref : #{container_ref}")
+    existing_lb.listeners.each do |existing_listener|
+      existing_listener.tls_container=container_ref
+      Chef::Log.info("Updating listener #{existing_lb.label} with default container_ref #{container_ref}...")
+      listeners_manager.update_listener(existing_lb.id, existing_listener)
+    end
+  end
+
   member_manager = MemberManager.new(tenant)
   computes = node[:workorder][:payLoad][:DependsOn].select { |d| d[:ciClassName] =~ /Compute/ }
 

@@ -58,7 +58,7 @@ end
 loadbalancer = initialize_loadbalancer(subnet_id, service_lb_attributes[:provider], lb_name, listeners)
 
 lb_manager = LoadbalancerManager.new(tenant)
-Chef::Log.info("Creating Loadbalancer..." + lb_name)
+Chef::Log.info("Creating Loadbalancer ..." + lb_name)
 start_time = Time.now
 Chef::Log.info("start time " + start_time.to_s)
 loadbalancer_id = lb_manager.create_loadbalancer(loadbalancer)

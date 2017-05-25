@@ -205,7 +205,7 @@ class SecretManager
 
   def get_container(container_name)
     key_manager = Fog::KeyManager::OpenStack.new(@connection_params)
-    response = key_manager.list_containers()
+    response = key_manager.list_containers(limit: 10000000)
     container_list = (response.data[:body])['containers']
     if !container_list.nil?
       container_list.each do |container|
