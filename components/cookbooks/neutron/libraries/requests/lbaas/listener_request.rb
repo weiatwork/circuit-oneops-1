@@ -27,7 +27,7 @@ class ListenerRequest < BaseRequest
   def update_lbaas_listener(listener_id, options = {})
     data = { 'listener' => {} }
 
-    optional_parameters = [:name, :description, :admin_state_up, :connection_limit]
+    optional_parameters = [:name, :description, :admin_state_up, :connection_limit, :default_tls_container_ref]
     optional_parameters.select{ |o| options.key?(o) }.each do |key|
       data['listener'][key] = options[key]
     end
