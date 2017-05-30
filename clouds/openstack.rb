@@ -52,6 +52,18 @@ service "neutron",
             :username => ""
         }
 
+service "octavia",
+        :description => 'LB-as-a-Service',
+        :cookbook => 'octavia',
+        :source => [Chef::Config[:register], Chef::Config[:version].split(".").first].join('.'),
+        :provides => {:service => 'lb'},
+        :attributes => {
+            :endpoint => "http://openstack.example.com/v2.0/tokens",
+            :tenant => "",
+            :username => ""
+        }
+
+
 service "nova",
         :description => 'Compute-as-a-Service',
         :cookbook => 'openstack',
