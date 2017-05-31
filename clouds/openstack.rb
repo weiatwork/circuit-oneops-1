@@ -27,7 +27,6 @@ repo_map = '{
       "centos-6.2":"yum -d0 -e0 -y install rsync; rpm -ivh http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm"
 }'
 
-
 service "designate",
         :description => 'DNS-as-a-Service',
         :cookbook => 'designate',
@@ -56,13 +55,12 @@ service "octavia",
         :description => 'LB-as-a-Service',
         :cookbook => 'octavia',
         :source => [Chef::Config[:register], Chef::Config[:version].split(".").first].join('.'),
-        :provides => {:service => 'lb'},
+        :provides => {:service => 'slb'},
         :attributes => {
             :endpoint => "http://openstack.example.com/v2.0/tokens",
             :tenant => "",
             :username => ""
         }
-
 
 service "nova",
         :description => 'Compute-as-a-Service',
