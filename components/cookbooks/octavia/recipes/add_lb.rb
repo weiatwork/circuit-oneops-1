@@ -12,11 +12,9 @@ require File.expand_path('../../../barbican/libraries/secret_manager', __FILE__)
 #-------------------------------------------------------
 lb_attributes = node[:workorder][:rfcCi][:ciAttributes]
 cloud_name = node[:workorder][:cloud][:ciName]
-service_lb = node[:workorder][:services][:lb][cloud_name]
-service_lb_attributes = node[:workorder][:services][:lb][cloud_name][:ciAttributes]
+service_lb_attributes = node[:workorder][:services][:slb][cloud_name][:ciAttributes]
 tenant = TenantModel.new(service_lb_attributes[:endpoint],service_lb_attributes[:tenant],
                          service_lb_attributes[:username],service_lb_attributes[:password])
-service_compute_attributes = node[:workorder][:services][:compute][cloud_name][:ciAttributes]
 stickiness = lb_attributes[:stickiness]
 persistence_type = lb_attributes[:persistence_type]
 subnet_name = service_lb_attributes[:subnet_name]
