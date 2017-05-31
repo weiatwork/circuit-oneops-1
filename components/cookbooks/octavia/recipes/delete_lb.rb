@@ -2,7 +2,7 @@ require File.expand_path('../../libraries/models/tenant_model', __FILE__)
 require File.expand_path('../../libraries/loadbalancer_manager', __FILE__)
 
 cloud_name = node[:workorder][:cloud][:ciName]
-service_lb_attributes = node[:workorder][:services][:lb][cloud_name][:ciAttributes]
+service_lb_attributes = node[:workorder][:services][:slb][cloud_name][:ciAttributes]
 tenant = TenantModel.new(service_lb_attributes[:endpoint],service_lb_attributes[:tenant],
                          service_lb_attributes[:username],service_lb_attributes[:password])
 include_recipe "octavia::build_lb_name"

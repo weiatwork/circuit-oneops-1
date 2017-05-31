@@ -87,7 +87,7 @@ def get_dc_lb_names()
   org_name = node.workorder.payLoad.Organization[0]["ciName"]
 
   cloud_name = node.workorder.cloud.ciName
-  dc = node.workorder.services["lb"][cloud_name][:ciAttributes][:gslb_site_dns_id]+"."
+  dc = node.workorder.services["slb"][cloud_name][:ciAttributes][:gslb_site_dns_id]+"."
   dns_zone = node.workorder.services["dns"][cloud_name][:ciAttributes][:zone]
   dc_dns_zone = dc + dns_zone
   platform_ciId = node.workorder.box.ciId.to_s
