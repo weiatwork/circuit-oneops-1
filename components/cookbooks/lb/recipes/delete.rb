@@ -81,4 +81,8 @@ when /haproxy/
 when /neutron/
 
   include_recipe "neutron::delete_lb"
+
+when /octavia/
+
+  include_recipe "octavia::delete_lb"
 end
