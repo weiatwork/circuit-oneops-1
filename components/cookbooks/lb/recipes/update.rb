@@ -17,6 +17,10 @@ case cloud_service[:ciClassName].split(".").last.downcase
   when /neutron/
     include_recipe "lb::build_load_balancers"
     include_recipe "neutron::update"
+  
+  when /octavia/
+    include_recipe "lb::build_load_balancers"
+    include_recipe "octavia::update"
 
   when /netscaler/
     include_recipe "lb::add"
