@@ -27,5 +27,5 @@ if node.tomcat.install_type == "repository"
   end
 end
 %>
-  <user username="admin" password="admin" roles="admin,<%= manager_role %>"/>
+  <user username="admin" password="<%= node['tomcat']['manager']['key'] %>" roles="admin,<%= manager_role %>"/>
 </tomcat-users>

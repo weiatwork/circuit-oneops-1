@@ -16,12 +16,12 @@ grouping 'default',
 attribute 'install_type',
           :description => "Installation Type",
           :required => "required",
-          :default => "repository",
+          :default => "binary",
           :format => {
               :category => '1.Global',
               :help => 'Select the type of installation - standard OS repository package or custom build from source code',
               :order => 1,
-              :form => {'field' => 'select', 'options_for_select' => [['Repository package', 'repository'], ['Binary Tarball', 'binary']]}
+              :form => {'field' => 'select', 'options_for_select' => [['Repository package - Deprecated', 'repository'], ['Binary Tarball', 'binary']]}
           }
 
 attribute 'tomcat_install_dir',
@@ -594,8 +594,6 @@ attribute 'max_number_of_retries_for_post_startup_check',
 recipe 'status', 'Tomcat Status'
 recipe 'start', 'Start Tomcat'
 recipe 'stop', 'Stop Tomcat'
-recipe 'force-stop', 'Skips PreShutDownHook'
-recipe 'force-restart', 'Skips PreShutDownHook'
 recipe 'restart', 'Restart Tomcat'
 recipe 'repair', 'Repair Tomcat'
 recipe 'debug', 'Debug Tomcat'
