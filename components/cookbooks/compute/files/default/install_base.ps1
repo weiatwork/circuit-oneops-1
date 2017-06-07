@@ -101,7 +101,7 @@ try {
   $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
 
   Write-Output "Installing nuget.commandline ..."
-  choco install -y --no-progress nuget.commandline
+  choco install -y --no-progress nuget.commandline --version 3.4.3
   $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
 
   Write-Output "Installing ruby2.devKit ..."
