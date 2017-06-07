@@ -150,7 +150,7 @@ attribute 'owner_email',
     :filter => {'all' => {'visible' => 'auto_provision:eq:true'}},
     :help => 'Email alias of the application team that owns this certificate',
     :category => '1.Certificate',
-    :pattern => "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$",
+    :pattern => "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}",
     :order => 13
   }
 
