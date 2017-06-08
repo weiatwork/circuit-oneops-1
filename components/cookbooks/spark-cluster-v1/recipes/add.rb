@@ -195,6 +195,27 @@ if is_zk_specified || (actionName == "replace") || (actionName == "update")
             Chef::Log.debug("Skipping worker on #{workerIP} [#{thisWorkerAction}]")
           end
         end
+
+        # SSH to each client and build the spark.master file.
+        allClients = node.workorder.payLoad.clusterSparkClients
+
+        allClients.each do |thisClient|
+          clientIP = thisClient[:ciAttributes][:private_ip]
+
+          nameComponents = thisClient[:ciName].split('-',-1)
+
+          cloudid = nameComponents[nameComponents.length - 2]
+
+          thisMasterURL = sparkMasterURL
+
+          thisClientAction = thisClient.has_key?("rfcAction") ? thisClient.rfcAction : "";
+
+          # Update this client. Make sure the Spark master URL is accurate.
+          Chef::Log.debug("Updating client on #{clientIP} with master URL #{thisMasterURL}")
+
+          # Echo the spark master URL to this server
+          `ssh -i #{ssh_key_file} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null oneops@#{clientIP} "echo -n \"#{thisMasterURL}\" | sudo tee /opt/spark/conf/spark.master  > /dev/null"`
+        end
       end
       notifies :delete, "file[#{ssh_key_file}]", :delayed
     end
