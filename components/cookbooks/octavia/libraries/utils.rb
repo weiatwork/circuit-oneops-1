@@ -137,5 +137,8 @@ def select_provider_network_to_use(tenant, available_network_list)
       end
     end
   end
+  msg = "No IPs available in any of the provider networks configured."
+  puts "***FAULT:FATAL=#{msg}"
+  Chef::Application.fatal!(msg)
 end
 
