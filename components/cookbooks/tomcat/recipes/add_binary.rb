@@ -3,7 +3,6 @@
 #  /tomcat/tomcat-7/v7.0.41/bin/apache-tomcat-7.0.41.tar.gz
 #
 # mirrors attribute is an array of uri's prefixing the distribution path convention
-Chef::Log.error("This is add_binary. #{node.tomcat.version}")
 major_and_minor = node.tomcat.version
 major_version = major_and_minor.gsub(/\..*/,"")
 
@@ -174,15 +173,15 @@ end
 
 template "#{base_dir}/conf/server.xml" do
   source "server#{major_version}.xml.erb"
-  owner "root"
-  group "root"
+  owner username
+  group group
   mode "0644"
 end
 
 template "#{base_dir}/conf/web.xml" do
   source "web#{major_version}.xml.erb"
-  owner "root"
-  group "root"
+  owner username
+  group group
   mode "0644"
 end
 
@@ -196,22 +195,15 @@ template "#{base_dir}/conf/context.xml" do
 
 template "#{base_dir}/conf/tomcat-users.xml" do
   source "tomcat-users.xml.erb"
-  owner "root"
-  group "root"
-  mode "0644"
-end
-
-template "#{base_dir}/conf/manager.xml" do
-  source "manager.xml.erb"
-  owner "root"
-  group "root"
+  owner username
+  group group
   mode "0644"
 end
 
 template "#{base_dir}/conf/catalina.policy" do
   source "catalina.policy.erb"
-  owner "root"
-  group "root"
+  owner username
+  group group
   mode "0644"
 end
 
