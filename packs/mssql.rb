@@ -55,8 +55,8 @@ resource 'mssql',
        'agentup'  => metric( :unit => 'agentup', :description => 'SQLAGENT status')
      },
      :thresholds => {
-        'ProcessDown' => threshold('1m', 'avg', 'mssqlup', trigger('<=', 98, 1, 1), reset('>', 95, 1, 1),'unhealthy'),
-        'ProcessDown' => threshold('1m', 'avg', 'agentup', trigger('<=', 98, 1, 1), reset('>', 95, 1, 1),'unhealthy')
+        'MssqlProcessDown' => threshold('1m', 'avg', 'mssqlup', trigger('<=', 98, 1, 1), reset('>', 95, 1, 1),'unhealthy'),
+        'AgentProcessDown' => threshold('1m', 'avg', 'agentup', trigger('<=', 98, 1, 1), reset('>', 95, 1, 1),'unhealthy')
      },
    },
     'databasecheck' =>  { :description => 'MSSQL DB status check',
