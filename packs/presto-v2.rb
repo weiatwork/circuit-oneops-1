@@ -648,6 +648,15 @@ resource 'java',
            'jrejdk' => 'server-jre'
          }
 
+resource "hostname",
+         :cookbook => "oneops.1.fqdn",
+         :design => true,
+         :requires => {
+           :constraint => "1..1",
+           :services => "dns",
+           :help => "hostname dns entry"
+         }
+
 resource "client-yarn",
         :cookbook => "oneops.1.hadoop-yarn-v1",
         :design => true,
