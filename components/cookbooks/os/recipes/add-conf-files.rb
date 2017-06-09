@@ -76,14 +76,18 @@ file "/etc/profile.d/oneops.conf" do
 end
 
 ##For backward compatibilty
-link "/etc/oneops" do
-  to "/etc/profile.d/oneops.conf"
+ostype = node[:workorder][:rfcCi][:ciAttributes][:ostype]
+prefix = ''
+prefix = 'C:' if ostype =~ /windows/ 
+  
+link "#{prefix}/etc/oneops" do
+  to '/etc/profile.d/oneops.conf'
 end
 
-if node.platform != "ubuntu"
+if node.platform != "ubuntu" && ostype !~ /windows/
   Chef::Log.info("Changing permission for /var/log/messages")
   execute "change_permission" do
-      cwd("/var/log/")
-      command "chmod a+r messages"
+    cwd("/var/log/")
+    command "chmod a+r messages"
   end
 end
