@@ -90,7 +90,7 @@ def process_url(playbook = nil, playbook_dir = nil)
 
     ruby_block 'Install role ansible-galaxy' do
       block do
-        only_if { ::File.exist?('{playbook_dir}/requirements.yml') }
+        only_if { ::File.exist?("#{playbook_dir}/requirements.yml") }
         Chef::Log.info("Runninag ansible-galaxy install -r #{playbook_dir}/requirements.yml")
         Chef::Resource::RubyBlock.send(:include, Chef::Mixin::ShellOut)
         shell = Mixlib::ShellOut.new("ansible-galaxy install -r #{playbook_dir}/requirements.yml",
