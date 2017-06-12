@@ -40,17 +40,6 @@ service "designate",
             :cloud_dns_id => "west1"
         }
 
-service "neutron",
-        :description => 'LB-as-a-Service',
-        :cookbook => 'neutron',
-        :source => [Chef::Config[:register], Chef::Config[:version].split(".").first].join('.'),
-        :provides => {:service => 'lb'},
-        :attributes => {
-            :endpoint => "http://openstack.example.com/v2.0/tokens",
-            :tenant => "",
-            :username => ""
-        }
-
 service "octavia",
         :description => 'LB-as-a-Service',
         :cookbook => 'octavia',

@@ -99,11 +99,6 @@ when /haproxy/
   include_recipe "haproxy::add_lb"
   lb_dns_name = node.lb_dns_name
 
-when /neutron/
-
-  include_recipe "neutron::add_lb"
-  lb_dns_name = node.lb_dns_name
-
 when /octavia/
 
   include_recipe "octavia::add_lb"

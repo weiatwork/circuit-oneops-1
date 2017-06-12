@@ -16,9 +16,6 @@ end
 exit_with_error "no cloud service defined or empty" if cloud_service.nil?
 
 case cloud_service[:ciClassName].split(".").last.downcase
-  when /neutron/
-    include_recipe "lb::build_load_balancers"
-    include_recipe "neutron::update"
   
   when /octavia/
     include_recipe "lb::build_load_balancers"
