@@ -52,15 +52,15 @@ attribute 'password',
     :order => 4
   }
 
-attribute 'subnet_name',
-  :description => "Subnet Name",
-  :required => "required",
-  :default => "",
-  :format => {
-    :help => 'Subnet Name',
-    :category => '2.Configuration',
-    :order => 1
-  }
+attribute 'enabled_networks',
+          :description => "Enabled Networks",
+          :data_type => "array",
+          :default => '[]',
+          :format => {
+              :help => 'Enabled Network List is to find a subnet within to get a VIP for lb',
+              :category => '2.Configuration',
+              :order => 1
+          }
 
 attribute 'provider',
   :description => "Provider",
@@ -83,5 +83,7 @@ attribute 'gslb_site_dns_id',
       :order => 3,
       :help => 'GSLB Site DNS id'
   }
+
+
 
 recipe "status", "Octavia Status"

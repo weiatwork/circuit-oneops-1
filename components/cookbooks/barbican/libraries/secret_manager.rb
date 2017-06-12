@@ -1,7 +1,7 @@
 require 'rest-client'
 
-#require '/usr/local/share/gems/gems/fog-openstack-0.1.19/lib/fog/openstack.rb'
-#require '/usr/local/share/gems/gems/fog-openstack-0.1.19/lib/fog/openstack/core.rb'
+#require '/usr/local/share/gems/gems/fog-openstack-0.1.21/lib/fog/openstack.rb'
+#require '/usr/local/share/gems/gems/fog-openstack-0.1.21/lib/fog/openstack/core.rb'
 
 require 'fog/openstack'
 require 'fog/core'

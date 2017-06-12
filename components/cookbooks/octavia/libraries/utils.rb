@@ -119,3 +119,26 @@ def get_barbican_container_name()
   end
 end
 
+def select_provider_network_to_use(tenant, available_network_list)
+  network_list = JSON.parse(available_network_list)
+  network_manager = NetworkManager.new(tenant)
+  network_list.each do | network|
+    network_id = network_manager.get_network_id(network)
+    ip_availability = network_manager.get_ip_availability_network(network_id)
+    Chef::Log.info(ip_availability.inspect)
+    subnet_ip_availability_list = ip_availability[0]["subnet_ip_availability"]
+    Chef::Log.info("subnet_ip_availability:")
+    Chef::Log.info(subnet_ip_availability_list.inspect)
+    subnet_ip_availability_list.each do | subnet |
+      if subnet["used_ips"] < subnet["total_ips"]
+        return subnet["subnet_id"]
+      else
+        Chef::Log.info("#{subnet["subnet_name"]} does not have IP availability , so trying to use the next available network}")
+      end
+    end
+  end
+  msg = "No IPs available in any of the provider networks configured."
+  puts "***FAULT:FATAL=#{msg}"
+  Chef::Application.fatal!(msg)
+end
+
