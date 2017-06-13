@@ -16,12 +16,12 @@ grouping 'default',
 attribute 'install_type',
           :description => "Installation Type",
           :required => "required",
-          :default => "repository",
+          :default => "binary",
           :format => {
               :category => '1.Global',
               :help => 'Select the type of installation - standard OS repository package or custom build from source code',
               :order => 1,
-              :form => {'field' => 'select', 'options_for_select' => [['Repository package', 'repository'], ['Binary Tarball', 'binary']]}
+              :form => {'field' => 'select', 'options_for_select' => [['Repository package - Deprecated', 'repository'], ['Binary Tarball', 'binary']]}
           }
 
 attribute 'tomcat_install_dir',
@@ -35,9 +35,9 @@ attribute 'tomcat_install_dir',
           }
 
 attribute 'mirrors',
-          :description => "Binary distribution mirrors",
+          :description => "Deprecated - Binary distribution mirrors",
           :data_type => 'array',
-          :default => '["http://archive.apache.org/dist","http://apache.cs.utah.edu" ]',
+          #:default => '["http://archive.apache.org/dist","http://apache.cs.utah.edu" ]',
           :format => {
               :category => '1.Global',
               :help => 'Apache distribution compliant mirrors - uri without /tomcat/tomcat-x/... path.If not defined will use cloud apache mirror service',
@@ -47,26 +47,25 @@ attribute 'mirrors',
 attribute 'version',
           :description => "Version",
           :required => "required",
-          :default => "7.0",
+          :default => "7.0.75",
           :format => {
               :important => true,
               :help => 'Version of Tomcat',
               :category => '1.Global',
               :order => 4,
-              :form => {'field' => 'select', 'options_for_select' => [['6.0', '6.0'], ['7.0', '7.0']]},
+              :form => {'field' => 'select', 'options_for_select' => [['6.0 - Deprecated', '6.0'], ['7.0 - Deprecated', '7.0'], ['7.0.75', '7.0.75'], ['8.5.12', '8.5.12']]},
               :pattern => "[0-9\.]+"
           }
 
 attribute 'build_version',
-          :description => "Build Version",
-          :required => "required",
-          :default => "70",
+          :description => "Deprecated - Build Version",
+          #:default => "70",
           :format => {
             :important => true,
             :category => '1.Global',
-            :help => 'Tomcat minor version number.  Example: Version=7, Build Version=75 will install Tomcat 7.0.75',
+            :help => 'Deprecated - Tomcat minor version number.  Example: Version=7, Build Version=75 will install Tomcat 7.0.75',
             :order => 5,
-            :form => {'field' => 'select', 'options_for_select' => [['42', '42'], ['62', '62'], ['67', '67'], ['68', '68'], ['70', '70'], ['72', '72'], ['73', '73'], ['75', '75']]}
+            :form => {'field' => 'select', 'options_for_select' => [['42', '42'], ['62', '62'], ['67', '67'], ['68', '68'], ['70', '70'], ['72', '72'], ['73', '73'], ['75', '75'], ['NA', '']]}
           }
 
 
@@ -595,10 +594,8 @@ attribute 'max_number_of_retries_for_post_startup_check',
 recipe 'status', 'Tomcat Status'
 recipe 'start', 'Start Tomcat'
 recipe 'stop', 'Stop Tomcat'
-recipe 'force-stop', 'Skips PreShutDownHook'
-recipe 'force-restart', 'Skips PreShutDownHook'
 recipe 'restart', 'Restart Tomcat'
 recipe 'repair', 'Repair Tomcat'
-recipe 'debug', 'Debug Tomcat'
-recipe 'validateAppVersion', 'Server started after app deployment'
+# recipe 'debug', 'Debug Tomcat'
+# recipe 'validateAppVersion', 'Server started after app deployment'
 recipe 'threaddump','Java Thread Dump'

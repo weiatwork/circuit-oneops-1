@@ -21,7 +21,7 @@ resource "ruby",
 resource "railsapp",
   :cookbook => "oneops.1.build",
   :design => true,
-  :requires => { "constraint" => "0..*" },
+  :requires => { "constraint" => "0..*", "services" => "*mirror" },
   :attributes => {
     "install_dir"   => '/usr/local/railsapp',
     "repository"    => "",

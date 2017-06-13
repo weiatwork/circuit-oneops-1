@@ -3,28 +3,33 @@
 #  /tomcat/tomcat-7/v7.0.41/bin/apache-tomcat-7.0.41.tar.gz
 #
 # mirrors attribute is an array of uri's prefixing the distribution path convention
-
 major_and_minor = node.tomcat.version
 major_version = major_and_minor.gsub(/\..*/,"")
 
 build_version = node.tomcat.build_version
-full_version = "#{major_and_minor}.#{build_version}"
+
+if major_and_minor.to_s == "6.0" || major_and_minor.to_s == "7.0"
+  full_version = "#{major_and_minor}.#{build_version}"
+  #full_version = major_and_minor
+else
+  full_version = major_and_minor
+end
 
 # mirrors - default value in metadata are first 2
 # http://archive.apache.org/dist
 # http://apache.cs.utah.edu/ (no /dist)
 # + /tomcat/tomcat-7/v7.0.29/bin/apache-tomcat-7.0.29.tar.gz
-tarball = "/tomcat/tomcat-#{major_version}/v#{full_version}/bin/apache-tomcat-#{full_version}.tar.gz"
-
+tarball = "tomcat/tomcat-#{major_version}/v#{full_version}/bin/apache-tomcat-#{full_version}.tar.gz"
 
 # create parent dir (keep ownership as root) if doesnt exist
-directory node.tomcat.tomcat_install_dir do
+directory node['tomcat']['tomcat_install_dir'] do
   action :create
   not_if "test -d #{node.tomcat.tomcat_install_dir}"
 end
 dest_file = "#{node.tomcat.tomcat_install_dir}/apache-tomcat-#{full_version}.tar.gz"
 
-source_list = JSON.parse(node.tomcat.mirrors).map! { |mirror| "#{mirror}/#{tarball}" }
+source_list = JSON.parse(node.tomcat.mirrors).map! { |mirror| "#{mirror}#{tarball}" }
+
 #node['tomcat']['mirrors']
 ##Get apache mirror configured for the cloud, if no mirror is defined for component.
 if source_list.empty?
@@ -168,15 +173,15 @@ end
 
 template "#{base_dir}/conf/server.xml" do
   source "server#{major_version}.xml.erb"
-  owner "root"
-  group "root"
+  owner username
+  group group
   mode "0644"
 end
 
 template "#{base_dir}/conf/web.xml" do
   source "web#{major_version}.xml.erb"
-  owner "root"
-  group "root"
+  owner username
+  group group
   mode "0644"
 end
 
@@ -190,22 +195,15 @@ template "#{base_dir}/conf/context.xml" do
 
 template "#{base_dir}/conf/tomcat-users.xml" do
   source "tomcat-users.xml.erb"
-  owner "root"
-  group "root"
-  mode "0644"
-end
-
-template "#{base_dir}/conf/manager.xml" do
-  source "manager.xml.erb"
-  owner "root"
-  group "root"
+  owner username
+  group group
   mode "0644"
 end
 
 template "#{base_dir}/conf/catalina.policy" do
   source "catalina.policy.erb"
-  owner "root"
-  group "root"
+  owner username
+  group group
   mode "0644"
 end
 

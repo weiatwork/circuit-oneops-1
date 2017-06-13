@@ -15,6 +15,31 @@ platform :attributes => {
         }
 
 # dns service needed for ptr record cleanup on replace
+
+resource "telegraf",
+  :cookbook => "oneops.1.telegraf",
+  :design => true,
+  :requires => {
+       "constraint" => "0..10",
+       :services => "mirror"
+  },
+  :monitors => {
+    'telegrafprocess' => {:description => 'TelegrafProcess',
+      :source => '',
+      :enable => 'true',
+      :chart => {'min' => '0', 'max' => '100', 'unit' => 'Percent'},
+      :cmd => 'check_process_count!telegraf',
+      :cmd_line => '/opt/nagios/libexec/check_process_count.sh "$ARG1$"',
+      :metrics => {
+            'count' => metric(:unit => '', :description => 'Running Process'),
+      },
+      :thresholds => {
+            'TelegrafProcessLow' => threshold('1m', 'avg', 'count', trigger('<', 1, 1, 1), reset('>=', 1, 1, 1)),
+            'TelegrafProcessHigh' => threshold('1m', 'avg', 'count', trigger('>=', 200, 1, 1), reset('<', 200, 1, 1))
+      }
+    }
+  }
+
 resource "compute",
   :cookbook => "oneops.1.compute",
   :design => true,
@@ -60,7 +85,7 @@ resource "os",
   :cookbook => "oneops.1.os",
   :design => true,
   :requires => { "constraint" => "1..1", "services" => "compute,dns,*mirror,*ntp,*windows-domain" },
-  :attributes => { "ostype"  => "centos-7.0",
+  :attributes => { "ostype"  => "centos-7.2",
                    "dhclient"  => 'true'
                  },
   :monitors => {
@@ -750,6 +775,8 @@ end
   { :from => 'share',       :to => 'os' },
   { :from => 'logstash',    :to => 'os' },
   { :from => 'logstash',    :to => 'compute' },
+  { :from => 'telegraf',    :to => 'os' },
+  { :from => 'telegraf',    :to => 'compute' },
   { :from => 'storage',     :to => 'compute' },
   { :from => 'share',       :to => 'volume'  },
   { :from => 'volume',      :to => 'user' },
@@ -809,7 +836,7 @@ end
 end
 
 # managed_via
-[ 'os', 'user', 'job', 'file', 'volume', 'share', 'download', 'library', 'daemon', 
+[ 'os', 'telegraf', 'user', 'job', 'file', 'volume', 'share', 'download', 'library', 'daemon', 
   'certificate', 'logstash', 'sensuclient', 'artifact', 'objectstore'].each do |from|
   relation "#{from}::managed_via::compute",
     :except => [ '_default' ],

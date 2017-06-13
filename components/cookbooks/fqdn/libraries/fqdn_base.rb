@@ -5,6 +5,9 @@
 #
 # Author : OneOps
 # Apache License, Version 2.0
+require 'resolv'
+require 'ipaddr'
+
 
 module Fqdn
 
@@ -37,13 +40,20 @@ module Fqdn
         cmd = "dig +short PTR #{ptr_name} @#{ns}"
         Chef::Log.info(cmd)
         existing_dns += `#{cmd}`.split("\n").map! { |v| v.gsub(/\.$/,"") }
+      elsif dns_name =~ Resolv::IPv6::Regex ###check this !!
+        ptr_name= IPAddr.new(dns_name).reverse
+        cmd = "dig +short PTR #{ptr_name} @#{ns}"
+        Chef::Log.info(cmd)
+        existing_dns += `#{cmd}`.split("\n").map! { |v| v.gsub(/\.$/,"") }
       else
-        ["A","CNAME"].each do |record_type|
+        ["A", "AAAA", "CNAME"].each do |record_type|
           Chef::Log.info("dig +short #{record_type} #{dns_name} @#{ns}")
           vals = `dig +short #{record_type} #{dns_name} @#{ns}`.split("\n").map! { |v| v.gsub(/\.$/,"") }
           # skip dig's lenient A record lookup thru CNAME
-          next if record_type == "A" && vals.size > 1 && vals[0] !~ /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/
+          next if (record_type == "A" && vals.size > 1 && vals[0] !~ /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/) || (record_type == "AAAA" && vals.size > 1 && vals[0] !~ Resolv::IPv6::Regex
+          )
           existing_dns += vals
+
         end
       end
       Chef::Log.info("existing: "+existing_dns.sort.inspect)
@@ -55,16 +65,22 @@ module Fqdn
     def get_record_type (dns_name, dns_values)
       record_type = "cname"
       ips = dns_values.grep(/\d+\.\d+\.\d+\.\d+/)
+      dns_values.each do |dns_value|
+        if dns_value =~ Resolv::IPv6::Regex
+          record_type = "aaaa"
+        end
+      end
+
+
       if ips.size > 0
         record_type = "a"
       end
-      if dns_name =~ /^\d+\.\d+\.\d+\.\d+$/
+      if dns_name =~ /^\d+\.\d+\.\d+\.\d+$/ || dns_name =~ Resolv::IPv6::Regex
         record_type = "ptr"
       end
       if dns_name =~ /^txt-/
         record_type = "txt"
       end
-    
       return record_type
     end
     
@@ -117,7 +133,7 @@ module Fqdn
           # dns_record must be all lowercase
           dns_record.downcase!
           # unless ends w/ . or is an ip address
-          dns_record += '.' unless dns_record =~ /,|\.$|^\d+\.\d+\.\d+\.\d+$/
+          dns_record += '.' unless dns_record =~ /,|\.$|^\d+\.\d+\.\d+\.\d+$/ || dns_record =~ Resolv::IPv6::Regex
         end
     
         if dns_record.empty?
@@ -136,6 +152,10 @@ module Fqdn
         
     
     def verify(dns_name, dns_values, ns, max_retry_count=30)
+      if dns_values.count > max_retry_count
+        max_retry_count = dns_values.count + 1
+      end
+
       retry_count = 0
       dns_type = get_record_type(dns_name, dns_values)
   
@@ -149,6 +169,8 @@ module Fqdn
           dns_lookup_name = dns_name
           if dns_name =~ /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/
             dns_lookup_name = $4 +'.' + $3 + '.' + $2 + '.' + $1 + '.in-addr.arpa'
+          elsif dns_name =~ Resolv::IPv6::Regex
+            dns_lookup_name = IPAddr.new(dns_name).reverse
           end
           
           puts "dig +short #{dns_type} #{dns_lookup_name} @#{ns}"

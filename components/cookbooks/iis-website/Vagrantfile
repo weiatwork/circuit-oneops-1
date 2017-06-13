@@ -1,12 +1,13 @@
 #VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure("2") do |config|
-  config.vm.box = 'win2012r2chef121118'
+  config.vm.box = 'windows2016'
   config.vm.guest = :windows
 
   config.vm.provider "virtualbox" do |v|
     v.gui = false
   end
+
   config.vm.communicator = "winrm"
   config.winrm.timeout = 24000
   config.winrm.max_tries = 20
@@ -19,7 +20,7 @@ Vagrant.configure("2") do |config|
     chef.log_level      = :info
     chef.cookbooks_path = [".."]
 
-    chef.add_recipe("iis-website::add")
+    chef.add_recipe("iis-website::iis_logging")
     chef.json = {
       "iis-website": {
         "compression_max_disk_usage": "100",

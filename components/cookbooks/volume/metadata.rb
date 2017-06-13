@@ -5,6 +5,7 @@ maintainer       "OneOps"
 maintainer_email "support@oneops.com"
 license          "Apache License, Version 2.0"
 depends 'azuredatadisk'
+depends 'os'
 
 grouping 'default',
   :access => "global",
@@ -58,12 +59,12 @@ attribute 'fstype',
   }
 
 attribute 'mount_point',
-  :description => "Mount Point. (For Windows specify the the drive letter)",
+  :description => "Mount Point.",
   :required => 'required',
   :default => '/volume',
   :format => {
     :important => true,
-    :help => 'Directory path where the volume should be mounted',
+    :help => 'Directory path where the volume should be mounted. For Windows specify the the drive letter.',
     :category => '2.Filesystem',
     :order => 2
   }

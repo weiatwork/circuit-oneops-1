@@ -151,10 +151,18 @@ attribute 'size',
           ['XXL (Standard)','XXL'],
           ['3XL (Standard)','3XL'],
           ['4XL (Standard)','4XL'],
+          ['L-BD (Big Data Optimized)','L-BD'],
+          ['L-LXD (LXD)','L-LXD'],
+          ['L-IO-LXD (LXD)','L-IO-LXD'],
+          ['XL-IO-LXD (LXD)','XL-IO-LXD'],
+          ['XXL-IO-LXD (LXD)','XXL-IO-LXD'],
+          ['S-MEM-LXD (LXD)','S-MEM-LXD'],
+          ['L-MEM-LXD (LXD)','L-MEM-LXD'],
+          ['L-BM (Baremetal)','L-BM'],
           ['S-Win (Windows)','S-WIN'],
           ['M-Win (Windows)','M-WIN'],
           ['L-Win (Windows)','L-WIN'],
-          ['XL-Win (Windows)','XL-WIN'],            
+          ['XL-Win (Windows)','XL-WIN'],
           ['S-CPU (Compute Optimized)','S-CPU'],
           ['M-CPU (Compute Optimized)','M-CPU'],
           ['L-CPU (Compute Optimized)','L-CPU'],
@@ -289,24 +297,34 @@ attribute 'dns_record',
   }
 
 attribute 'ports',
-  :description => "PAT Ports",
+  :description => "PAT ports",
   :data_type => "hash",
   :default => '{}',
   :format => {
-    :help => 'PAT Ports. Internal Port => External Port',
+    :help => 'Configure the Port Address Translation PAT from internal ports (key) to external ports (value).',
     :category => '4.Networking',
     :order => 7
   }
 
 
 attribute 'require_public_ip',
-  :description => "Require public ip",
+  :description => "Require public IP",
   :default => 'false',
   :format => {
-    :help => 'Require a public ip. Used when compute cloud service public networking type: interface or floating',
+    :help => 'Check if a public IP is required. Setting is used when the compute cloud service public networking type is interface or floating.',
     :category => '4.Networking',
     :form => { 'field' => 'checkbox' },
     :order => 10
+  }
+
+attribute 'private_ipv6',
+  :description => "Private IPv6",
+  :grouping => 'bom',
+  :format => {
+    :important => true,
+    :help => 'Private IPv6 address allocated by the cloud provider',
+    :category => '4.Networking',
+    :order => 11
   }
 
 
