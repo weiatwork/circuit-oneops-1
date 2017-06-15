@@ -1,3 +1,5 @@
+#Deprecated - Will be removed in future releases
+
 include_recipe "tomcat::generate_variables"
 include_recipe "tomcat::stop"
 
