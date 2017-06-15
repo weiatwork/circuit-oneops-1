@@ -53,7 +53,7 @@ attribute 'version',
               :help => 'Version of Tomcat',
               :category => '1.Global',
               :order => 4,
-              :form => {'field' => 'select', 'options_for_select' => [['6.0 - Deprecated', '6.0'], ['7.0 - Deprecated', '7.0'], ['7.0.75', '7.0.75'], ['8.5.12', '8.5.12']]},
+              :form => {'field' => 'select', 'options_for_select' => [['7.0 - Deprecated', '7.0'], ['7.0.75', '7.0.75'], ['7.0.78', '7.0.78'], ['8.5.12', '8.5.12']]},
               :pattern => "[0-9\.]+"
           }
 
@@ -98,12 +98,12 @@ attribute 'tomcat_group',
 attribute 'protocol',
           :description => 'Sets the protocol to handle incoming traffic for Connector',
           :required => 'required',
-          :default => 'HTTP/1.1',
+          :default => 'Non blocking Java connector',
           :format => {
               :help => 'Sets "protocol" attribute in server.xml connector.[Blocking Java connector=org.apache.coyote.http11.Http11Protocol,Non blocking Java connector=org.apache.coyote.http11.Http11NioProtocol,The APR/native connector=org.apache.coyote.http11.Http11AprProtocol]. Refer. /tomcat-7.0-doc/config/http.html ',
               :category => '2.Server',
               :order => 3,
-              :form => {'field' => 'select', 'options_for_select' => [['HTTP/1.1','HTTP/1.1'],['Blocking Java connector', 'org.apache.coyote.http11.Http11Protocol'], ['Non blocking Java connector', 'org.apache.coyote.http11.Http11NioProtocol'],['The APR/native connector', 'org.apache.coyote.http11.Http11AprProtocol']]},
+              :form => {'field' => 'select', 'options_for_select' => [['HTTP/1.1 - Deprecated','HTTP/1.1'],['Blocking Java connector', 'org.apache.coyote.http11.Http11Protocol'], ['Non blocking Java connector', 'org.apache.coyote.http11.Http11NioProtocol'],['The APR/native connector - Deprecated', 'org.apache.coyote.http11.Http11AprProtocol']]},
           }
 
 attribute 'http_connector_enabled',
@@ -596,6 +596,4 @@ recipe 'start', 'Start Tomcat'
 recipe 'stop', 'Stop Tomcat'
 recipe 'restart', 'Restart Tomcat'
 recipe 'repair', 'Repair Tomcat'
-# recipe 'debug', 'Debug Tomcat'
-# recipe 'validateAppVersion', 'Server started after app deployment'
 recipe 'threaddump','Java Thread Dump'
