@@ -20,6 +20,14 @@ end
 
 Chef::Log.info(" protocol  #{node['tomcat']['connector']['protocol']} - connector config #{node['tomcat']['connector']['advanced_connector_config']} ssl_configured : #{node['tomcat']['connector']['ssl_configured']}")
 
+# Check to see if user is choosing 8.5.12+ and Blocking connector.  This combo doesn't work so default to NonBlocking Connector
+if (node['tomcat']['version'].gsub(/\..*/,"") != "7" && node['tomcat']['protocol'] == "org.apache.coyote.http11.Http11Protocol")
+  Chef::Log.warn("Tomcat 8.5.12 or greater is selected with Blocking Java Connector.  This configuration does not exist.  Defaulting to Non-Blocking Java Connector only.")
+  node.set['tomcat']['connector']['protocol'] = "org.apache.coyote.http11.Http11NioProtocol"
+end
+
+Chef::Log.info(" protocol  #{node['tomcat']['connector']['protocol']} - connector config #{node['tomcat']['connector']['advanced_connector_config']} ssl_configured : #{node['tomcat']['connector']['ssl_configured']}")
+
 tomcat_version_name = "tomcat"+node.workorder.rfcCi.ciAttributes.version[0,1]
 node.set['tomcat']['tomcat_version_name'] = tomcat_version_name
 

@@ -21,8 +21,8 @@ perf = nil
 # default tomcat
 connector_name = '"http-nio-'+node.tomcat.port+'"'
 
-case node.tomcat.version
-when "7.0.75"
+case node.tomcat.protocol
+when 'org.apache.coyote.http11.Http11Protocol'
 	connector_name = '"http-bio-'+node.tomcat.port+'"'
 end
 %>
