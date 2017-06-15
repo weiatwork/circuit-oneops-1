@@ -1,45 +1,30 @@
-#join windows domain if service exists otherwise just change hostname
-if node[:workorder][:services].has_key?("windows-domain")
+pw_file = '/etc/passwd'
+execute "mkpasswd -l -u oneops > #{pw_file}" do
+  guard_interpreter :powershell_script
+  not_if "(Test-Path #{pw_file}) -And (Get-Content #{pw_file}) -Like '*oneops:*/home/oneops*'"
+end
+
+#1. Rename VM and restart
+powershell_script 'Rename-Computer' do
+  code "Rename-Computer -NewName '#{node[:vmhostname]}' -Force -ErrorAction Stop"
+  only_if "$env:computername -ne '#{node[:vmhostname]}'"
+end
+
+#2. join windows domain if service exists and restart
+if node[:workorder][:services].has_key?('windows-domain')
 
   cloud_name = node[:workorder][:cloud][:ciName]
-  domain = node[:workorder][:services]["windows-domain"][cloud_name][:ciAttributes]
-  ps_code = "$domain = '#{domain[:domain]}'
-  $password = '#{domain[:password]}'| ConvertTo-SecureString -asPlainText -Force
-  $username = '#{domain[:domain]}\\#{domain[:username]}'
-  $credential = New-Object System.Management.Automation.PSCredential($username,$password)
-  $currentname = (Get-WmiObject -Class Win32_ComputerSystem).DNSHostName
-  $newname = '#{node.vmhostname}'
-
-  #Generate OU path
-  $oupath = 'OU=Servers,'
-  foreach ($a in $domain.Split('.')) { $oupath += 'DC='+$a + ',' }
-  $oupath = $oupath.Substring(0,$oupath.Length-1)
-
-  If ($currentname -ne $newname) 
-  { Rename-Computer -NewName $newname -Force 
-    try { Add-Computer -DomainName $domain -Credential $credential -Force -Options JoinWithNewName -ErrorAction Stop -OUPath $oupath }
-    catch { Add-Computer -DomainName $domain -Credential $credential -NewName $newname -Force -ErrorAction Stop -OUPath $oupath }  }
-  Else
-  { Add-Computer -DomainName $domain -Credential $credential -Force -ErrorAction Stop -OUPath $oupath }
+  domain = node[:workorder][:services]['windows-domain'][cloud_name][:ciAttributes]
   
-  Start-Sleep -s 10"
-
-  execute 'mkpasswd-oneops' do
-    command 'mkpasswd -l -u oneops > /etc/passwd'
-    action :nothing
-  end
+  ps_code = "#{Chef::Config[:file_cache_path]}/cookbooks/os/files/windows/Join-Domain.ps1"
+  ps_code += " -domain '#{domain[:domain]}' -password '#{domain[:password]}' -username '#{domain[:username]}'"
 
   powershell_script 'Join-Domain' do
     code ps_code
+    sensitive true
     not_if '(gwmi win32_computersystem).partofdomain'
-    notifies :run, 'execute[mkpasswd-oneops]', :before
   end
-else
-  #rename windows VM
-  powershell_script 'Rename-Computer' do
-    code "Rename-Computer -NewName '#{node[:vmhostname]}' -Force -ErrorAction Stop"
-    not_if "hostname | grep #{node.vmhostname}"
-  end
+
 end
 
 
@@ -49,8 +34,8 @@ ruby_block 'declare-restart' do
     puts "***REBOOT_FLAG***"
   end
   action :nothing
-  subscribes :run, 'powershell_script[Rename-Computer]', :immediately
   subscribes :run, 'powershell_script[Join-Domain]', :immediately
+  subscribes :run, 'powershell_script[Rename-Computer]', :immediately
 end
 
 reboot 'perform-restart' do

@@ -49,6 +49,74 @@ resource "iis-website",
     "dc_file_directory" => '$OO_LOCAL{log_directory}\\IISTemporaryCompressedFiles',
     "sc_file_directory" => '$OO_LOCAL{log_directory}\\IISTemporaryCompressedFiles',
     "windows_authentication" => 'false'
+  },
+  :monitors => {
+  'IISW3SVC' =>  { :description => 'W3SVC service status',
+     :chart => {'min' => 0, 'unit' => ''},
+     :heartbeat => false,
+     :cmd => 'iis_service_status.ps1',
+     :cmd_line => 'powershell.exe -file /opt/nagios/libexec/iis_service_status.ps1',
+     :metrics =>  {
+       'up'  => metric( :unit => '%', :description => 'Up %')
+     },
+     :thresholds => {
+        'ProcessDown' => threshold('1m', 'avg', 'up', trigger('<=', 98, 1, 1), reset('>', 95, 1, 1),'unhealthy')
+     },
+   },
+   'AspNetCounters' =>  { :description => 'ASP.NET counters',
+      :chart => {'min' => 0, 'unit' => ''},
+      :heartbeat => false,
+      :cmd => 'aspnet_counters.ps1',
+      :cmd_line => 'powershell.exe -file /opt/nagios/libexec/aspnet_counters.ps1',
+      :metrics =>  {
+        'RequestCount'  => metric(:unit => '', :description => 'Indicates number of requests per second handled by the application.', :dstype => 'GAUGE'),
+        'RequestsTotal'  => metric(:unit => '', :description => 'Indicates number of current requests', :dstype => 'GAUGE'),
+        'TotalErrorsPerSec'  => metric(:unit => 'errors /sec', :description => 'Indicates number of errors per second.', :dstype => 'GAUGE'),
+        'RequestsExecuting'  => metric(:unit => '', :description => 'Indicates the number of executing requests', :dstype => 'GAUGE'),
+        'RestartCount'  => metric(:unit => '', :description => 'Indicates the number of restarts of the application in the server uptime', :dstype => 'GAUGE'),
+        'RequestWaitTime'  => metric(:unit => 'ms', :description => 'Requests held in the queue', :dstype => 'GAUGE'),
+        'RequestsQueued'  => metric(:unit => '', :description => 'Throughput of the ASP.NET application on the server', :dstype => 'GAUGE')
+      },
+      :thresholds => {
+      },
+    },
+    'SystemCounters' =>  { :description => 'System counters',
+       :chart => {'min' => 0, 'unit' => ''},
+       :heartbeat => false,
+       :cmd => 'check_system.ps1',
+       :cmd_line => 'powershell.exe -file /opt/nagios/libexec/check_system.ps1',
+       :metrics =>  {
+         'CpuUsage'  => metric(:unit => 'Percent', :description => 'Average percentage of processor time occupied', :dstype => 'GAUGE'),
+         'QueueLength'  => metric(:unit => '', :description => 'Processor Queue Length', :dstype => 'GAUGE'),
+         'MemoryAvailable'  => metric(:unit => 'MB', :description => 'Amount of physical memory available', :dstype => 'GAUGE'),
+         'MemoryPages'  => metric(:unit => 'Percent', :description => 'Amount of read and write requests from memory to disk', :dstype => 'GAUGE')
+       },
+       :thresholds => {
+       },
+     },
+     'DotNetCounters' =>  { :description => '.Net counters',
+        :chart => {'min' => 0, 'unit' => ''},
+        :heartbeat => false,
+        :cmd => 'dotnet_counters.ps1',
+        :cmd_line => 'powershell.exe -file /opt/nagios/libexec/dotnet_counters.ps1',
+        :metrics =>  {
+          'ExceptionsPerSecond'  => metric(:unit => 'exceptions /sec', :description => 'Number of exceptions per second that the application is throwing', :dstype => 'GAUGE'),
+          'TotalCommittedBytes'  => metric(:unit => 'B/sec', :description => 'Shows the amount of virtual memory reserved for the application on the paging file', :dstype => 'GAUGE')
+        },
+        :thresholds => {
+        },
+      },
+      'WebConnections' =>  { :description => 'Web Connections',
+         :chart => {'min' => 0, 'unit' => ''},
+         :heartbeat => false,
+         :cmd => 'web_connections.ps1',
+         :cmd_line => 'powershell.exe -file /opt/nagios/libexec/web_connections.ps1',
+         :metrics =>  {
+           'CurrentConnections'  => metric(:unit => '', :description => 'Shows the number of active connections with the Web Service', :dstype => 'GAUGE')
+         },
+         :thresholds => {
+         },
+       }
   }
 
 resource "dotnetframework",

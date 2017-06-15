@@ -87,6 +87,17 @@ attribute 'osname',
             :order     => 3
           }
 
+attribute 'features',
+          :description => 'Windows Features',
+          :data_type   => 'array',
+          :default     => '[]',
+          :format      => {
+            :help     => 'Install additional windows features',
+            :category => '3.Operating System',
+            :filter   => {'all' => {'visible' => 'ostype:eq:windows_2012_r2 || ostype:eq:windows_2016'}},
+            :order    => 4
+          }
+
 attribute 'repo_list',
           :description => "OS Package Repositories",
           :data_type   => "array",

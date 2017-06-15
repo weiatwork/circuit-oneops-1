@@ -79,3 +79,7 @@ attribute 'userdb_log',
     :category => '3.Directories',
     :order => 4
   }
+
+recipe "start", "Start SQL Server"
+recipe "stop", "Stop SQL Server"
+recipe "restart", "Restart SQL Server"
