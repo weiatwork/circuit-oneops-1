@@ -103,7 +103,7 @@ attribute 'protocol',
               :help => 'Sets "protocol" attribute in server.xml connector.[Blocking Java connector=org.apache.coyote.http11.Http11Protocol,Non blocking Java connector=org.apache.coyote.http11.Http11NioProtocol,The APR/native connector=org.apache.coyote.http11.Http11AprProtocol]. Refer. /tomcat-7.0-doc/config/http.html ',
               :category => '2.Server',
               :order => 3,
-              :form => {'field' => 'select', 'options_for_select' => [['HTTP/1.1','HTTP/1.1'],['Blocking Java connector', 'org.apache.coyote.http11.Http11Protocol'], ['Non blocking Java connector', 'org.apache.coyote.http11.Http11NioProtocol'],['The APR/native connector', 'org.apache.coyote.http11.Http11AprProtocol']]},
+              :form => {'field' => 'select', 'options_for_select' => [['HTTP/1.1 - Deprecated','HTTP/1.1'],['Blocking Java connector', 'org.apache.coyote.http11.Http11Protocol'], ['Non blocking Java connector', 'org.apache.coyote.http11.Http11NioProtocol'],['The APR/native connector - Deprecated', 'org.apache.coyote.http11.Http11AprProtocol']]},
           }
 
 attribute 'http_connector_enabled',
