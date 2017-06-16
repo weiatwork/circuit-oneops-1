@@ -225,6 +225,35 @@ resource "windowsservice",
     "user_account"             => 'NT AUTHORITY\LocalService'
   }
 
+resource "taskscheduler",
+  :cookbook => "oneops.1.taskscheduler",
+  :design => true,
+  :requires => {
+    :constraint => "0..*",
+    :help => "Installing a task in taskscheduler"
+  },
+  :attributes => {
+    "package_name"            => '',
+    "repository_url"          => '',
+    "version"                 => 'latest',
+    "task_name"               => '',
+    "description"             => '',
+    "path"                    => '',
+    "arguments"               => '',
+    "working_directory"       => '$OO_LOCAL{app_directory}',
+    "physical_path"           => '$OO_LOCAL{app_directory}',
+    "username"                => '',
+    "password"                => '',
+    "type"                    => '',
+    "execution_time_limit"    => '',
+    "start_day"               => '',
+    "start_time"              => '',
+    "days_interval"           => '',
+    "days_of_week"            => '',
+    "weeks_interval"          => ''
+  }
+
+
 resource "lb",
   :attributes => {
     "listeners" => "[\"http 80 http 80\"]",
@@ -249,6 +278,7 @@ resource "volume",
   }
 
 [ { :from => 'iis-website', :to => 'dotnetframework' },
+  { :from => 'taskscheduler',  :to => 'volume' },
   { :from => 'iis-website', :to => 'volume' },
   { :from => 'nuget-package', :to => 'iis-website' },
   { :from => 'windowsservice', :to => 'iis-website' },
@@ -267,7 +297,7 @@ relation "iis-website::depends_on::certificate",
   :to_resource => 'certificate',
   :attributes => {"propagate_to" => "from", "flex" => false, "min" => 1, "max" => 1}
 
-[ 'iis-website', 'dotnetframework', 'nuget-package', 'windowsservice' , 'chocolatey-package' , 'volume', 'os' ].each do |from|
+[ 'iis-website', 'taskscheduler', 'dotnetframework', 'nuget-package', 'windowsservice' , 'chocolatey-package' , 'volume', 'os' ].each do |from|
   relation "#{from}::managed_via::compute",
     :except => [ '_default' ],
     :relation_name => 'ManagedVia',
