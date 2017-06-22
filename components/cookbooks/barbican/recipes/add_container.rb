@@ -1,4 +1,5 @@
 require File.expand_path('../../libraries/barbican_utils.rb', __FILE__)
+cloud_name = node[:workorder][:cloud][:ciName]
 
 secrets = get_secrets_wo()
 
@@ -25,7 +26,7 @@ end
 user_list = Array.new
 user_list.push("neutron")
 user_list.push("octavia")
-user_list.push("admin")
+user_list.push(node[:workorder][:services][:keymanagement][cloud_name][:ciAttributes][:username])
 
 replace_acl(container_name,user_list,"container")
 
