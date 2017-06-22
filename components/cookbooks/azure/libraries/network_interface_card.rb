@@ -7,7 +7,7 @@ module AzureNetwork
   # class to implement all functionality needed for an Azure NIC.
   class NetworkInterfaceCard
 
-    attr_accessor :location, :rg_name, :private_ip, :profile, :ci_id
+    attr_accessor :location, :rg_name, :private_ip, :profile, :ci_id, :flag
 
     attr_reader :creds, :subscription
 
@@ -87,10 +87,26 @@ module AzureNetwork
       begin
         OOLog.info("Updating NIC '#{network_interface.name}' ")
         start_time = Time.now.to_i
-        promise =
-          @client.network_interfaces.create_or_update(@rg_name,
-                                                      network_interface.name,
-                                                      network_interface)
+
+        begin
+          if(@flag)
+            begin
+              promise = @client.network_interfaces.get(@rg_name, network_interface.name)
+            rescue MsRestAzure::AzureOperationError => er
+              error_msg = er.body.to_s
+              Chef::Log.error('***FAULT:FATAL=' + error_msg)
+              promise =
+                  @client.network_interfaces.create_or_update(@rg_name,
+                                                              network_interface.name,
+                                                              network_interface)
+            end
+          else
+            promise =
+                @client.network_interfaces.create_or_update(@rg_name,
+                                                            network_interface.name,
+                                                            network_interface)
+          end
+        end
 
         response = promise.value!
         result = response.body
@@ -159,6 +175,7 @@ module AzureNetwork
 
       begin
         # get the subnet to use for the network
+
         subnet =
             subnet_cls.get_subnet_with_available_ips(subnetlist,
                                                      express_route_enabled)

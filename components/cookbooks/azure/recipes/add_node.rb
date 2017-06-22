@@ -132,6 +132,13 @@ secgroup_name = node.workorder.payLoad.DependsOn[0]['ciName']
 begin
   network_interface_cls =
     AzureNetwork::NetworkInterfaceCard.new(creds, subscription)
+  #required to check if nic is realdy available
+  if(defined?(node[:workorder][:rfcCi][:ciAttributes][:public_ip]) &&  node[:workorder][:rfcCi][:rfcAction] == 'update')
+    network_interface_cls.flag = true
+  else
+    network_interface_cls.flag = false
+  end
+
   network_interface_cls.location = location
   network_interface_cls.rg_name = resource_group_name
   network_interface_cls.ci_id = ci_id
