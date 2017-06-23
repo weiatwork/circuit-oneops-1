@@ -4,7 +4,8 @@ WINDOWS_SERVICE_PROPERTIES = {
   'startup_type'          =>  'start_type',
   'path'                  =>  'binary_path_name',
   'username'              =>  'service_start_name',
-  'password'              =>  'password'
+  'password'              =>  'password',
+  'dependencies'          =>  'dependencies'
 }
 
 SERVICE_STARTUP_TYPE = {
@@ -37,7 +38,7 @@ action :create do
   if @service_windows.service_exists?(new_resource.service_name)
     Chef::Log.info "The service #{new_resource.service_name} already exist."
   else
-    @service_windows.create_service( get_windows_service_attributes )
+    @service_windows.create_service(get_windows_service_attributes)
     Chef::Log.info "Successfully installed the service #{new_resource.service_name}."
     new_resource.updated_by_last_action(true)
   end
@@ -45,12 +46,15 @@ end
 
 action :update do
   if @current_resource.exists
-    if service_need_update
-      @service_windows.update_service( get_windows_service_attributes )
-      Chef::Log.info "Successfully updated the service #{new_resource.service_name}."
-    else
-      Chef::Log.info "#{new_resource.service_name} is already up to date. Nothing to do."
+    windows_service_attributes = {}
+    windows_service_attributes['service_name'] = new_resource.service_name
+    WINDOWS_SERVICE_PROPERTIES.each_pair do |property_name, value_property_name|
+      windows_service_attributes[value_property_name] = new_resource.send(property_name) if resource_needs_change(property_name) && property_name != "dependencies"
     end
+    windows_service_attributes['start_type'] = SERVICE_STARTUP_TYPE[windows_service_attributes['start_type']] unless windows_service_attributes['start_type'].nil?
+    @service_windows.update_service(windows_service_attributes)
+    update_dependencies
+    new_resource.updated_by_last_action(true)
   else
     Chef::Log.info "#{new_resource.service_name} does not exist. Nothing to do."
   end
@@ -72,9 +76,7 @@ end
 action :stop do
   if @current_resource.exists
     if @current_resource.status == 'running'
-      windows_service new_resource.service_name do
-        action :stop
-      end
+      @service_windows.stop_service(new_resource.service_name)
       new_resource.updated_by_last_action(true)
     else
       Chef::Log.info "#{new_resource.service_name} is not running. Nothing to do."
@@ -93,10 +95,15 @@ def get_windows_service_attributes
   attributes
 end
 
-def service_need_update
-  resource_need_update = false
-  WINDOWS_SERVICE_PROPERTIES.each_key do |property_name|
-    resource_need_update = true if @current_resource.send(property_name) != new_resource.send(property_name) && property_name != 'password'
+def update_dependencies
+  dependencies = (new_resource.dependencies.nil? || new_resource.dependencies.empty?) ?  "/" : new_resource.dependencies.join('/')
+
+  if new_resource.dependencies != @current_resource.dependencies
+    cmd = Mixlib::ShellOut.new("sc config #{new_resource.service_name} depend= #{dependencies}")
+    cmd.run_command
   end
-  resource_need_update
+end
+
+def resource_needs_change property_name
+  property_name == 'password' || property_name == 'username' || new_resource.send(property_name) != current_resource.send(property_name)
 end

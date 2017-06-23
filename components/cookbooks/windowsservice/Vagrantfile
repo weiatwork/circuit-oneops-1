@@ -24,7 +24,7 @@ Vagrant.configure("2") do |config|
       "windowsservice": {
         "package_name": "",
         "service_name": "",
-        "cmd_path": "",
+        "physical_path": "",
         "path": "",
         "service_display_name": "",
         "startup_type": "",

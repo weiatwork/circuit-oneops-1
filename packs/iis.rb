@@ -219,10 +219,16 @@ resource "windowsservice",
     :help       => "Installing a service in windows"
   },
   :attributes   => {
+    "package_name"             => '',
+    "repository_url"           => '',
+    "version"                  => 'latest',
     "service_name"             => '',
+    "service_display_name"     => '',
     "path"                     => '',
-    "cmd_path"                 => '$OO_LOCAL{app_directory}',
-    "user_account"             => 'NT AUTHORITY\LocalService'
+    "physical_path"            => '$OO_LOCAL{app_directory}',
+    "user_account"             => 'NT AUTHORITY\LocalService',
+    "username"                 => '',
+    "password"                 => ''
   }
 
 resource "taskscheduler",
