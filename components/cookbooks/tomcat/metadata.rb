@@ -1,6 +1,6 @@
 name                "Tomcat"
 description         "Installs/Configures tomcat"
-version             "0.1"
+version             "1.1"
 maintainer          "OneOps"
 maintainer_email    "support@oneops.com"
 license             "Apache License, Version 2.0"
@@ -53,7 +53,7 @@ attribute 'version',
               :help => 'Version of Tomcat',
               :category => '1.Global',
               :order => 4,
-              :form => {'field' => 'select', 'options_for_select' => [['7.0 - Deprecated', '7.0'], ['7.0.75', '7.0.75'], ['7.0.78', '7.0.78'], ['8.5.12', '8.5.12']]},
+              :form => {'field' => 'select', 'options_for_select' => [['7.0 - Deprecated', '7.0'], ['7.0.75', '7.0.75'], ['7.0.78', '7.0.78'], ['8.5.12', '8.5.12'], ['8.5.14', '8.5.14']]},
               :pattern => "[0-9\.]+"
           }
 
@@ -103,7 +103,7 @@ attribute 'protocol',
               :help => 'Sets "protocol" attribute in server.xml connector.[Blocking Java connector=org.apache.coyote.http11.Http11Protocol,Non blocking Java connector=org.apache.coyote.http11.Http11NioProtocol,The APR/native connector=org.apache.coyote.http11.Http11AprProtocol]. Refer. /tomcat-7.0-doc/config/http.html ',
               :category => '2.Server',
               :order => 3,
-              :form => {'field' => 'select', 'options_for_select' => [['HTTP/1.1 - Deprecated','HTTP/1.1'],['Blocking Java connector', 'org.apache.coyote.http11.Http11Protocol'], ['Non blocking Java connector', 'org.apache.coyote.http11.Http11NioProtocol'],['The APR/native connector - Deprecated', 'org.apache.coyote.http11.Http11AprProtocol']]},
+              :form => {'field' => 'select', 'options_for_select' => [['HTTP/1.1 - Deprecated','HTTP/1.1'],['Blocking Java connector', 'org.apache.coyote.http11.Http11Protocol'], ['Non blocking Java connector', 'org.apache.coyote.http11.Http11NioProtocol']]},
           }
 
 attribute 'http_connector_enabled',
