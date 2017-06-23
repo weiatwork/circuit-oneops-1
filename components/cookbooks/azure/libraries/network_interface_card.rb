@@ -1,6 +1,7 @@
 #TODO: add checks in each method for rg_name
 require File.expand_path('../../../azuresecgroup/libraries/network_security_group.rb', __FILE__)
 require File.expand_path('../../../azure_base/libraries/custom_exceptions.rb', __FILE__)
+require 'ipaddr'
 # module to contain classes for dealing with the Azure Network features.
 module AzureNetwork
 
@@ -90,16 +91,7 @@ module AzureNetwork
 
         begin
           if(@flag)
-            begin
-              promise = @client.network_interfaces.get(@rg_name, network_interface.name)
-            rescue MsRestAzure::AzureOperationError => er
-              error_msg = er.body.to_s
-              Chef::Log.error('***FAULT:FATAL=' + error_msg)
-              promise =
-                  @client.network_interfaces.create_or_update(@rg_name,
-                                                              network_interface.name,
-                                                              network_interface)
-            end
+            promise = @client.network_interfaces.get(@rg_name, network_interface.name)
           else
             promise =
                 @client.network_interfaces.create_or_update(@rg_name,
@@ -120,12 +112,29 @@ module AzureNetwork
         error_msg = e.body.to_s
         if error_msg.include? "\"code\"=>\"SubnetIsFull\""
           raise AzureBase::CustomExceptions::SubnetIsFullError, error_msg
+        elsif error_msg.include? "\"code\"=>\"ResourceNotFound\""
+          Chef::Log.error('***FAULT:FATAL= NIC is no more available, please consider replacing compute')
+          Chef::Log.error('***FAULT:FATAL=' + error_msg)
         else
           OOLog.fatal("Error creating/updating NIC.  Exception: #{e.body}")
         end
       rescue => ex
         OOLog.fatal("Error creating/updating NIC.  Exception: #{ex.message}")
       end
+    end
+
+    #function to check available ip belongs to which subnet
+    def ip_belongs_to_subnet(subnets, available_ip)
+      my_ip = IPAddr.new(available_ip)
+      subnets.each do |subnet|
+        OOLog.info(subnet.properties.address_prefix)
+        check = IPAddr.new(subnet.properties.address_prefix)
+        if(check.include?(my_ip))
+          OOLog.info('IP belongs to subnet : '+subnet.properties.address_prefix)
+          return subnet
+        end
+      end
+      return nil
     end
 
     # this manages building the network profile in preperation of creating
@@ -176,9 +185,17 @@ module AzureNetwork
       begin
         # get the subnet to use for the network
 
-        subnet =
-            subnet_cls.get_subnet_with_available_ips(subnetlist,
-                                                     express_route_enabled)
+        if(@flag)
+          OOLog.info("getting subnet which belongs that ip")
+          subnet = ip_belongs_to_subnet(subnetlist, @private_ip)
+        else
+          OOLog.info("checking in subnet")
+          subnet =
+              subnet_cls.get_subnet_with_available_ips(subnetlist,
+                                                       express_route_enabled)
+        end
+
+
 
         # define the NIC ip config object
         nic_ip_config = define_nic_ip_config(ip_type, subnet)

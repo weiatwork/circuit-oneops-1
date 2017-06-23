@@ -133,8 +133,9 @@ begin
   network_interface_cls =
     AzureNetwork::NetworkInterfaceCard.new(creds, subscription)
   #required to check if nic is realdy available
-  if(defined?(node[:workorder][:rfcCi][:ciAttributes][:public_ip]) &&  node[:workorder][:rfcCi][:rfcAction] == 'update')
+  if(defined?(node[:workorder][:rfcCi][:ciAttributes][:private_ip]) &&  node[:workorder][:rfcCi][:rfcAction] == 'update')
     network_interface_cls.flag = true
+    network_interface_cls.private_ip = node[:workorder][:rfcCi][:ciAttributes][:private_ip]
   else
     network_interface_cls.flag = false
   end
