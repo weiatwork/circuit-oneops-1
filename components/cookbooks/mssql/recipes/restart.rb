@@ -1,7 +1,2 @@
-powershell_script 'Restart SQL Server' do
-    code <<-EOH
-	restart-service -force mssqlserver
-    EOH
-end
-
-
+include_recipe 'mssql::stop'
+include_recipe 'mssql::start'
