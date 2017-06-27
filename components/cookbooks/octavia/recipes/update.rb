@@ -22,9 +22,9 @@ tenant = TenantModel.new(service_lb_attributes[:endpoint],service_lb_attributes[
                          service_lb_attributes[:username],service_lb_attributes[:password])
 stickiness = lb_attributes[:stickiness]
 persistence_type = lb_attributes[:persistence_type]
+subnet_name = service_lb_attributes[:subnet_name]
 network_manager = NetworkManager.new(tenant)
-subnet_id = select_provider_network_to_use(tenant, service_lb_attributes[:enabled_networks])
-
+subnet_id = network_manager.get_subnet_id(subnet_name)
 barbican_container_name = get_barbican_container_name()
 connection_limit = (lb_attributes[:connection_limit]).to_i
 Chef::Log.info("connection_limit : #{connection_limit}")
