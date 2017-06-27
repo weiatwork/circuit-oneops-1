@@ -8,7 +8,7 @@ depends          "barbican"
 
 grouping 'default',
   :access => "global",
-  :packages => [ 'base', 'mgmt.catalog', 'mgmt.manifest', 'catalog', 'manifest' ]
+  :packages => [ 'base', 'mgmt.catalog', 'mgmt.manifest', 'catalog', 'manifest', 'bom' ]
 
 grouping 'bom',
   :access => "global",
@@ -141,17 +141,6 @@ attribute 'domain',
     :help => 'Required for internet facing cert. Optional field if requesting internal certificate',
     :category => '1.Certificate',
     :order => 12
-  }
-
-attribute 'owner_email',
-  :description => "Application Owner Email DL (Mandatory)",
-  :default => "",
-  :format => {
-    :filter => {'all' => {'visible' => 'auto_provision:eq:true'}},
-    :help => 'Email alias of the application team that owns this certificate',
-    :category => '1.Certificate',
-    :pattern => "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}",
-    :order => 13
   }
 
 attribute 'path',
