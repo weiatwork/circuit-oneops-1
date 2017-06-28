@@ -134,6 +134,13 @@ ruby_block 'set flavor/image/availability_zone' do
         compute_type_hash["image_compute_type"] = "baremetal"
       end
 
+      image_metadata_hash = image.metadata.to_hash
+      if image_metadata_hash.has_key?("hypervisor_type") && !image_metadata_hash["hypervisor_type"].empty?
+        if image_metadata_hash["hypervisor_type"] == "baremetal"
+           compute_type_hash["image_compute_type"] = "baremetal"
+        end
+      end
+
       if flavor.name.downcase =~ /baremetal/
          compute_type_hash["flavor_compute_type"] = "baremetal"
       end
