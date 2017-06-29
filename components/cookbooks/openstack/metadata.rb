@@ -116,7 +116,7 @@ attribute 'public_subnet',
 attribute 'sizemap',
   :description => "Sizes Map",
   :data_type => "hash",
-  :default => '{ "XS":"1","S":"2","M":"3","L":"4","XL":"5","XXL":"12","3XL":"11" }',
+  :default => '{ "XS":"1","S":"2","M":"3","L":"4","XL":"5","XXL":"12","3XL":"11","XL-BD":"42" }',
   :format => {
     :help => 'Map of generic compute sizes to provider specific',
     :category => '3.Mappings',
