@@ -101,14 +101,6 @@ attribute 'tags',
     :order => 9
   }
 
-attribute 'compute_type',
-  :description => "Compute Type",
-  :grouping => 'bom',
-  :format => {
-    :help => 'Compute type determined by image and flavor.',
-    :category => '1.Identity',
-    :order => 10
-  }
 
 # state
 
