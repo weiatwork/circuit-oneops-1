@@ -1,7 +1,6 @@
 ---
 driver:
   name: vagrant
-
 provisioner:
   name: chef_solo
   cookbook_files_glob: "**/*"
@@ -24,3 +23,4 @@ suites:
             http_username: "admin"
             http_password: "admin"
             program_config: ""
+
