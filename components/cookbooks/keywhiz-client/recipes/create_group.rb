@@ -2,8 +2,7 @@ require 'rubygems'
 require 'net/https'
 require 'json'
 
-group = "/" + node[:oneops_server] + "/" + node.org + "/" + node.assembly
-#group = node.org + "/" + node.assembly
+group = "/" + node[:oneops_server] + "/" + node.org + "/" + node.assembly + "/" + node.env
 
 oneops_host = node.mgmt_url
 https = node.kw_https
