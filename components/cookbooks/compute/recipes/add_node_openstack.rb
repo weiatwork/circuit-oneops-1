@@ -153,8 +153,6 @@ ruby_block 'set flavor/image/availability_zone' do
         exit_with_error "Image and flavor selected do not match for compute request."
       end
 
-      puts "***RESULT:compute_type=#{compute_type}" if !compute_type.empty?
-
       #Set max server create value based on compute_type
       if compute_type == "baremetal"
         max_server_create_value = 360
@@ -562,12 +560,12 @@ end
 #give some time to initialize - max_wait_for_initialize_value min
 ruby_block 'wait for initialization' do
   block do
-      Chef::Log.info("Wait to initialize -  #{max_wait_for_initialize_value} min")
+      Chef::Log.debug("Wait to initialize -  #{max_wait_for_initialize_value} min")
       (1..max_wait_for_initialize_value).each do |i|
          sleep 60
       end
   end
-end if wait_for_initialization
+end if wait_for_initialization == true
 
 include_recipe "compute::ssh_port_wait"
 

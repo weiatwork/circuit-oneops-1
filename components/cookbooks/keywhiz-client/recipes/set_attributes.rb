@@ -45,7 +45,9 @@ node.set[:kw_https] = https
 ns_parts = node.workorder.rfcCi.nsPath.split("/")
 org = ns_parts[1]
 assembly = ns_parts[2]
+env = ns_parts[3]
 
 node.set[:org] = org
 node.set[:assembly] = assembly
+node.set[:env] = env
 
