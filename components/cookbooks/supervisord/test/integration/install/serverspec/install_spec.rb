@@ -2,8 +2,8 @@
 
 require 'spec_helper'
 
-describe port(9001) do 
-	it { should be_listening.on('127.0.0.1').with('tcp') }
+describe port($node['workorder']['rfcCi']['ciAttributes']['http_port']) do 
+  it { should be_listening.on('127.0.0.1').with('tcp') }
 end
 
 describe command('ps -ef|grep "supervisord"') do
