@@ -17,10 +17,23 @@ end
 #end
 
 #download kw-synch tool and start it with the config file
-remote_file '/opt/oneops/keywhiz/keysync/keysync' do
+remote_file '/opt/oneops/keywhiz/keysync/keysync.tar.gz' do
   source node.keywhiz_sync_download_url
   mode '0755'
   action :create
+end
+
+#stop the keysync service so that the untar can overwrite the keysync binary
+service "keysync" do
+  supports :status => true, :restart => true
+  action [:stop]
+  only_if { File.exists?("/opt/oneops/keywhiz/keysync/keysync") }
+end
+
+execute 'extract_tar' do
+  command 'tar --overwrite -xvzf keysync.tar.gz'
+  cwd '/opt/oneops/keywhiz/keysync'
+  only_if { File.exists?("/opt/oneops/keywhiz/keysync/keysync.tar.gz") }
 end
 
 file '/opt/oneops/keywhiz/keysync/clients/client.crt' do
