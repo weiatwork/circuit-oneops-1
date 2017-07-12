@@ -19,6 +19,6 @@ certificate["owner_email"] = node.keywhiz_sync_cert_owner_dl
 
 node.set[:certificate] = certificate
 Chef::Log.info("common is: " + certificate["common_name"])
-include_recipe provider + "::delete_cert"
+include_recipe provider + "::delete_certificate"
 
 
