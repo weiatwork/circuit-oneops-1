@@ -25,13 +25,10 @@ if node.platform =~ /windows/
   include_recipe "volume::windows_vol_add"
   return
 end
+
 storage = nil
-node.workorder.payLoad[:DependsOn].each do |dep|
-  if dep["ciClassName"] =~ /Storage/
-    storage = dep
-    break
-  end
-end
+storage,device_maps = get_storage()
+
 include_recipe "shared::set_provider"
 
 size = node.workorder.rfcCi.ciAttributes["size"].gsub(/\s+/, "")
@@ -39,7 +36,6 @@ size = node.workorder.rfcCi.ciAttributes["size"].gsub(/\s+/, "")
 storage_provider = node.storage_provider_class
 if (storage_provider =~ /azure/) && !storage.nil?        
        dev_id=nil
-       device_maps = storage['ciAttributes']['device_map'].split(" ")
        node.set[:device_maps] = device_maps
        device_maps.each do |dev_vol|
             dev_id = dev_vol.split(":")[4]
@@ -122,7 +118,6 @@ ruby_block 'create-iscsi-volume-ruby-block' do
         Chef::Log.info("instance_id: "+instance_id)
         compute = provider.servers.get(instance_id)
 
-        device_maps = storage['ciAttributes']['device_map'].split(" ")
         vols = Array.new
         dev_list = ""
         i = 0
@@ -200,7 +195,7 @@ ruby_block 'create-iscsi-volume-ruby-block' do
                   Chef::Log.error("attached already, no way to determine device")
                   # mdadm sometime reassembles with _0
                   new_raid_device = `ls -1 #{raid_device}* 2>/dev/null`.chop
-		              non_raid_device  = `ls -1 /dev/#{platform_name}/#{node.workorder.rfcCi.ciName}* 2>/dev/null`.chop
+                  non_raid_device  = `ls -1 /dev/#{platform_name}/#{node.workorder.rfcCi.ciName}* 2>/dev/null`.chop
                   if new_raid_device.empty? && non_raid_device.empty?
                     Chef::Log.warn("Cleanup Failed Attempt ")
                     vol.detach instance_id, vol_id
@@ -213,7 +208,7 @@ ruby_block 'create-iscsi-volume-ruby-block' do
                       raid_device = new_raid_device
                       no_raid_device = new_raid_device
                     end
-		          next
+                  next
                   end
                 end
 
@@ -678,13 +673,13 @@ ruby_block 'filesystem' do
       if rfc_action == "update"
         has_resized = false
         if _fstype == "xfs"
-	        `xfs_growfs #{_mount_point}`
-	        Chef::Log.info("Extending the xfs filesystem" )
-	        has_resized = true
-	      elsif (_fstype == "ext4" || _fstype == "ext3") && File.exists?("/dev/#{platform_name}/#{logical_name}")
+          `xfs_growfs #{_mount_point}`
+          Chef::Log.info("Extending the xfs filesystem" )
+          has_resized = true
+        elsif (_fstype == "ext4" || _fstype == "ext3") && File.exists?("/dev/#{platform_name}/#{logical_name}")
           `resize2fs /dev/#{platform_name}/#{logical_name}`
-           Chef::Log.info("Extending the filesystem" )
-           has_resized = true
+          Chef::Log.info("Extending the filesystem" )
+          has_resized = true
         end
         if has_resized && $? != 0
           exit_with_error "Error in extending filesystem"
