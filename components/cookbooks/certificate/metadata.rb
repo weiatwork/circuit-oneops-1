@@ -105,9 +105,8 @@ attribute 'common_name',
   :description => "Common Name",
   :default => "",
   :format => {
-    :pattern => '^[^.]*$',
     :filter => {'all' => {'visible' => 'auto_provision:eq:true'}},
-    :help => 'Enter the common name for the certificate to be provisioned. Do not use dot (.) OneOps will append the domain. Use the field below to add specific SANs',
+    :help => 'Enter the common name for the certificate to be provisioned',
     :category => '1.Certificate',
     :order => 9 
   }
