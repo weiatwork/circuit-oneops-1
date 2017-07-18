@@ -43,6 +43,7 @@ attribute 'version',
 
 attribute 'service_name',
   :description => 'Service name',
+  :editable    => false,
   :required    => 'required',
   :format      => {
     :help      => 'Name of the service to create',
@@ -67,13 +68,13 @@ attribute 'path',
     :order     => 3
   }
 
-attribute 'cmd_path',
+attribute 'physical_path',
   :description => 'Application directory',
   :required    => 'required',
   :format      => {
     :help      => 'Application directory where the package is to be installed, Ex: e:\apps',
     :category  => '2.General',
-    :pattern   => '^((?:[${}a-zA-Z]:){0,1}(?:[\\$][${}a-zA-Z0-9]+(?:_[${}a-zA-Z0-9]+)*(?:-[${}a-zA-Z0-9]+)*)+)$',
+    :pattern   => '^((?:[${}a-zA-Z]:){0,1}(?:[\\\/$][${}a-zA-Z0-9]+(?:_[${}a-zA-Z0-9]+)*(?:-[${}a-zA-Z0-9]+)*)+)$',
     :order     => 4
   }
 
@@ -100,6 +101,15 @@ attribute 'arguments',
     :help      => 'You can specify the start parameters that apply when you start the service',
     :category  => '2.General',
     :order     => 6
+  }
+
+attribute 'dependencies',
+  :description => 'Dependencies',
+  :data_type   => 'array',
+  :format      => {
+    :help      => 'The service depends on the following services',
+    :category  => '2.General',
+    :order     => 7
   }
 
 attribute 'user_account',
@@ -137,6 +147,7 @@ attribute 'password',
     :filter    => {'all' => {'visible' => 'user_account:eq:SpecificUser'}}
   }
 
+depends 'artifact'
 recipe 'start_service', 'Start windows service'
 recipe 'stop_service', 'Stop windows service'
 recipe 'restart_service', 'Restart windows service'
