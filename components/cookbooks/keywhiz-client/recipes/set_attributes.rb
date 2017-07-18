@@ -51,3 +51,6 @@ node.set[:org] = org
 node.set[:assembly] = assembly
 node.set[:env] = env
 
+#set common name of the keysync cert
+ci_id = node.workorder.rfcCi.ciId
+node.set[:common_name] = "keysync-" + ci_id.to_s + "." + node[:workorder][:cloud][:ciName] + "." + mgmt_domain
