@@ -1,6 +1,6 @@
 name                "Tomcat"
 description         "Installs/Configures tomcat"
-version             "1.1"
+version             "1.2"
 maintainer          "OneOps"
 maintainer_email    "support@oneops.com"
 license             "Apache License, Version 2.0"
@@ -13,16 +13,6 @@ grouping 'default',
 
 
 # installation attributes
-attribute 'install_type',
-          :description => "Installation Type",
-          :required => "required",
-          :default => "binary",
-          :format => {
-              :category => '1.Global',
-              :help => 'Select the type of installation - standard OS repository package or custom build from source code',
-              :order => 1,
-              :form => {'field' => 'select', 'options_for_select' => [['Repository package - Deprecated', 'repository'], ['Binary Tarball', 'binary']]}
-          }
 
 attribute 'tomcat_install_dir',
           :description => "Tomcat Installation Directory",
@@ -34,15 +24,6 @@ attribute 'tomcat_install_dir',
               :order => 2
           }
 
-attribute 'mirrors',
-          :description => "Deprecated - Binary distribution mirrors",
-          :data_type => 'array',
-          #:default => '["http://archive.apache.org/dist","http://apache.cs.utah.edu" ]',
-          :format => {
-              :category => '1.Global',
-              :help => 'Apache distribution compliant mirrors - uri without /tomcat/tomcat-x/... path.If not defined will use cloud apache mirror service',
-              :order => 3
-          }
 
 attribute 'version',
           :description => "Version",
@@ -162,11 +143,11 @@ attribute 'server_port',
           }
 
 attribute 'ajp_port',
-          :description => "AJP port",
+          :description => "AJP port - Deprecated",
           :required => "required",
           :default => "8009",
           :format => {
-              :help => 'Tomcat AJP port',
+              :help => 'Deprecated - Tomcat AJP port',
               :category => '2.Server',
               :order => 9,
               :pattern => "[0-9]+"
