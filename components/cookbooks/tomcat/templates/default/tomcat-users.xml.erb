@@ -20,12 +20,7 @@
   <role rolename="admin"/>
 <%
 manager_role = "manager-script"
-if node.tomcat.install_type == "repository"
-  case node.platform
-  when "redhat","centos","fedora"
-    manager_role = "manager"
-  end
-end
+
 %>
   <user username="admin" password="<%= node['tomcat']['manager']['key'] %>" roles="admin,<%= manager_role %>"/>
 </tomcat-users>
