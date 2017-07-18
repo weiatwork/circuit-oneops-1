@@ -25,8 +25,7 @@ end
 ci_id = node.workorder.rfcCi.ciId
 
 certificate = Hash.new
-#certificate["common_name"] = node[:oneops_server] + "-" + "keywhiz-sync-" + ci_id.to_s
-certificate["common_name"] = "keywhiz-sync-" + ci_id.to_s
+certificate["common_name"] = node[:common_name] 
 certificate["san"] = ""
 certificate["external"] = "false"
 certificate["domain"] = node[:keywhiz_sync_cert_domain] 
