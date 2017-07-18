@@ -93,10 +93,10 @@ resource "windowsservice",
     "service_name"             => '',
     "service_display_name"     => '',
     "path"                     => '',
-    "cmd_path"                 => '$OO_LOCAL{app_directory}',
-    "user_account"             => '',
+    "physical_path"            => '$OO_LOCAL{app_directory}',
+    "user_account"             => 'NT AUTHORITY\LocalService',
     "username"                 => '',
-    "password"                 => '',
+    "password"                 => ''
   }
 
 resource "taskscheduler",

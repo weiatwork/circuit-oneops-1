@@ -15,6 +15,7 @@ module OO
       windows_service_attributes['path'] = service.binary_path_name
       windows_service_attributes['startup_type'] = service.start_type
       windows_service_attributes['username'] = service.service_start_name
+      windows_service_attributes['dependencies'] = service.dependencies
 
       windows_service_attributes
     end
@@ -37,6 +38,10 @@ module OO
 
     def start_service(service_name, arguments)
       Service.start(service_name, nil, *arguments)
+    end
+
+    def stop_service(service_name)
+      Service.stop(service_name)
     end
   end
 end
