@@ -23,7 +23,7 @@ include_recipe "tomcat::force-stop"
 tomcat_install_dir = get_attribute_value("tomcat_install_dir")
 webapp_install_dir = get_attribute_value("webapp_install_dir")
 
-install_type = get_attribute_value("install_type")
+install_type = "binary"
 dest_file = "#{tomcat_install_dir}/apache-tomcat-#{full_version}.tar.gz"
 service_script = "/etc/init.d/tomcat"+ major_version
 

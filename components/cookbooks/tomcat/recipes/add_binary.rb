@@ -28,27 +28,22 @@ directory node['tomcat']['tomcat_install_dir'] do
 end
 dest_file = "#{node.tomcat.tomcat_install_dir}/apache-tomcat-#{full_version}.tar.gz"
 
-source_list = JSON.parse(node.tomcat.mirrors).map! { |mirror| "#{mirror}#{tarball}" }
-
-#node['tomcat']['mirrors']
 ##Get apache mirror configured for the cloud, if no mirror is defined for component.
-if source_list.empty?
-  cloud_name = node[:workorder][:cloud][:ciName]
-  services = node[:workorder][:services]
+cloud_name = node[:workorder][:cloud][:ciName]
+services = node[:workorder][:services]
 
-  if services.nil? || !services.has_key?(:mirror)
-    Chef::Log.error("Please make sure  cloud '#{cloud_name}' has mirror service with 'apache' eg {apache=>http://archive.apache.org/dist}")
-    exit 1
-  end
-  mirrors = JSON.parse(services[:mirror][cloud_name][:ciAttributes][:mirrors])
-  if mirrors.nil? || !mirrors.has_key?('apache')
-    Chef::Log.error("Please make sure  cloud '#{cloud_name}' has mirror service with 'apache' eg {apache=>http://archive.apache.org/dist}")
-    exit 1
-  end
-  mirrors = JSON.parse(node[:workorder][:services][:mirror][cloud_name][:ciAttributes][:mirrors])
-  source_list = mirrors['apache'].split(",").map { |mirror| "#{mirror}/#{tarball}" }
-
+if services.nil? || !services.has_key?(:mirror)
+  Chef::Log.error("Please make sure  cloud '#{cloud_name}' has mirror service with 'apache' eg {apache=>http://archive.apache.org/dist}")
+  exit 1
 end
+mirrors = JSON.parse(services[:mirror][cloud_name][:ciAttributes][:mirrors])
+if mirrors.nil? || !mirrors.has_key?('apache')
+  Chef::Log.error("Please make sure  cloud '#{cloud_name}' has mirror service with 'apache' eg {apache=>http://archive.apache.org/dist}")
+  exit 1
+end
+mirrors = JSON.parse(node[:workorder][:services][:mirror][cloud_name][:ciAttributes][:mirrors])
+source_list = mirrors['apache'].split(",").map { |mirror| "#{mirror}/#{tarball}" }
+
 
 
 build_version_checksum = {
@@ -213,7 +208,7 @@ end
 #Set up the log directories
 log_dir=node["tomcat"]["logfiles_path"]
 access_log_dir=node["tomcat"]["access_log_dir"]
-Chef::Log.info("Installation type #{node["tomcat"]["install_type"]} - access log #{access_log_dir} logpath : #{log_dir}")
+Chef::Log.info("Installation type binary - access log #{access_log_dir} logpath : #{log_dir}")
 [log_dir,access_log_dir].each do |dir_name|
   directory dir_name do
     action :create
