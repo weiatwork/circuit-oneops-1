@@ -2,6 +2,7 @@ include_pack "genericlb"
 
 name "tomcat"
 description "Tomcat"
+version "1.1"
 type "Platform"
 category "Web Application"
 
