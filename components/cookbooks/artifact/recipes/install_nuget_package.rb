@@ -3,7 +3,7 @@ application = node.workorder.rfcCi.ciAttributes
 version = application.version
 package_name = application.package_name
 repository_url = application.repository_url
-output_directory = "#{File.dirname application.physical_path}/platform_deployment"
+output_directory = ::File.join(File.dirname(application.physical_path), "platform_deployment")
 Chef::Log.info "The output directory is #{output_directory}"
 
 directory output_directory do
@@ -11,8 +11,17 @@ directory output_directory do
   recursive true
 end
 
+nuget = "C:\\ProgramData\\chocolatey\\lib\\NuGet.CommandLine\\tools\\NuGet.exe"
+oo_local_vars = node.workorder.payLoad.OO_LOCAL_VARS if node.workorder.payLoad.has_key?(:OO_LOCAL_VARS)
+
+Array(oo_local_vars).each do |var|
+  if var[:ciName] == "nuget_exe"
+    nuget = "#{var[:ciAttributes][:value]}"
+  end
+end
+
 if version == 'latest'
-  cmd = Mixlib::ShellOut.new("nuget list #{package_name} -source #{repository_url}")
+  cmd = Mixlib::ShellOut.new("#{nuget} list #{package_name} -source #{repository_url}")
   cmd.run_command
   version = cmd.stdout.split('\n')
   Chef::Log.fatal "The given package #{package_name} does not exist" unless version.size == 1
@@ -24,15 +33,6 @@ Chef::Log.info "The package_version is #{node['workorder']['rfcCi']['ciAttribute
 package_path = "#{output_directory}\\#{package_name}.#{version}"
 
 version_option = "-version #{version}"
-nuget = "C:\\ProgramData\\chocolatey\\lib\\NuGet.CommandLine\\tools\\NuGet.exe"
-
-oo_local_vars = node.workorder.payLoad.OO_LOCAL_VARS if node.workorder.payLoad.has_key?(:OO_LOCAL_VARS)
-
-Array(oo_local_vars).each do |var|
-  if var[:ciName] == "nuget_exe"
-    nuget = "#{var[:ciAttributes][:value]}"
-  end
-end
 
 powershell_script "Install #{package_name}" do
   code "#{nuget} install #{package_name} -source #{repository_url} #{version_option} -outputdirectory #{output_directory} -NoCache"

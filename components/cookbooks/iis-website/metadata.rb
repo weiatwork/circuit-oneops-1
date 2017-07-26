@@ -143,6 +143,7 @@ attribute 'logformat',
 
 attribute 'period',
   :description => 'Period',
+  :default     => 'Daily',
   :format      => {
     :help      => 'Specifies how often IIS creates a new log file',
     :category  => '3.IIS Logging',

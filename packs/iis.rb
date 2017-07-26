@@ -48,7 +48,8 @@ resource "iis-website",
     "log_file_directory" => '$OO_LOCAL{log_directory}',
     "dc_file_directory" => '$OO_LOCAL{log_directory}\\IISTemporaryCompressedFiles',
     "sc_file_directory" => '$OO_LOCAL{log_directory}\\IISTemporaryCompressedFiles',
-    "windows_authentication" => 'false'
+    "windows_authentication" => 'false',
+    "period"  => 'Daily'
   },
   :monitors => {
   'IISW3SVC' =>  { :description => 'W3SVC service status',
@@ -289,7 +290,7 @@ resource "volume",
   { :from => 'nuget-package', :to => 'iis-website' },
   { :from => 'windowsservice', :to => 'iis-website' },
   { :from => 'dotnetframework', :to => 'os' },
-  { :from => 'chocolatey-package', :to => 'iis-website' } ].each do |link|
+  { :from => 'chocolatey-package', :to => 'volume' } ].each do |link|
   relation "#{link[:from]}::depends_on::#{link[:to]}",
     :relation_name => 'DependsOn',
     :from_resource => link[:from],
