@@ -18,7 +18,7 @@ ruby_block "Stop tomcat service" do
 	end
 end
 
-include_recipe "tomcat::force-stop"
+include_recipe "tomcat::stop"
 
 tomcat_install_dir = get_attribute_value("tomcat_install_dir")
 webapp_install_dir = get_attribute_value("webapp_install_dir")

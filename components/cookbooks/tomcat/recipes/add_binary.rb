@@ -44,18 +44,9 @@ end
 mirrors = JSON.parse(node[:workorder][:services][:mirror][cloud_name][:ciAttributes][:mirrors])
 source_list = mirrors['apache'].split(",").map { |mirror| "#{mirror}/#{tarball}" }
 
-
-
-build_version_checksum = {
-  "62" => "a787ea12e163e78ccebbb9662d7da78e707aef051d15af9ab5be20489adf1f6d",
-  "42" => "c163f762d7180fc259cc0d8d96e6e05a53b7ffb0120cb2086d6dfadd991c36df",
-}
-
-#Ignore foodcritic(FC002) warning here.  We need the string interpolation magic to get the correct build version
 shared_download_http source_list.join(",") do
   path dest_file
   action :create
-  checksum build_version_checksum["#{build_version}"]   # ~FC002
 end
 
 tar_flags = "--exclude webapps/ROOT"
@@ -149,20 +140,9 @@ if !node[:tomcat][:post_startup_command].nil? # ~FC023
   end
 end
 
-depends_on=node.workorder.payLoad.DependsOn.reject { |d| d['ciClassName'] !~ /Javaservicewrapper/ }
-#if the javaservicewrapper component is present, dont generate the tomcat initd
-if (depends_on.nil? || depends_on.empty? || depends_on[0][:rfcAction] == 'delete')
 template "/etc/init.d/tomcat#{major_version}" do
   source "generic_initd.erb"
   mode "0755"
-end
-
-else
-#call wrapper.configure recipe
-  include_recipe "javaservicewrapper::wire_ci_attr"
-  #Ignoring foodcritic violation(FC007) when using self as the cookbook related to https://github.com/acrmp/foodcritic/issues/44
-  include_recipe "tomcat::setwrapperattribs" # ~FC007
-  include_recipe "javaservicewrapper::configure"
 end
 
 

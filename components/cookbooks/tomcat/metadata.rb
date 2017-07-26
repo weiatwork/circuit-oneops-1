@@ -1,6 +1,5 @@
 name                "Tomcat"
 description         "Installs/Configures tomcat"
-version             "1.2"
 maintainer          "OneOps"
 maintainer_email    "support@oneops.com"
 license             "Apache License, Version 2.0"
