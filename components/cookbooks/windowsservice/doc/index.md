@@ -71,7 +71,7 @@ In this section you configure application pool attributes.
  ### Log On section
 
  ![alt text](Log-On-section.png)
- 
+
  ![alt text](Log-On-section1.png)
 
  Attribute                | Description                                                                     | Comments   
