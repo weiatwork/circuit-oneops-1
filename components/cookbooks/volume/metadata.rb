@@ -47,6 +47,14 @@ attribute 'mode',
     :order => 3
   }
 
+attribute 'based_on_storage',
+  :description => "Based on Storage",
+  :format => {
+    :help => 'When multiple storage components are used specify the name of the storage component this volume component will depend on.',
+    :category => '1.Global',
+    :order => 4
+  }
+
 attribute 'fstype',
   :description => "Filesystem Type",
   :default => 'ext3',

@@ -134,6 +134,13 @@ ruby_block 'set flavor/image/availability_zone' do
         compute_type_hash["image_compute_type"] = "baremetal"
       end
 
+      image_metadata_hash = image.metadata.to_hash
+      if image_metadata_hash.has_key?("hypervisor_type") && !image_metadata_hash["hypervisor_type"].empty?
+        if image_metadata_hash["hypervisor_type"] == "baremetal"
+           compute_type_hash["image_compute_type"] = "baremetal"
+        end
+      end
+
       if flavor.name.downcase =~ /baremetal/
          compute_type_hash["flavor_compute_type"] = "baremetal"
       end
@@ -418,8 +425,8 @@ ruby_block 'set node network params' do
         Chef::Log.info("checking for address by network name: #{net}")
         if server.addresses.has_key?(net)
           addrs = server.addresses[net]
-	  # check multiple ips (exception: possible to have 2 ip entries (public, private) after initial deployment)
-	  exit_with_error "multiple ips returned" if addrs.size > 1 && rfcCi["rfcAction"] != "update"
+          #check multiple ips (exception: possible to have 2 ip entries (public, private) after initial deployment)
+          exit_with_error "multiple ips returned" if addrs.size > 1 && rfcCi["rfcAction"] != "update"
           private_ip = addrs.first["addr"]
           break
         end

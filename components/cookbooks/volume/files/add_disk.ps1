@@ -75,6 +75,9 @@ try
   #1. Switch online
   if ((Get-Disk -Number $DiskNum).IsOffline) {Set-Disk -Number $DiskNum -IsOffline $False}
 
+  #1a. Make sure the disk is writeable
+  if ((Get-Disk -Number $DiskNum).IsReadOnly) {Set-Disk -Number $DiskNum -IsReadOnly $False}
+
   #2. Initialize disk
   if ((Get-Disk -Number $DiskNum).PartitionStyle -eq "RAW") {Initialize-Disk -Number $DiskNum}
 

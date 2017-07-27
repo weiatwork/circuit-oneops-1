@@ -14,6 +14,8 @@ end
 
 Chef::Log.info("======= prod_level_checks_enabled enabled = #{prod_level_checks_enabled} =====")
 
+profile = node.workorder.payLoad.Environment[0][:ciAttributes]["profile"]
+
 if profile == 'prod'
   if !prod_level_checks_enabled.eql?("true")
     Chef::Log.error("production level cloud configuration is NOT enabled for PROD profile: ")

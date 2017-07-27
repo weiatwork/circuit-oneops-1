@@ -6,7 +6,7 @@ maintainer_email "support@oneops.com"
 license          "Apache License, Version 2.0"
 depends          "netscaler"
 depends          "azure_lb"
-depends          "neutron"
+depends          "octavia"
 depends          "f5-bigip"
 depends          "haproxy"
 
@@ -153,6 +153,17 @@ attribute 'connection_limit',
               :category => '1.Global',
     }
 
+attribute 'lb_service_type',
+  :description => "LB Service Type",
+  :required => "required",
+  :default => "lb",
+  :format => {
+    :important => true,
+    :help => 'Select the service type. lb for netscaler; slb for octavia',
+    :category => '1.Global',
+    :order => 1,
+    :form => { 'field' => 'select', 'options_for_select' => [['lb','lb'],['slb','slb']] }
+  }
 
 attribute 'ecv_map',
   :description => "ECV",

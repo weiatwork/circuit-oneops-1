@@ -18,12 +18,15 @@ variable 'data_drive',
   :description => 'Data Drive',
   :value       => 'F'
 
+variable 'tcp_port',
+  :description => 'TCP Port',
+  :value       => '1433'
 
 resource 'secgroup',
          :cookbook => 'oneops.1.secgroup',
          :design => true,
          :attributes => {
-             'inbound' => '[ "22 22 tcp 0.0.0.0/0", "1433 1433 tcp 0.0.0.0/0", "3389 3389 tcp 0.0.0.0/0"]'
+             'inbound' => '[ "22 22 tcp 0.0.0.0/0", "$OO_LOCAL{tcp_port} $OO_LOCAL{tcp_port} tcp 0.0.0.0/0", "3389 3389 tcp 0.0.0.0/0"]'
          },
          :requires => {
              :constraint => '1..1',
@@ -40,10 +43,51 @@ resource 'mssql',
   },
   :attributes   => {
     'version' => 'mssql_2014_enterprise',
+    'tcp_port' => '$OO_LOCAL{tcp_port}',
     'tempdb_data' => '$OO_LOCAL{temp_drive}:\\MSSQL',
     'tempdb_log' => '$OO_LOCAL{temp_drive}:\\MSSQL',
     'userdb_data' => '$OO_LOCAL{data_drive}:\\MSSQL\\UserData',
     'userdb_log' => '$OO_LOCAL{data_drive}:\\MSSQL\\UserLog'
+  },
+  :monitors => {
+  'mssql' =>  { :description => 'MSSQL Service check',
+     :chart => {'min'=>0},
+     :cmd => 'sql_servicemonitor.ps1',
+     :cmd_line => 'powershell.exe -file /opt/nagios/libexec/sql_servicemonitor.ps1',
+     :metrics =>  {
+       'mssqlup'  => metric( :unit => 'mssqlup', :description => 'MSSQL Status'),
+       'agentup'  => metric( :unit => 'agentup', :description => 'SQLAGENT status')
+     },
+     :thresholds => {
+        'MssqlProcessDown' => threshold('1m', 'avg', 'mssqlup', trigger('<=', 98, 1, 1), reset('>', 95, 1, 1),'unhealthy'),
+        'AgentProcessDown' => threshold('1m', 'avg', 'agentup', trigger('<=', 98, 1, 1), reset('>', 95, 1, 1),'unhealthy')
+     },
+   },
+    'databasecheck' =>  { :description => 'MSSQL DB status check',
+       :chart => {'min'=>0},
+       :cmd => 'sql_dbcount.ps1',
+       :cmd_line => 'powershell.exe -file /opt/nagios/libexec/sql_dbcount.ps1',
+       :metrics =>  {
+         'totaldbs'  => metric(:unit => 'totaldbs', :description => 'Total Number of databases'),
+         'offlinedbs'  => metric(:unit => 'offlinedbs', :description => 'Total Number of offline databases'),
+       },
+       :thresholds  => {
+        'offlinedbs' => threshold('1m', 'avg', 'offlinedbs', trigger('>=', 1, 1, 1), reset('<', 1, 1, 1)),
+       }
+     },
+      'latencies' =>  { :description => 'Disk latencies',
+         :chart => {'min'=>0},
+         :cmd => 'sql_disklatency.ps1',
+         :cmd_line => 'powershell.exe -file /opt/nagios/libexec/sql_disklatency.ps1',
+         :metrics =>  {
+           'logical'  => metric(:unit => 'logical', :description => 'Logical disk latency'),
+           'physical'  => metric(:unit => 'physical', :description => 'Physical disk latency'),
+         },
+         :thresholds  => {
+          'logical' => threshold('1m', 'avg', 'logical', trigger('>', 0.015, 1, 1), reset('<', 0.015, 1, 1)),
+          'physical' => threshold('1m', 'avg', 'physical', trigger('>', 0.015, 1, 1), reset('<', 0.015, 1, 1))
+         }
+       }
   }
 
 resource 'compute',
@@ -52,11 +96,11 @@ resource 'compute',
 
 resource 'storage',
   :cookbook => 'oneops.1.storage',
-  :requires => { 'constraint' => '1..1', 'services' => 'storage' }
+  :requires => { 'constraint' => '1..*', 'services' => 'storage' }
 
 resource 'volume',
   :cookbook => 'oneops.1.volume',
-  :requires => {'constraint' => '1..1', 'services' => 'compute,storage'},
+  :requires => {'constraint' => '1..*', 'services' => 'compute,storage'},
   :attributes => { 'mount_point'    => '$OO_LOCAL{data_drive}' }
 
 resource 'vol-temp',
@@ -67,7 +111,7 @@ resource 'vol-temp',
 resource 'os',
   :cookbook => 'oneops.1.os',
   :design => true,
-  :requires => { 
+  :requires => {
     :constraint => '1..1',
     :services   => 'compute,*mirror,*ntp,*windows-domain'
     },
@@ -86,7 +130,7 @@ resource 'dotnetframework',
   :attributes   => {
     :chocolatey_package_source   => 'https://chocolatey.org/api/v2/',
     :dotnet_version_package_name => '{ ".Net 4.6":"dotnet4.6", ".Net 3.5":"dotnet3.5" }'
-  }  
+  }
 
 resource 'database',
   :cookbook      => "oneops.1.database",
@@ -113,11 +157,11 @@ resource 'custom-config',
   { :from => 'storage', :to => 'os' },
   { :from => 'vol-temp', :to => 'os' },
   { :from => 'dotnetframework', :to => 'vol-temp' },
-  { :from => 'volume', :to => 'storage' }, 
+  { :from => 'volume', :to => 'storage' },
   { :from => 'mssql', :to => 'volume' } ,
   { :from => 'mssql', :to => 'dotnetframework' } ,
   { :from => 'database', :to => 'mssql' } ,
-  { :from => 'custom-config', :to => 'mssql' } 
+  { :from => 'custom-config', :to => 'mssql' }
 ].each do |link|
   relation "#{link[:from]}::depends_on::#{link[:to]}",
     :relation_name => 'DependsOn',

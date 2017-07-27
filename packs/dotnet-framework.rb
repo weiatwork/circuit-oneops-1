@@ -93,11 +93,40 @@ resource "windowsservice",
     "service_name"             => '',
     "service_display_name"     => '',
     "path"                     => '',
-    "cmd_path"                 => '$OO_LOCAL{app_directory}',
-    "user_account"             => '',
+    "physical_path"            => '$OO_LOCAL{app_directory}',
+    "user_account"             => 'NT AUTHORITY\LocalService',
     "username"                 => '',
-    "password"                 => '',
+    "password"                 => ''
   }
+
+resource "taskscheduler",
+  :cookbook => "oneops.1.taskscheduler",
+  :design => true,
+  :requires => {
+    :constraint => "0..*",
+    :help => "Installing a task in taskscheduler"
+  },
+  :attributes => {
+    "package_name"            => '',
+    "repository_url"          => '',
+    "version"                 => 'latest',
+    "task_name"               => '',
+    "description"             => '',
+    "path"                    => '',
+    "arguments"               => '',
+    "working_directory"       => '$OO_LOCAL{app_directory}',
+    "physical_path"           => '$OO_LOCAL{app_directory}',
+    "username"                => '',
+    "password"                => '',
+    "type"                    => '',
+    "execution_time_limit"    => '',
+    "start_day"               => '',
+    "start_time"              => '',
+    "days_interval"           => '',
+    "days_of_week"            => '',
+    "weeks_interval"          => ''
+  }
+
 
 resource "secgroup",
   :attributes => {
@@ -124,6 +153,7 @@ resource "volume",
   }
 
 [ { :from => 'windowsservice',  :to => 'volume' },
+  { :from => 'taskscheduler',  :to => 'volume' },
   { :from => 'dotnetframework',  :to => 'os' },
   { :from => 'chocolatey-package', :to => 'volume' } ].each do |link|
   relation "#{link[:from]}::depends_on::#{link[:to]}",
@@ -133,7 +163,7 @@ resource "volume",
     :attributes => { "flex" => false, "min" => 1, "max" => 1 }
 end
 
-[ 'windowsservice','dotnetframework','chocolatey-package' ,'volume','os' ].each do |from|
+[ 'windowsservice', 'taskscheduler', 'dotnetframework','chocolatey-package' ,'volume','os' ].each do |from|
   relation "#{from}::managed_via::compute",
     :except => [ '_default' ],
     :relation_name => 'ManagedVia',

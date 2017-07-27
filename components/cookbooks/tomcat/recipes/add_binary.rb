@@ -3,7 +3,6 @@
 #  /tomcat/tomcat-7/v7.0.41/bin/apache-tomcat-7.0.41.tar.gz
 #
 # mirrors attribute is an array of uri's prefixing the distribution path convention
-Chef::Log.error("This is add_binary. #{node.tomcat.version}")
 major_and_minor = node.tomcat.version
 major_version = major_and_minor.gsub(/\..*/,"")
 
@@ -29,27 +28,22 @@ directory node['tomcat']['tomcat_install_dir'] do
 end
 dest_file = "#{node.tomcat.tomcat_install_dir}/apache-tomcat-#{full_version}.tar.gz"
 
-source_list = JSON.parse(node.tomcat.mirrors).map! { |mirror| "#{mirror}#{tarball}" }
-
-#node['tomcat']['mirrors']
 ##Get apache mirror configured for the cloud, if no mirror is defined for component.
-if source_list.empty?
-  cloud_name = node[:workorder][:cloud][:ciName]
-  services = node[:workorder][:services]
+cloud_name = node[:workorder][:cloud][:ciName]
+services = node[:workorder][:services]
 
-  if services.nil? || !services.has_key?(:mirror)
-    Chef::Log.error("Please make sure  cloud '#{cloud_name}' has mirror service with 'apache' eg {apache=>http://archive.apache.org/dist}")
-    exit 1
-  end
-  mirrors = JSON.parse(services[:mirror][cloud_name][:ciAttributes][:mirrors])
-  if mirrors.nil? || !mirrors.has_key?('apache')
-    Chef::Log.error("Please make sure  cloud '#{cloud_name}' has mirror service with 'apache' eg {apache=>http://archive.apache.org/dist}")
-    exit 1
-  end
-  mirrors = JSON.parse(node[:workorder][:services][:mirror][cloud_name][:ciAttributes][:mirrors])
-  source_list = mirrors['apache'].split(",").map { |mirror| "#{mirror}/#{tarball}" }
-
+if services.nil? || !services.has_key?(:mirror)
+  Chef::Log.error("Please make sure  cloud '#{cloud_name}' has mirror service with 'apache' eg {apache=>http://archive.apache.org/dist}")
+  exit 1
 end
+mirrors = JSON.parse(services[:mirror][cloud_name][:ciAttributes][:mirrors])
+if mirrors.nil? || !mirrors.has_key?('apache')
+  Chef::Log.error("Please make sure  cloud '#{cloud_name}' has mirror service with 'apache' eg {apache=>http://archive.apache.org/dist}")
+  exit 1
+end
+mirrors = JSON.parse(node[:workorder][:services][:mirror][cloud_name][:ciAttributes][:mirrors])
+source_list = mirrors['apache'].split(",").map { |mirror| "#{mirror}/#{tarball}" }
+
 
 
 build_version_checksum = {
@@ -174,15 +168,15 @@ end
 
 template "#{base_dir}/conf/server.xml" do
   source "server#{major_version}.xml.erb"
-  owner "root"
-  group "root"
+  owner username
+  group group
   mode "0644"
 end
 
 template "#{base_dir}/conf/web.xml" do
   source "web#{major_version}.xml.erb"
-  owner "root"
-  group "root"
+  owner username
+  group group
   mode "0644"
 end
 
@@ -196,22 +190,15 @@ template "#{base_dir}/conf/context.xml" do
 
 template "#{base_dir}/conf/tomcat-users.xml" do
   source "tomcat-users.xml.erb"
-  owner "root"
-  group "root"
-  mode "0644"
-end
-
-template "#{base_dir}/conf/manager.xml" do
-  source "manager.xml.erb"
-  owner "root"
-  group "root"
+  owner username
+  group group
   mode "0644"
 end
 
 template "#{base_dir}/conf/catalina.policy" do
   source "catalina.policy.erb"
-  owner "root"
-  group "root"
+  owner username
+  group group
   mode "0644"
 end
 
@@ -221,7 +208,7 @@ end
 #Set up the log directories
 log_dir=node["tomcat"]["logfiles_path"]
 access_log_dir=node["tomcat"]["access_log_dir"]
-Chef::Log.info("Installation type #{node["tomcat"]["install_type"]} - access log #{access_log_dir} logpath : #{log_dir}")
+Chef::Log.info("Installation type binary - access log #{access_log_dir} logpath : #{log_dir}")
 [log_dir,access_log_dir].each do |dir_name|
   directory dir_name do
     action :create

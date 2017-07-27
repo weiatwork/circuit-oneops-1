@@ -1,6 +1,6 @@
 name                "Tomcat"
 description         "Installs/Configures tomcat"
-version             "0.1"
+version             "1.2"
 maintainer          "OneOps"
 maintainer_email    "support@oneops.com"
 license             "Apache License, Version 2.0"
@@ -13,16 +13,6 @@ grouping 'default',
 
 
 # installation attributes
-attribute 'install_type',
-          :description => "Installation Type",
-          :required => "required",
-          :default => "repository",
-          :format => {
-              :category => '1.Global',
-              :help => 'Select the type of installation - standard OS repository package or custom build from source code',
-              :order => 1,
-              :form => {'field' => 'select', 'options_for_select' => [['Repository package', 'repository'], ['Binary Tarball', 'binary']]}
-          }
 
 attribute 'tomcat_install_dir',
           :description => "Tomcat Installation Directory",
@@ -34,15 +24,6 @@ attribute 'tomcat_install_dir',
               :order => 2
           }
 
-attribute 'mirrors',
-          :description => "Deprecated - Binary distribution mirrors",
-          :data_type => 'array',
-          #:default => '["http://archive.apache.org/dist","http://apache.cs.utah.edu" ]',
-          :format => {
-              :category => '1.Global',
-              :help => 'Apache distribution compliant mirrors - uri without /tomcat/tomcat-x/... path.If not defined will use cloud apache mirror service',
-              :order => 3
-          }
 
 attribute 'version',
           :description => "Version",
@@ -53,7 +34,7 @@ attribute 'version',
               :help => 'Version of Tomcat',
               :category => '1.Global',
               :order => 4,
-              :form => {'field' => 'select', 'options_for_select' => [['6.0 - Deprecated', '6.0'], ['7.0 - Deprecated', '7.0'], ['7.0.75', '7.0.75'], ['8.5.12', '8.5.12']]},
+              :form => {'field' => 'select', 'options_for_select' => [['7.0 - Deprecated', '7.0'], ['7.0.75', '7.0.75'], ['7.0.78', '7.0.78'], ['8.5.12', '8.5.12'], ['8.5.14', '8.5.14']]},
               :pattern => "[0-9\.]+"
           }
 
@@ -98,12 +79,12 @@ attribute 'tomcat_group',
 attribute 'protocol',
           :description => 'Sets the protocol to handle incoming traffic for Connector',
           :required => 'required',
-          :default => 'HTTP/1.1',
+          :default => 'Non blocking Java connector',
           :format => {
               :help => 'Sets "protocol" attribute in server.xml connector.[Blocking Java connector=org.apache.coyote.http11.Http11Protocol,Non blocking Java connector=org.apache.coyote.http11.Http11NioProtocol,The APR/native connector=org.apache.coyote.http11.Http11AprProtocol]. Refer. /tomcat-7.0-doc/config/http.html ',
               :category => '2.Server',
               :order => 3,
-              :form => {'field' => 'select', 'options_for_select' => [['HTTP/1.1','HTTP/1.1'],['Blocking Java connector', 'org.apache.coyote.http11.Http11Protocol'], ['Non blocking Java connector', 'org.apache.coyote.http11.Http11NioProtocol'],['The APR/native connector', 'org.apache.coyote.http11.Http11AprProtocol']]},
+              :form => {'field' => 'select', 'options_for_select' => [['HTTP/1.1 - Deprecated','HTTP/1.1'],['Blocking Java connector', 'org.apache.coyote.http11.Http11Protocol'], ['Non blocking Java connector', 'org.apache.coyote.http11.Http11NioProtocol']]},
           }
 
 attribute 'http_connector_enabled',
@@ -162,11 +143,11 @@ attribute 'server_port',
           }
 
 attribute 'ajp_port',
-          :description => "AJP port",
+          :description => "AJP port - Deprecated",
           :required => "required",
           :default => "8009",
           :format => {
-              :help => 'Tomcat AJP port',
+              :help => 'Deprecated - Tomcat AJP port',
               :category => '2.Server',
               :order => 9,
               :pattern => "[0-9]+"
@@ -594,10 +575,6 @@ attribute 'max_number_of_retries_for_post_startup_check',
 recipe 'status', 'Tomcat Status'
 recipe 'start', 'Start Tomcat'
 recipe 'stop', 'Stop Tomcat'
-recipe 'force-stop', 'Skips PreShutDownHook'
-recipe 'force-restart', 'Skips PreShutDownHook'
 recipe 'restart', 'Restart Tomcat'
 recipe 'repair', 'Repair Tomcat'
-recipe 'debug', 'Debug Tomcat'
-recipe 'validateAppVersion', 'Server started after app deployment'
 recipe 'threaddump','Java Thread Dump'

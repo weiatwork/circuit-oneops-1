@@ -10,7 +10,7 @@ resource "lb",
   :except => [ 'single' ],
   :design => true,
   :cookbook => "oneops.1.lb",
-  :requires => { "constraint" => "1..1", "services" => "compute,lb,dns" },
+  :requires => { "constraint" => "1..1", "services" => "compute,lb,*slb,dns" },
   :attributes => {
     "stickiness"    => ""
   },

@@ -870,7 +870,11 @@ end
 end
 
 # managed_via
+<<<<<<< HEAD
 [ 'os', 'telegraf', 'filebeat', 'user', 'job', 'file', 'volume', 'share', 'download', 'library', 'daemon', 
+=======
+[ 'os', 'telegraf', 'user', 'job', 'file', 'volume', 'share', 'download', 'library', 'daemon', 
+>>>>>>> upstream/master
   'certificate', 'logstash', 'sensuclient', 'artifact', 'objectstore', 'keywhiz-client'].each do |from|
   relation "#{from}::managed_via::compute",
     :except => [ '_default' ],

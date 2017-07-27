@@ -46,7 +46,7 @@ sql_sys_admin_list = if node['sql_server']['sysadmins'].is_a? Array
 if (ext = '.zip' || ext = '.iso')
 
   temp_drive = 'C'
-  
+
   #use temp_drive (OO_LOCAL variable) if it has enough space
   if node[:workorder][:payLoad].has_key?(:OO_LOCAL_VARS)
     local_vars = node.workorder.payLoad.OO_LOCAL_VARS
@@ -67,7 +67,7 @@ if (ext = '.zip' || ext = '.iso')
 
   output_file = File.join(temp_location, File.basename(uri.path))
   Chef::Log.info( "Output file: #{output_file}")
-  
+
   directory temp_location do
     recursive true
   end
@@ -81,7 +81,7 @@ if (ext = '.zip' || ext = '.iso')
     $wc.DownloadFile($url, $output_file)
     EOH
     not_if "Test-Path '#{output_file}'"
-  end  
+  end
 
   powershell_script 'Extract from zipfile' do
     code <<-EOH
@@ -98,34 +98,34 @@ if (ext = '.zip' || ext = '.iso')
     block do
       ::Chef::Recipe.send(:include, Chef::Mixin::PowershellOut)
       ps_code = "$dir = '#{temp_location}/distr'
-      $a = Get-ChildItem -Path $dir -Filter setup.exe 
+      $a = Get-ChildItem -Path $dir -Filter setup.exe
       if (!$a) {
         $b = Get-ChildItem -Path $dir | ?{ $_.PSIsContainer }
         $a = Get-ChildItem $b.FullName -Filter setup.exe }
       $a.FullName + ','  + (Get-FileHash $a.FullName).Hash"
- 
+
       cmd = powershell_out!(ps_code)
       Chef::Log.info( "Powershell returned: #{cmd.stdout}")
-      
+
       new_url = cmd.stdout.split(",").first
       new_checksum = cmd.stdout.split(",").last.downcase
-      
+
       node.override['sql_server']['server']['url'] = new_url
       node.default['mssql']['setup'] = new_url
       node.override['sql_server']['server']['checksum'] = new_checksum
 
       Chef::Log.info( "Latest URL - #{node['sql_server']['server']['url']}")
       Chef::Log.info( "Latest checksum - #{node['sql_server']['server']['checksum']}")
-  
+
     end #block do
   end #ruby_block 'Find setup.exe' do
-      
+
 end #if (ext = '.zip' || ext = '.iso')
 
 #Adjust the PS resource to take runtime values for parameters
 ruby_block 'Adjust PS resource' do
   block do
-    
+
     arglist = "-sql_version_num #{node['sql_server']['version_num']} -setup_file '#{node['sql_server']['server']['url']}' -arg_list '/q /ConfigurationFile=#{config_file_path}'"
     r = run_context.resource_collection.find(:elevated_script => 'Install-Mssql-Features')
     r.arglist(arglist)
@@ -165,7 +165,7 @@ template config_file_path do
 end
 
 
-ps_script = "#{Chef::Config[:file_cache_path]}\\cookbooks\\mssql\\files\\windows\\Install-Mssql.ps1" 
+ps_script = "#{Chef::Config[:file_cache_path]}\\cookbooks\\mssql\\files\\windows\\Install-Mssql.ps1"
 elevated_script 'Install-Mssql-Features' do
   script ps_script
   timeout 1800
@@ -191,3 +191,5 @@ end
 #declare a resource to run setup command
 
 include_recipe 'mssql::configure'
+include_recipe 'mssql::monitoring'
+include_recipe 'mssql::sysadmins'

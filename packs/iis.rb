@@ -49,6 +49,74 @@ resource "iis-website",
     "dc_file_directory" => '$OO_LOCAL{log_directory}\\IISTemporaryCompressedFiles',
     "sc_file_directory" => '$OO_LOCAL{log_directory}\\IISTemporaryCompressedFiles',
     "windows_authentication" => 'false'
+  },
+  :monitors => {
+  'IISW3SVC' =>  { :description => 'W3SVC service status',
+     :chart => {'min' => 0, 'unit' => ''},
+     :heartbeat => false,
+     :cmd => 'iis_service_status.ps1',
+     :cmd_line => 'powershell.exe -file /opt/nagios/libexec/iis_service_status.ps1',
+     :metrics =>  {
+       'up'  => metric( :unit => '%', :description => 'Up %')
+     },
+     :thresholds => {
+        'ProcessDown' => threshold('1m', 'avg', 'up', trigger('<=', 98, 1, 1), reset('>', 95, 1, 1),'unhealthy')
+     },
+   },
+   'AspNetCounters' =>  { :description => 'ASP.NET counters',
+      :chart => {'min' => 0, 'unit' => ''},
+      :heartbeat => false,
+      :cmd => 'aspnet_counters.ps1',
+      :cmd_line => 'powershell.exe -file /opt/nagios/libexec/aspnet_counters.ps1',
+      :metrics =>  {
+        'RequestCount'  => metric(:unit => '', :description => 'Indicates number of requests per second handled by the application.', :dstype => 'GAUGE'),
+        'RequestsTotal'  => metric(:unit => '', :description => 'Indicates number of current requests', :dstype => 'GAUGE'),
+        'TotalErrorsPerSec'  => metric(:unit => 'errors /sec', :description => 'Indicates number of errors per second.', :dstype => 'GAUGE'),
+        'RequestsExecuting'  => metric(:unit => '', :description => 'Indicates the number of executing requests', :dstype => 'GAUGE'),
+        'RestartCount'  => metric(:unit => '', :description => 'Indicates the number of restarts of the application in the server uptime', :dstype => 'GAUGE'),
+        'RequestWaitTime'  => metric(:unit => 'ms', :description => 'Requests held in the queue', :dstype => 'GAUGE'),
+        'RequestsQueued'  => metric(:unit => '', :description => 'Throughput of the ASP.NET application on the server', :dstype => 'GAUGE')
+      },
+      :thresholds => {
+      },
+    },
+    'SystemCounters' =>  { :description => 'System counters',
+       :chart => {'min' => 0, 'unit' => ''},
+       :heartbeat => false,
+       :cmd => 'system_counters.ps1',
+       :cmd_line => 'powershell.exe -file /opt/nagios/libexec/system_counters.ps1',
+       :metrics =>  {
+         'CpuUsage'  => metric(:unit => 'Percent', :description => 'Average percentage of processor time occupied', :dstype => 'GAUGE'),
+         'QueueLength'  => metric(:unit => '', :description => 'Processor Queue Length', :dstype => 'GAUGE'),
+         'MemoryAvailable'  => metric(:unit => 'MB', :description => 'Amount of physical memory available', :dstype => 'GAUGE'),
+         'MemoryPages'  => metric(:unit => 'Percent', :description => 'Amount of read and write requests from memory to disk', :dstype => 'GAUGE')
+       },
+       :thresholds => {
+       },
+     },
+     'DotNetCounters' =>  { :description => '.Net counters',
+        :chart => {'min' => 0, 'unit' => ''},
+        :heartbeat => false,
+        :cmd => 'dotnet_counters.ps1',
+        :cmd_line => 'powershell.exe -file /opt/nagios/libexec/dotnet_counters.ps1',
+        :metrics =>  {
+          'ExceptionsPerSecond'  => metric(:unit => 'exceptions /sec', :description => 'Number of exceptions per second that the application is throwing', :dstype => 'GAUGE'),
+          'TotalCommittedBytes'  => metric(:unit => 'B/sec', :description => 'Shows the amount of virtual memory reserved for the application on the paging file', :dstype => 'GAUGE')
+        },
+        :thresholds => {
+        },
+      },
+      'WebConnections' =>  { :description => 'Web Connections',
+         :chart => {'min' => 0, 'unit' => ''},
+         :heartbeat => false,
+         :cmd => 'web_connections.ps1',
+         :cmd_line => 'powershell.exe -file /opt/nagios/libexec/web_connections.ps1',
+         :metrics =>  {
+           'CurrentConnections'  => metric(:unit => '', :description => 'Shows the number of active connections with the Web Service', :dstype => 'GAUGE')
+         },
+         :thresholds => {
+         },
+       }
   }
 
 resource "dotnetframework",
@@ -151,11 +219,46 @@ resource "windowsservice",
     :help       => "Installing a service in windows"
   },
   :attributes   => {
+    "package_name"             => '',
+    "repository_url"           => '',
+    "version"                  => 'latest',
     "service_name"             => '',
+    "service_display_name"     => '',
     "path"                     => '',
-    "cmd_path"                 => '$OO_LOCAL{app_directory}',
-    "user_account"             => 'NT AUTHORITY\LocalService'
+    "physical_path"            => '$OO_LOCAL{app_directory}',
+    "user_account"             => 'NT AUTHORITY\LocalService',
+    "username"                 => '',
+    "password"                 => ''
   }
+
+resource "taskscheduler",
+  :cookbook => "oneops.1.taskscheduler",
+  :design => true,
+  :requires => {
+    :constraint => "0..*",
+    :help => "Installing a task in taskscheduler"
+  },
+  :attributes => {
+    "package_name"            => '',
+    "repository_url"          => '',
+    "version"                 => 'latest',
+    "task_name"               => '',
+    "description"             => '',
+    "path"                    => '',
+    "arguments"               => '',
+    "working_directory"       => '$OO_LOCAL{app_directory}',
+    "physical_path"           => '$OO_LOCAL{app_directory}',
+    "username"                => '',
+    "password"                => '',
+    "type"                    => '',
+    "execution_time_limit"    => '',
+    "start_day"               => '',
+    "start_time"              => '',
+    "days_interval"           => '',
+    "days_of_week"            => '',
+    "weeks_interval"          => ''
+  }
+
 
 resource "lb",
   :attributes => {
@@ -181,6 +284,7 @@ resource "volume",
   }
 
 [ { :from => 'iis-website', :to => 'dotnetframework' },
+  { :from => 'taskscheduler',  :to => 'volume' },
   { :from => 'iis-website', :to => 'volume' },
   { :from => 'nuget-package', :to => 'iis-website' },
   { :from => 'windowsservice', :to => 'iis-website' },
@@ -199,7 +303,7 @@ relation "iis-website::depends_on::certificate",
   :to_resource => 'certificate',
   :attributes => {"propagate_to" => "from", "flex" => false, "min" => 1, "max" => 1}
 
-[ 'iis-website', 'dotnetframework', 'nuget-package', 'windowsservice' , 'chocolatey-package' , 'volume', 'os' ].each do |from|
+[ 'iis-website', 'taskscheduler', 'dotnetframework', 'nuget-package', 'windowsservice' , 'chocolatey-package' , 'volume', 'os' ].each do |from|
   relation "#{from}::managed_via::compute",
     :except => [ '_default' ],
     :relation_name => 'ManagedVia',
