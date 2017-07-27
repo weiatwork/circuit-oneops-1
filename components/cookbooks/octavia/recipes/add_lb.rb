@@ -35,6 +35,11 @@ node.loadbalancers.each do |loadbalancer|
   iport = loadbalancer[:iport]
   sg_name = loadbalancer[:sg_name]
 
+  if (vprotocol == 'HTTPS' and iprotocol == 'HTTP') or (vprotocol == 'HTTP' and iprotocol == 'HTTPS')
+    Chef::Log.error(loadbalancer)
+    Chef::Log.error('Protocol Mismatch in listener config')
+    raise Exception, 'Protocol Mismatch in listener config'
+  end
   if vprotocol == 'HTTPS' and iprotocol == 'HTTPS'
     health_monitor = initialize_health_monitor('TCP', lb_attributes[:ecv_map], lb_name, iport)
   else
@@ -42,7 +47,7 @@ node.loadbalancers.each do |loadbalancer|
   end
 
   members = initialize_members(subnet_id, iport)
-  pool = initialize_pool(iprotocol, lb_attributes[:lbmethod], lb_name, members, health_monitor, stickiness, persistence_type)
+  pool = initialize_pool(iprotocol, iport, lb_attributes[:lbmethod], lb_name, members, health_monitor, stickiness, persistence_type)
   if !barbican_container_name.nil? && !barbican_container_name.empty? && vprotocol == 'TERMINATED_HTTPS'
     secret_manager = SecretManager.new(service_lb_attributes[:endpoint], service_lb_attributes[:username],service_lb_attributes[:password], service_lb_attributes[:tenant] )
     container_ref = secret_manager.get_container(barbican_container_name)
