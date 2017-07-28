@@ -796,8 +796,9 @@ end
   { :from => 'library',     :to => 'os' },
   { :from => 'objectstore',  :to => 'compute'},
   { :from => 'keywhiz-client',  :to => 'os'},
-  { :from => 'keywhiz-client',  :to => 'user'},  
+  { :from => 'keywhiz-client',  :to => 'user'},
   { :from => 'keywhiz-client',  :to => 'certificate'},
+  { :from => 'keywhiz-client',  :to => 'volume'},
   { :from => 'objectstore',  :to => 'user'}
 ].each do |link|
   relation "#{link[:from]}::depends_on::#{link[:to]}",
