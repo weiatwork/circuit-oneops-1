@@ -23,4 +23,7 @@ case cloud_service[:ciClassName].split(".").last.downcase
 
   when /netscaler/
     include_recipe "lb::add"
+
+  when /azure_lb/
+    include_recipe "lb::add"
 end

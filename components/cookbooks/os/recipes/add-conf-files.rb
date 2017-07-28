@@ -26,6 +26,14 @@ else
   cloud_priority = "secondary"
 end
 
+provider = node[:workorder][:services][:compute][cloud_name][:ciClassName].gsub("cloud.service.","").downcase.split(".").last
+
+if provider =~ /azure/
+  cloud_tenant = node[:workorder][:payLoad][:Organization][0][:ciName]
+else
+  cloud_tenant = compute_cloud_service[:tenant]
+end
+
 
 vars =  { 
   :ONEOPS_NSPATH =>  node[:workorder][:rfcCi][:nsPath],
@@ -40,7 +48,7 @@ vars =  {
   :ONEOPS_CLOUD_COMPUTE_SERVICE =>node[:workorder][:services][:compute][cloud_name][:ciName],
   :ONEOPS_CLOUD_REGION => compute_cloud_service[:region],
   :ONEOPS_CLOUD_ADMINSTATUS => cloud_priority,
-  :ONEOPS_CLOUD_TENANT => compute_cloud_service[:tenant]
+  :ONEOPS_CLOUD_TENANT => cloud_tenant
 }
 
 

@@ -192,3 +192,4 @@ end
 
 include_recipe 'mssql::configure'
 include_recipe 'mssql::monitoring'
+include_recipe 'mssql::sysadmins'

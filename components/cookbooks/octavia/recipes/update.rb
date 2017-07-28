@@ -22,9 +22,8 @@ tenant = TenantModel.new(service_lb_attributes[:endpoint],service_lb_attributes[
                          service_lb_attributes[:username],service_lb_attributes[:password])
 stickiness = lb_attributes[:stickiness]
 persistence_type = lb_attributes[:persistence_type]
-subnet_name = service_lb_attributes[:subnet_name]
 network_manager = NetworkManager.new(tenant)
-subnet_id = network_manager.get_subnet_id(subnet_name)
+subnet_id = select_provider_network_to_use(tenant, service_lb_attributes[:enabled_networks])
 barbican_container_name = get_barbican_container_name()
 connection_limit = (lb_attributes[:connection_limit]).to_i
 Chef::Log.info("connection_limit : #{connection_limit}")
@@ -77,6 +76,11 @@ begin
         vport = listener_properties[1]
         iprotocol = listener_properties[2].upcase
         iport = listener_properties[3]
+        if (vprotocol == 'HTTPS' and iprotocol == 'HTTP') or (vprotocol == 'HTTP' and iprotocol == 'HTTPS')
+          Chef::Log.error(listener)
+          Chef::Log.error('Protocol Mismatch in listener config')
+          raise Exception, 'Protocol Mismatch in listener config'
+        end
         if vprotocol == 'HTTPS' and iprotocol == 'HTTPS'
           health_monitor = initialize_health_monitor('TCP', lb_attributes[:ecv_map], lb_name, iport)
         else
@@ -84,9 +88,9 @@ begin
         end
 
         members = initialize_members(subnet_id, iport)
-        pool = initialize_pool(iprotocol, lb_attributes[:lbmethod], lb_name, members, health_monitor, stickiness, persistence_type)
+        pool = initialize_pool(iprotocol, iport, lb_attributes[:lbmethod], lb_name, members, health_monitor, stickiness, persistence_type)
         new_listener = nil
-        if !barbican_container_name.nil? && !barbican_container_name.empty?
+        if !barbican_container_name.nil? && !barbican_container_name.empty? && vprotocol == 'TERMINATED_HTTPS'
           secret_manager = SecretManager.new(service_lb_attributes[:endpoint], service_lb_attributes[:username],service_lb_attributes[:password], service_lb_attributes[:tenant] )
           container_ref = secret_manager.get_container(barbican_container_name)
           Chef::Log.info("Container_ref : #{container_ref}")

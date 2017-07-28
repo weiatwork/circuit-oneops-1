@@ -83,8 +83,8 @@ resource "iis-website",
     'SystemCounters' =>  { :description => 'System counters',
        :chart => {'min' => 0, 'unit' => ''},
        :heartbeat => false,
-       :cmd => 'check_system.ps1',
-       :cmd_line => 'powershell.exe -file /opt/nagios/libexec/check_system.ps1',
+       :cmd => 'system_counters.ps1',
+       :cmd_line => 'powershell.exe -file /opt/nagios/libexec/system_counters.ps1',
        :metrics =>  {
          'CpuUsage'  => metric(:unit => 'Percent', :description => 'Average percentage of processor time occupied', :dstype => 'GAUGE'),
          'QueueLength'  => metric(:unit => '', :description => 'Processor Queue Length', :dstype => 'GAUGE'),
@@ -219,11 +219,46 @@ resource "windowsservice",
     :help       => "Installing a service in windows"
   },
   :attributes   => {
+    "package_name"             => '',
+    "repository_url"           => '',
+    "version"                  => 'latest',
     "service_name"             => '',
+    "service_display_name"     => '',
     "path"                     => '',
-    "cmd_path"                 => '$OO_LOCAL{app_directory}',
-    "user_account"             => 'NT AUTHORITY\LocalService'
+    "physical_path"            => '$OO_LOCAL{app_directory}',
+    "user_account"             => 'NT AUTHORITY\LocalService',
+    "username"                 => '',
+    "password"                 => ''
   }
+
+resource "taskscheduler",
+  :cookbook => "oneops.1.taskscheduler",
+  :design => true,
+  :requires => {
+    :constraint => "0..*",
+    :help => "Installing a task in taskscheduler"
+  },
+  :attributes => {
+    "package_name"            => '',
+    "repository_url"          => '',
+    "version"                 => 'latest',
+    "task_name"               => '',
+    "description"             => '',
+    "path"                    => '',
+    "arguments"               => '',
+    "working_directory"       => '$OO_LOCAL{app_directory}',
+    "physical_path"           => '$OO_LOCAL{app_directory}',
+    "username"                => '',
+    "password"                => '',
+    "type"                    => '',
+    "execution_time_limit"    => '',
+    "start_day"               => '',
+    "start_time"              => '',
+    "days_interval"           => '',
+    "days_of_week"            => '',
+    "weeks_interval"          => ''
+  }
+
 
 resource "lb",
   :attributes => {
@@ -249,6 +284,7 @@ resource "volume",
   }
 
 [ { :from => 'iis-website', :to => 'dotnetframework' },
+  { :from => 'taskscheduler',  :to => 'volume' },
   { :from => 'iis-website', :to => 'volume' },
   { :from => 'nuget-package', :to => 'iis-website' },
   { :from => 'windowsservice', :to => 'iis-website' },
@@ -267,7 +303,7 @@ relation "iis-website::depends_on::certificate",
   :to_resource => 'certificate',
   :attributes => {"propagate_to" => "from", "flex" => false, "min" => 1, "max" => 1}
 
-[ 'iis-website', 'dotnetframework', 'nuget-package', 'windowsservice' , 'chocolatey-package' , 'volume', 'os' ].each do |from|
+[ 'iis-website', 'taskscheduler', 'dotnetframework', 'nuget-package', 'windowsservice' , 'chocolatey-package' , 'volume', 'os' ].each do |from|
   relation "#{from}::managed_via::compute",
     :except => [ '_default' ],
     :relation_name => 'ManagedVia',

@@ -1,26 +1,23 @@
 Chef::Log.info('Windows volume add recipe')
-storage = nil
-device_maps = nil
-node.workorder.payLoad[:DependsOn].each do |dep|
-  if dep['ciClassName'] =~ /Storage/
-    storage = dep
-    device_maps = storage['ciAttributes']['device_map'].split(" ")
-    break
-  end
-end
-Chef::Log.info("Storage: #{storage}")
 
 ps_script = "#{Chef::Config[:file_cache_path]}/cookbooks/os/files/windows/Run-Script.ps1"
 ps_volume_script = "#{Chef::Config[:file_cache_path]}/cookbooks/Volume/files/add_disk.ps1"
 
-mount_point =  node.workorder.rfcCi.ciAttributes[:mount_point]
+cloud_name = node[:workorder][:cloud][:ciName]
+mount_point =  node[:workorder][:rfcCi][:ciAttributes][:mount_point]
+
 reg_ex = /[e-z]|[E-Z]/
 if (mount_point.nil? || mount_point.length > 1 || !reg_ex.match(mount_point))
   exit_with_error ("Invalid mount point for a windows drive: #{mount_point}")
 end
 
+#Determine which particular storage this volume depends on
+storage,device_maps = get_storage()
+
+Chef::Log.info("Device map: #{device_maps}")
+
 #No DependsOn storage, assuming it's an ephemeral disk - add it exit
-if storage.nil?
+if device_maps.empty?
   Chef::Log.info("no DependsOn Storage - Assuming ephemeral storage")
   #Execute PS script to add ephemeral disk (set online, initialize, create partition and format volume)
   arg_list = "-Command \"& {#{ps_volume_script} -DriveLetter #{mount_point} }\" "
@@ -37,12 +34,11 @@ end
 
 include_recipe "shared::set_provider"
 
-cloud_name = node[:workorder][:cloud][:ciName]
 token_class = node[:workorder][:services][:compute][cloud_name][:ciClassName].split(".").last.downcase
 provider = node[:iaas_provider]
 storage_provider = provider
 storage_provider = node[:storage_provider] if token_class =~ /rackspace|ibm/
-instance_id = node.workorder.payLoad.ManagedVia[0]["ciAttributes"]["instance_id"]
+instance_id = node[:workorder][:payLoad][:ManagedVia][0][:ciAttributes][:instance_id]
 compute = provider.servers.get(instance_id)
 Chef::Log.info("instance_id: "+instance_id)
 
@@ -64,7 +60,11 @@ else
     vol = nil
     vol = storage_provider.volumes.get vol_id
 
-    Chef::Log.info("vol: "+ vol.inspect.gsub("\n"," ").gsub("<","").gsub(">","") )
+    if vol.nil?
+      exit_with_error ("Storage #{vol_id} was not found!")
+    else
+      Chef::Log.info("vol: "+ vol.inspect.gsub("\n"," ").gsub("<","").gsub(">","") )
+    end
 
     #Attempt to attach
     begin

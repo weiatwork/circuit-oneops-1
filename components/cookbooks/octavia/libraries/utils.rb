@@ -1,20 +1,19 @@
 
 def initialize_health_monitor(iprotocol, ecv_map, lb_name, iport)
-  fail ArgumentError, 'ecv_map is invalid' if ecv_map.nil? || ecv_map.empty?
+  health_monitor = HealthMonitorModel.new(iprotocol, 5, 2, 3)
+  health_monitor.label.name=lb_name + '-ecv-' + iport
 
   begin
     ecv_map_list = JSON.parse(ecv_map)
     ecv_map_list.each do |ecv_port, ecv_path|
       if ecv_port == iport
         ecv_method, ecv_url = ecv_path.split(' ', 2)
-        health_monitor = HealthMonitorModel.new(iprotocol, 5, 2, 3)
-        health_monitor.label.name=lb_name + '-ecv'
         health_monitor.http_method=ecv_method
         health_monitor.url_path=ecv_url
         return health_monitor
       end
     end
-    raise "No ECV defined for port #{iport}"
+    return health_monitor
   end
 end
 
@@ -34,9 +33,9 @@ def initialize_members(subnet_id, protocol_port)
   return members
 end
 
-def initialize_pool(iprotocol, lb_algorithm, lb_name, members, health_monitor, stickiness, persistence_type)
+def initialize_pool(iprotocol, iport, lb_algorithm, lb_name, members, health_monitor, stickiness, persistence_type)
   pool = PoolModel.new(iprotocol, lb_algorithm)
-  pool.label.name=lb_name + '-pool'
+  pool.label.name=lb_name + '-pool-' + iport
   pool.members=members
   pool.health_monitor=health_monitor
 
@@ -50,7 +49,7 @@ end
 
 def initialize_listener(vprotocol, vprotocol_port, lb_name, pool, connection_limit, default_container_ref=nil)
   listener = ListenerModel.new(vprotocol, vprotocol_port)
-  listener.label.name=lb_name + '-listener'
+  listener.label.name=lb_name + '-listener-' + vprotocol_port
   listener.pool=pool
   listener.connection_limit=connection_limit
   if !default_container_ref.nil?

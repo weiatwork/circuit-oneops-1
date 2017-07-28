@@ -7,7 +7,7 @@ default['sql_server']['install_dir']    = 'C:\Program Files\Microsoft SQL Server
 default['sql_server']['instance_dir']   = 'C:\Program Files\Microsoft SQL Server'
 default['sql_server']['shared_wow_dir'] = 'C:\Program Files (x86)\Microsoft SQL Server'
 default['sql_server']['agent_account'] =  'NT AUTHORITY\NETWORK SERVICE'
-default['sql_server']['agent_startup'] =  'Disabled'
+default['sql_server']['agent_startup'] =  'Automatic'
 default['sql_server']['rs_mode'] = 'FilesOnlyMode'
 default['sql_server']['rs_account'] = 'NT AUTHORITY\NETWORK SERVICE'
 default['sql_server']['rs_startup'] = 'Automatic'
@@ -57,13 +57,13 @@ default['sql_server']['sql_user_db_log_dir']   = node['mssql']['userdb_log']
 #Configure settings
 # Tcp settings
 default['sql_server']['tcp_enabled']       = true
-default['sql_server']['port']              = 1433 # Keep port for backward compatibility
+default['sql_server']['port']              = node['mssql']['tcp_port']
 default['sql_server']['tcp_dynamic_ports'] = ''
 # Named Pipes settings
 default['sql_server']['np_enabled']        = false
 # Shared Memory settings
 default['sql_server']['sm_enabled']        = true
 # Via settings
-default['sql_server']['via_default_port']  = '0:1433'
+default['sql_server']['via_default_port']  = "0:#{node['mssql']['tcp_port']}"
 default['sql_server']['via_enabled']       = false
-default['sql_server']['via_listen_info']   = '0:1433'
+default['sql_server']['via_listen_info']   = "0:#{node['mssql']['tcp_port']}"

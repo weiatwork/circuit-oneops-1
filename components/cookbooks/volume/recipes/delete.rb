@@ -67,7 +67,7 @@ if rfcAttrs.has_key?("mount_point") && !rfcAttrs["mount_point"].empty?
     cmd = "#{ps_volume_script} \"#{mount_point}\""
     Chef::Log.info("cmd:"+cmd)
 
-	powershell_script "Remove-Windows-Volume" do
+    powershell_script "Remove-Windows-Volume" do
       code cmd
     end
   end #if node.platform !~ /windows/
@@ -89,14 +89,7 @@ if provider_class =~ /virtualbox|vagrant|docker/
 end
 
 storage = nil
-if node.workorder.payLoad.has_key?('DependsOn')
-  node.workorder.payLoad.DependsOn.each do |dep|
-    if dep["ciClassName"] =~ /Storage/
-      storage = dep
-      break
-    end
-  end
-end
+storage, device_maps = get_storage()
 
 if storage.nil?
   Chef::Log.info("no DependsOn Storage.")
@@ -110,8 +103,8 @@ ruby_block 'lvremove storage' do
 
     max_retry_count = 3
 
-	if !is_windows
-	  `lvremove -f #{platform_name}`
+    if !is_windows
+      `lvremove -f #{platform_name}`
       
       raid_device = "/dev/md/"+ node.workorder.rfcCi.ciName
       retry_count = 0
@@ -138,31 +131,30 @@ ruby_block 'lvremove storage' do
     storage_provider = node.storage_provider
     instance_id = node.workorder.payLoad.ManagedVia[0]["ciAttributes"]["instance_id"]
     Chef::Log.info("instance_id: "+instance_id)
-    device_maps = storage['ciAttributes']['device_map'].split(" ")
 
       change_count = 1
       retry_count = 0
       while change_count > 0 && retry_count < max_retry_count
         change_count = 0    
-     
+
         device_maps.each do |dev_vol|
           vol_id = dev_vol.split(":")[0]
           dev_id = dev_vol.split(":")[1]
           Chef::Log.info("vol: "+vol_id)
 
-		  if provider_class =~ /rackspace|ibm/
+          if provider_class =~ /rackspace|ibm/
             volume = storage_provider.volumes.get vol_id
           elsif provider_class =~ /azure/ && !is_windows
-			Chef::Log.info("running: lvdisplay /dev/#{platform_name}/* ...")
+            Chef::Log.info("running: lvdisplay /dev/#{platform_name}/* ...")
             out=`lvdisplay /dev/#{platform_name}/*`
             Chef::Log.info("out: #{out}")
             if $? != 0 #No more volumes, disk can be detached.
               Chef::Log.info("There is no more volumes on the disk, so disk can be detached.")
               dd_manager = Datadisk.new(node) # using azuredatadisk library to detach, recipes cannot be called from the ruby block
               dd_manager.detach()
-            end              
-		  elsif provider_class =~ /azure/ && is_windows
-		    Chef::Log.info("Windows: Assuming all volumes have been set offline.")
+            end
+          elsif provider_class =~ /azure/ && is_windows
+            Chef::Log.info("Windows: Assuming all volumes have been set offline.")
             dd_manager = Datadisk.new(node) # using azuredatadisk library to detach, recipes cannot be called from the ruby block
             dd_manager.detach()
           else
@@ -179,11 +171,11 @@ ruby_block 'lvremove storage' do
             else
               vol_state = volume.state.downcase
             end
-            
+
             if vol_state != "available" && vol_state != "detached"
               if vol_state != "detaching"
                 Chef::Log.info("detaching "+vol_id)
-                
+
                 case provider_class
                 when /openstack/
                   attached_instance_id = ""
@@ -199,7 +191,7 @@ ruby_block 'lvremove storage' do
                     detached=false
                     detach_wait_count=0
 
-					while !detached && detach_wait_count<max_retry_count do
+                    while !detached && detach_wait_count<max_retry_count do
                       volume = provider.volumes.get vol_id
                       Chef::Log.info("vol state: "+volume.status)
                       if volume.status == "available"
@@ -210,13 +202,13 @@ ruby_block 'lvremove storage' do
                       end
                     end
 
-					#Could not detach in allocated number of tries
-					exit_with_error("Could not detach volume #{vol_id}") unless detached
+                    #Could not detach in allocated number of tries
+                    exit_with_error("Could not detach volume #{vol_id}") unless detached
 
                   end
 
                 when /rackspace/
-    	            compute = provider.servers.get instance_id
+                  compute = provider.servers.get instance_id
                   compute.attachments.each do |a|
                      Chef::Log.info "destroying: "+a.inspect
                      a.destroy
@@ -234,7 +226,7 @@ ruby_block 'lvremove storage' do
                      Chef::Log.info("attached_instance_id: #{volume.server_id} doesn't match this instance_id: "+instance_id)
                   end
                 end
-    
+
               end
               change_count += 1
             else
@@ -244,7 +236,7 @@ ruby_block 'lvremove storage' do
             exit_with_error("#{e.message}" +"\n"+ "#{e.backtrace.inspect}")
           end
         end
-    
+
         Chef::Log.info("this pass detach count: #{change_count}")
         if change_count > 0
           retry_sec = retry_count*10
