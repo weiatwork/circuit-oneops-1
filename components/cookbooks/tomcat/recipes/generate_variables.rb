@@ -44,10 +44,8 @@ Chef::Log.info("retrieving keystore location from keyStore but only if we depend
 if (!depends_on_keystore.nil? && !depends_on_keystore.empty?)
     Chef::Log.info("do depend on keystore, with filename: #{depends_on_keystore[0]['ciAttributes']['keystore_filename']} ")
     #stash values which will be needed in server.xml template .erb
-    #node.set['tomcat']['keystore_path'] = depends_on_keystore[0].ciAttributes.keystore_filename
     node.set['tomcat']['keystore_path'] = depends_on_keystore[0]['ciAttributes']['keystore_filename']
 
-    #node.set['tomcat']['keystore_pass'] = depends_on_keystore[0].ciAttributes.keystore_password
     node.set['tomcat']['keystore_pass'] = depends_on_keystore[0]['ciAttributes']['keystore_password']
     Chef::Log.info("stashed keystore_path: #{node['tomcat']['keystore_path']} ")
 end
