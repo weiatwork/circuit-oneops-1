@@ -44,16 +44,7 @@ cron "logrotate" do
   action :create
 end
 
-depends_on=node.workorder.payLoad.DependsOn.reject{ |d| d['ciClassName'] !~ /Javaservicewrapper/ }
 depends_on_keystore=node.workorder.payLoad.DependsOn.reject{ |d| d['ciClassName'] !~ /Keystore/ }
-
-#Ignore foodcritic(FC023) warning here.  Looks for the file resource and since it cannot find it the recipe fails if we use the only_if directive
-if (!depends_on.nil? && !depends_on.empty? && File.exists?('/etc/init.d/' + tomcat_version_name)) # ~FC023
-#delete the tomcat init.d daemon
-	file '/etc/init.d/'+ tomcat_version_name do
-		action :delete
-	end
-end
 
 template "/opt/nagios/libexec/check_tomcat.rb" do
   source "check_tomcat.rb.erb"
@@ -99,14 +90,8 @@ link node['tomcat']['webapp_install_dir'] do
   not_if "test -d #{node['tomcat']['webapp_install_dir']}"
 end
 
-
-if (!depends_on.nil? && !depends_on.empty? && depends_on[0][:rfcAction] != "delete")
-	include_recipe "javaservicewrapper::restart"
-else
-	service "tomcat" do
-    service_name tom_ver
-  	action [:enable]
-  end
-  include_recipe "tomcat::restart"
-
+service "tomcat" do
+  service_name tom_ver
+	action [:enable]
 end
+include_recipe "tomcat::restart"
