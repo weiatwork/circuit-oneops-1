@@ -44,10 +44,12 @@ File.readlines(oneops_conf_path).each do |line|
   end
 end
 
-broker_address = mirror["dal_kafka_broker"]
+broker_address = mirror["#{dc}_kafka_broker"]
 if (broker_address.nil?)
   broker_address = mirror["default_kafka_broker"]
 end
+
+broker_address = broker_address.split(",").map { |e| "'#{e}'" }.join(',')
 
 Chef::Log.info("Using kafka broker address for telegraf if available: [#{broker_address}]")
 
