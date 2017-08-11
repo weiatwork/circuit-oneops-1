@@ -16,6 +16,30 @@ platform :attributes => {
 
 # dns service needed for ptr record cleanup on replace
 
+resource "filebeat",
+  :cookbook => "oneops.1.filebeat",
+  :design => true,
+  :requires => {
+       "constraint" => "0..10",
+       :services => "mirror"
+  },
+  :monitors => {
+    'filebeatprocess' => {:description => 'FilebeatProcess',
+      :source => '',
+      :enable => 'true',
+      :chart => {'min' => '0', 'max' => '100', 'unit' => 'Percent'},
+      :cmd => 'check_process_count!filebeat',
+      :cmd_line => '/opt/nagios/libexec/check_process_count.sh "$ARG1$"',
+      :metrics => {
+            'count' => metric(:unit => '', :description => 'Running Process'),
+      },
+      :thresholds => {
+            'FilebeatProcessLow' => threshold('1m', 'avg', 'count', trigger('<', 1, 1, 1), reset('>=', 1, 1, 1)),
+            'FilebeatProcessHigh' => threshold('1m', 'avg', 'count', trigger('>=', 200, 1, 1), reset('<', 200, 1, 1))
+      }
+    }
+  }
+
 resource "telegraf",
   :cookbook => "oneops.1.telegraf",
   :design => true,
@@ -782,6 +806,8 @@ end
   { :from => 'logstash',    :to => 'compute' },
   { :from => 'telegraf',    :to => 'os' },
   { :from => 'telegraf',    :to => 'compute' },
+  { :from => 'filebeat',    :to => 'os' },
+  { :from => 'filebeat',    :to => 'compute' },
   { :from => 'storage',     :to => 'compute' },
   { :from => 'share',       :to => 'volume'  },
   { :from => 'volume',      :to => 'user' },
@@ -796,8 +822,9 @@ end
   { :from => 'library',     :to => 'os' },
   { :from => 'objectstore',  :to => 'compute'},
   { :from => 'keywhiz-client',  :to => 'os'},
-  { :from => 'keywhiz-client',  :to => 'user'},  
+  { :from => 'keywhiz-client',  :to => 'user'},
   { :from => 'keywhiz-client',  :to => 'certificate'},
+  { :from => 'keywhiz-client',  :to => 'volume'},
   { :from => 'objectstore',  :to => 'user'}
 ].each do |link|
   relation "#{link[:from]}::depends_on::#{link[:to]}",
@@ -844,7 +871,7 @@ end
 end
 
 # managed_via
-[ 'os', 'telegraf', 'user', 'job', 'file', 'volume', 'share', 'download', 'library', 'daemon', 
+[ 'os', 'telegraf', 'filebeat', 'user', 'job', 'file', 'volume', 'share', 'download', 'library', 'daemon', 
   'certificate', 'logstash', 'sensuclient', 'artifact', 'objectstore', 'keywhiz-client'].each do |from|
   relation "#{from}::managed_via::compute",
     :except => [ '_default' ],
