@@ -1,5 +1,4 @@
-site :opscode
-metadata
+source "https://supermarket.chef.io"
 
-cookbook 'apt', '~> 1.7.0'
-cookbook 'build-essential'
+cookbook "kitchen-test-helper", github: "kbvincent/kitchen-test-helper", branch: "master"
+metadata
