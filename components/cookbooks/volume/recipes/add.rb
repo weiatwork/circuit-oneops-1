@@ -22,13 +22,6 @@
 # create a logical volume lvcreate with the name of the resource /dev/<resource>
 # use storage dep to gen a raid and lvm ontop
 
-#remove two out of three json gem so that it will not create conflit for azure gems
-if (node.workorder.payLoad.DependsOn[2].ciAttributes["ostype"] =~ /ubuntu-16.04/)
-  Chef::Log.info("Resolving json conflit")
-  `sudo gem uninstall json -v 2.0.2`
-  `sudo gem uninstall json -v 1.8.6`
-end
-
 if node.platform =~ /windows/
   include_recipe "volume::windows_vol_add"
   return
