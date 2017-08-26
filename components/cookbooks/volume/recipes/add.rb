@@ -661,7 +661,9 @@ ruby_block 'create-storage-non-ephemeral-volume' do
       end
 
       #will not run if there is no change in updated volume size
-      if size != "0G"
+      if (size == "0G" || ((!storageUpdated) && size =~ /%/))
+        Chef::Log.info("Storage is not extended")
+      else
         execute_command("yes |lvextend #{l_switch} +#{size} /dev/#{platform_name}/#{logical_name}")
       end
 
