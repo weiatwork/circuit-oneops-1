@@ -38,7 +38,7 @@ Vagrant.configure("2") do |config|
       "logtargetw3c": "1",
       "url_compression_dc_before_cache": "false",
       "requestfiltering_allow_double_escaping": "false",
-      "repository_url": "http://repo.wal-mart.com/service/local/nuget/nuget-snapshots/",
+      "repository_url": "http://repo.nuget/service/local/nuget/nuget-snapshots/",
       "identity_type": "LocalService",
       "binding_type": "https",
       "requestfiltering_allow_high_bit_characters": "true",
@@ -78,7 +78,7 @@ Vagrant.configure("2") do |config|
             "physical_path": "C:\\apps",
             "version": "latest",
             "package_name": "AFNetSampleApplication",
-            "repository_url": "http://repo.wal-mart.com/service/local/nuget/nuget-snapshots/"
+            "repository_url": "http://repo.nuget/service/local/nuget/nuget-snapshots/"
           },
           "ciClassName": "bom.oneops.1.Iis-website",
           "rfcAction": "create"
