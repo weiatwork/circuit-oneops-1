@@ -873,10 +873,10 @@ resource "firewall",
    }
  }
 
-resource "keywhiz-client",
-   :cookbook => "oneops.1.keywhiz-client",
+resource "secrets-client",
+   :cookbook => "oneops.1.secrets-client",
    :design => true,
-   :requires => {"constraint" => "0..1", 'services' => '*certificate,*keywhiz'}
+   :requires => {"constraint" => "0..1", 'services' => '*certificate,*secret'}
 
 resource "artifact",
   :cookbook => "oneops.1.artifact",
@@ -918,10 +918,10 @@ end
   { :from => 'sensuclient', :to => 'compute'  },
   { :from => 'library',     :to => 'os' },
   { :from => 'objectstore',  :to => 'compute'},
-  { :from => 'keywhiz-client',  :to => 'os'},
-  { :from => 'keywhiz-client',  :to => 'user'},
-  { :from => 'keywhiz-client',  :to => 'certificate'},
-  { :from => 'keywhiz-client',  :to => 'volume'},
+  { :from => 'secrets-client',  :to => 'os'},
+  { :from => 'secrets-client',  :to => 'user'},
+  { :from => 'secrets-client',  :to => 'certificate'},
+  { :from => 'secrets-client',  :to => 'volume'},
   { :from => 'objectstore',  :to => 'user'}
 ].each do |link|
   relation "#{link[:from]}::depends_on::#{link[:to]}",
@@ -969,7 +969,7 @@ end
 
 # managed_via
 [ 'os', 'telegraf', 'filebeat', 'user', 'job', 'file', 'volume', 'share', 'download', 'library', 'daemon', 
-  'certificate', 'logstash', 'sensuclient', 'artifact', 'objectstore', 'keywhiz-client'].each do |from|
+  'certificate', 'logstash', 'sensuclient', 'artifact', 'objectstore', 'secrets-client'].each do |from|
   relation "#{from}::managed_via::compute",
     :except => [ '_default' ],
     :relation_name => 'ManagedVia',

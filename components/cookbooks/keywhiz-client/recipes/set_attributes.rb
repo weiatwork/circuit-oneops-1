@@ -4,7 +4,7 @@ require 'json'
 require 'securerandom'
 
 cloud_name = node[:workorder][:cloud][:ciName]
-keywhiz_cloud_service = node[:workorder][:services][:keywhiz][cloud_name][:ciAttributes]
+keywhiz_cloud_service = node[:workorder][:services][:secret][cloud_name][:ciAttributes]
 mgmt_domain = node[:mgmt_domain]
 node.set[:oneops_server] = mgmt_domain.split(".")[0]
 Chef::Log.info("oneops server: " + node[:oneops_server])
