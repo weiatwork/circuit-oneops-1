@@ -52,7 +52,7 @@ elsif is_windows && cluster.size == 1
 end
 
 if ad_ci
-  dns_name = (ad_ci[0][:ciAttributes][ad_object_name] + '.' + get_windows_domain_service[:ciAttributes][:domain]).downcase
+  dns_name = (ad_ci[0][:ciAttributes][ad_object_name] + '.' + get_windows_domain).downcase
   is_hostname_entry = true if os.size == 1
 
 elsif node.workorder.payLoad.has_key?("Entrypoint")
@@ -143,11 +143,9 @@ end
 
 # platform-level remove cloud_dns_id for primary entry
 if ad_ci
-  primary_platform_dns_name = (ad_ci[0][:ciName] + get_windows_domain('')).downcase
-elsif is_windows
-  primary_platform_dns_name = (dns_name.split('.').first + get_windows_domain('')).downcase
+  primary_platform_dns_name = dns_name.split('.').first + get_customer_domain.split('.').select{|i| (i != service_attrs[:cloud_dns_id])}.join('.')
 else
-  primary_platform_dns_name = dns_name.gsub("\."+service_attrs[:cloud_dns_id]+"\."+service_attrs[:zone],"."+service_attrs[:zone]).downcase
+  primary_platform_dns_name = dns_name.split('.').select{|i| (i != service_attrs[:cloud_dns_id])}.join('.')
 end
 
 if node.workorder.rfcCi.ciAttributes.has_key?("ptr_enabled") &&
