@@ -65,21 +65,21 @@ def is_windows
   return ( get_ostype == 'windows' && get_windows_domain_service )
 end #def is_windows
 
-def get_windows_domain (cloud_id)
-  #environment.assembly.cloud_id.zone
-  arr = [node[:workorder][:payLoad][:Environment][0][:ciName],node[:workorder][:payLoad][:Assembly][0][:ciName]]
-  if !cloud_id.nil? && !cloud_id.empty?
-    arr.push(cloud_id)
+def get_windows_domain
+
+  if get_dns_service[:zone].split('.').last(2) == get_windows_domain_service[:ciAttributes][:domain].split('.').last(2)
+    return get_windows_domain_service[:ciAttributes][:domain].downcase
+  else
+    return get_dns_service[:zone].downcase
   end
-  arr.push(get_windows_domain_service[:ciAttributes][:domain])
-  
-  return '.' + (arr.join('.')).downcase
+
 end #def get_windows_domain
 
 def get_customer_domain
-
+  #environment.assembly.cloud_id.zone
   if is_windows
-    customer_domain = get_windows_domain(get_dns_service[:cloud_dns_id])
+    arr = [node[:workorder][:payLoad][:Environment][0][:ciName], node[:workorder][:payLoad][:Assembly][0][:ciName], get_dns_service[:cloud_dns_id], get_windows_domain]
+    customer_domain = '.' + arr.join('.').downcase
   else
     customer_domain = node[:customer_domain].downcase
   end

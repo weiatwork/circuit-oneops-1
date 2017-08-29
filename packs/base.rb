@@ -543,7 +543,7 @@ resource "fqdn",
       }'
     },
     'os_payload' => {
-     'description' => 'os_payload',
+     'description' => 'Os payload',
      'definition' => '{
        "returnObject": false,
        "returnRelation": false,
@@ -553,16 +553,16 @@ resource "fqdn",
        "relations": [
          { "returnObject": false,
            "returnRelation": false,
-           "relationName": "manifest.DependsOn",
-           "direction": "from",
-           "targetClassName": "manifest.oneops.1.Compute",
+           "relationName": "manifest.Requires",
+           "direction": "to",
+           "targetClassName": "manifest.Platform",
            "relations": [
-                 { "returnObject": true,
-                   "returnRelation": false,
-                   "relationName": "manifest.DependsOn",
-                   "direction": "to",
-                   "targetClassName": "manifest.oneops.1.Os"
-                 }
+             { "returnObject": true,
+               "returnRelation": false,
+               "relationName": "manifest.Requires",
+               "direction": "from",
+               "targetClassName": "manifest.oneops.1.Os"
+             }
             ]
          }
        ]
