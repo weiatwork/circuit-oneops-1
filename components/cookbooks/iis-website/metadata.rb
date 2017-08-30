@@ -172,7 +172,7 @@ attribute 'period',
                   }
 }
 
-attribute 'logTargetW3C',
+attribute 'logtargetw3c',
   :description => 'Log Event Destination',
   :default     => '1',
   :format      => {
