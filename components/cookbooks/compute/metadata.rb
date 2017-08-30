@@ -5,6 +5,7 @@ maintainer_email "support@oneops.com"
 license          "Apache License, Version 2.0"
 depends          "azure"
 depends          "shared"
+depends          "fqdn"
 
 grouping 'default',
   :access => "global",
