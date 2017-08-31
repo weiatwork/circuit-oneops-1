@@ -239,6 +239,10 @@ def create_lbvserver
       lbvserver[:backupVserver] = @new_resource.backupvserver
     end
 
+    if ['mssql','mysql'].include?(@new_resource.servicetype.downcase)
+      lbvserver[:dbslb] = 'ENABLED'
+    end
+
     Chef::Log.info("new lbvserver: #{lbvserver.inspect}")
 
     req = URI::encode('object= { "lbvserver":'+JSON.dump(lbvserver)+'}' )    
@@ -317,6 +321,10 @@ def create_lbvserver
         
     if !@new_resource.backupvserver.nil? && !@new_resource.backupvserver.empty?
       lbvserver[:backupVserver] = @new_resource.backupvserver
+    end
+
+    if ['mssql','mysql'].include?(@new_resource.servicetype.downcase)
+      lbvserver[:dbslb] = 'ENABLED'
     end
 
     if @new_resource.stickiness.nil?

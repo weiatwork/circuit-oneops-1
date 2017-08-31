@@ -51,9 +51,20 @@ iport_map.each_pair do |iport,protocol|
     base_monitor_name = lb_ci_id + "-"+ iport +"-monitor"
   end
 
+  #get custom attributes applicable to this particular monitor
+  monitor_attrs = {}
+  char = '|'
+  ecv_map.each_pair do |n,v|
+    if n.split(char).size == 2 && n.split(char)[0].to_s == iport.to_s
+      monitor_attrs[n.split(char).last] = v
+    end
+  end
+
   monitor_request = 'get /'
   if ecv_map.has_key?(iport)
     monitor_request = ecv_map[iport].downcase
+  elsif monitor_attrs.size > 0
+    monitor_request = monitor_attrs.values.first
   end
 
   # use generic monitors

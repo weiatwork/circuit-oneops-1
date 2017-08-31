@@ -70,7 +70,7 @@ end
 
 begin
   ecv_map.keys.each do |port|
-    next if port == 'all'
+    next if (port == 'all' || port =~ /^[0-9]+|\w+$/)
     port_int = Integer(port)
   end
 rescue Exception => e
@@ -80,68 +80,80 @@ end
 
 
 node.monitors.each do |mon|
-  
+
   if !ecv_map.has_key?(mon[:iport])
     ecv = "GET /"
   end
   iport = mon[:iport]
   ecv = ecv_map[iport]
 
+  #get custom attributes applicable to this particular monitor
+  monitor_attrs = {}
+  char = '|'
+  ecv_map.each_pair do |n,v|
+    if n.split(char).size == 2 && n.split(char)[0].to_s == mon[:iport].to_s
+      monitor_attrs[n.split(char).last] = v
+    end
+  end
+
+  protocol = mon[:protocol].upcase
   sg_name = mon[:sg_name]
   monitor_name = mon[:monitor_name]
 
+  #monitor_type
+  if ['UDP','TCP'].include?(protocol)
+    monitor_type =  protocol
+  elsif protocol == 'MSSQL'
+    monitor_type =  'MSSQL-ECV'
+  else
+    monitor_type =  'HTTP'
+  end
+
+  #monitor_secure
+  if protocol == 'SSL_BRIDGE' || protocol == 'HTTPS'
+    monitor_secure = 'YES'
+  else
+    monitor_secure = 'NO'
+  end
+
+  #Base monitor object
   monitor = {
     :monitorname => monitor_name,
-    :type => 'HTTP',
-    :respcode => ['200'],
-    :httprequest => ecv
+    :type => monitor_type,
+    :secure => monitor_secure
   }
-    
+
+  #Adding protocol-specific attributes
+  if monitor_type == 'HTTP'
+    monitor.merge!({:respcode => ['200'], :httprequest => ecv})
+  else
+    monitor.merge!(monitor_attrs)
+  end
+
   # cleanup previous az
   if node.has_key?("ns_conn_prev")
     
     resp_obj = JSON.parse(node.ns_conn_prev.request(
       :method => :get, 
-      :path =>"/nitro/v1/config/lbmonitor/#{monitor_name}").body)        
-    
+      :path =>"/nitro/v1/config/lbmonitor/#{monitor_name}").body)
+
     if (resp_obj["message"] !~ /No such resource/) && !(monitor_name.start_with? 'generic')
       type = resp_obj['lbmonitor'][0]['type']
 
-      Chef::Log.info("removing monitor: #{monitor_name} from previous az / netscaler.")              
+      Chef::Log.info("removing monitor: #{monitor_name} from previous az / netscaler.")
       resp_obj = JSON.parse(node.ns_conn_prev.request(
         :method => :delete,
         :path =>"/nitro/v1/config/lbmonitor/#{monitor_name}?args=type:#{type}").body)
-      
+
       if resp_obj["errorcode"] != 0
-        Chef::Log.error( "delete monitor #{monitor_name} resp: #{resp_obj.inspect}")  
+        Chef::Log.error( "delete monitor #{monitor_name} resp: #{resp_obj.inspect}")
         exit 1
       else
-        Chef::Log.info( "delete monitor #{monitor_name} resp: #{resp_obj.inspect}")    
+        Chef::Log.info( "delete monitor #{monitor_name} resp: #{resp_obj.inspect}")
       end
     else
       Chef::Log.info("already removed monitor: #{monitor_name} from previous az / netscaler.")
-    end      
-  end  
-
-
-  protocol = mon[:protocol]
-  case protocol
-  when /tcp/
-    monitor = {
-      :monitorname => monitor_name,
-      :type => 'TCP'
-    }
-  when "udp"
-    monitor = {
-      :monitorname => monitor_name,
-      :type => 'UDP'
-    }
-  end
-
-  if protocol == 'ssl_bridge' || protocol == 'https'
-    monitor[:secure] = 'YES'
-  else
-    monitor[:secure] = 'NO'
+    end
   end
 
   req = nil
