@@ -1,1 +1,4 @@
-Chef::Log.info("Cluster update called, temporary placeholder recipe.")
+Chef::Log.info("Cluster replace called.")
+
+include_recipe "cluster::delete"
+include_recipe "cluster::add"

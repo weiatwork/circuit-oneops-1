@@ -4,6 +4,7 @@ version          "0.1"
 maintainer       "OneOps"
 maintainer_email "support@oneops.com"
 license          "Apache License, Version 2.0"
+depends          'windows-utils'
 
 grouping 'default',
   :access => "global",
@@ -63,5 +64,14 @@ attribute 'dns_record',
     :category => '2.Operations',
     :order => 2
   }
-  
+
+attribute 'cluster_name',
+  :description => "Cluster Name",
+  :grouping => 'bom',
+  :format => {
+    :help => 'Cluster name generated during deployment',
+    :category => '2.Operations',
+    :order => 3
+  }
+
 recipe "repair", "Repair"

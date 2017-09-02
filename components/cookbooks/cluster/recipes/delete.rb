@@ -1,5 +1,10 @@
 require 'fog'
 
+if node.platform =~ /windows/
+  include_recipe "cluster::delete_windows"
+  return
+end
+
 Chef::Log.info("cibadmin -E --force && crm configure erase")
 Chef::Log.info(`cibadmin -E --force 2>&1`)
 Chef::Log.info(`crm configure erase 2>&1`)
