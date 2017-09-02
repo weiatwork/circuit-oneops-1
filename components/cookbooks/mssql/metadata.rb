@@ -49,8 +49,9 @@ attribute 'sysadmins',
     :order => 1
   }
 
-attribute 'password',
+attribute 'password_sa',
   :description => 'sa Password',
+  :required => 'required',
   :encrypted => true,
   :format => {
     :help => 'Specify password for sa account',
@@ -88,6 +89,16 @@ attribute 'userdb_log',
     :help => 'Default directory for user database logs',
     :category => '3.Directories',
     :order => 4
+  }
+
+attribute 'mirroring_port',
+  :description => 'Mirroring Endpoint Port',
+  :required => 'required',
+  :default => '5022',
+  :format => {
+    :help => 'This setting only applies in redundant mode. Specify TCP port the database mirroring endpoint will be listening on. The default is 5022',
+    :category => '4.Always-On',
+    :order => 1
   }
 
 recipe "start", "Start SQL Server"

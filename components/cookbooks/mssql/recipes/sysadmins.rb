@@ -17,7 +17,7 @@ if !node['mssql']['sysadmins'].nil? && node['mssql']['sysadmins'].size != 0
     end
 end
 
-password = node['mssql']['password']
+password = node['sql_server']['server_sa_password']
 sqlcmd = "IF EXISTS (SELECT 1 FROM sys.server_principals WHERE name = 'sa')
 ALTER LOGIN sa WITH PASSWORD=N'#{password}'"
 powershell_script 'modify_sa_pwd' do

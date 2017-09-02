@@ -74,12 +74,57 @@ registry_key "#{reg_prefix}\\SuperSocketNetLib\\Via" do
   notifies :restart, "service[#{service_name}]", :immediately
 end
 
-#open tcp port in firewall
-rule_name = "MSSQL: #{node['sql_server']['port']}"
-execute 'Open tcp port for MSSQL' do
-  command "netsh advfirewall firewall add rule name=\"#{rule_name}\" dir=in action=allow protocol=TCP localport=#{node['sql_server']['port']}"
+#open TCP port in firewall
+port = node['sql_server']['port']
+rule_name = "MSSQL: #{port}"
+execute "Add firewall rule ${rule_name}" do
+  command "netsh advfirewall firewall add rule name=\"#{rule_name}\" dir=in action=allow protocol=TCP localport=#{port}"
   not_if "netsh advfirewall firewall show rule name=\"#{rule_name}\""
 end
+
+#Enable alwayson in redundant mode
+if node[:workorder][:payLoad][:Environment][0][:ciAttributes][:availability] == 'redundant'
+
+  #create firewall rule for mirroring endpoint port
+  port = node['sql_server']['server']['mirroring_port']
+  rule_name = 'MSSQL mirroring endpoint'
+  execute "Add mirroring endpoint firewall rule" do
+    command "netsh advfirewall firewall add rule name=\"MSSQL mirroring endpoint\" dir=in action=allow protocol=TCP localport=#{port}"
+    not_if "netsh advfirewall firewall show rule name=\"MSSQL mirroring endpoint\""
+  end
+
+  ps_code = "
+  try { get-cluster -ErrorAction Stop -WarningAction SilentlyContinue } catch { \"get-cluster has failed $_\" >> /tmp/1.log; return }
+  Import-Module SQLPS -DisableNameChecking
+  Enable-SqlAlwaysOn -Path \"SQLSERVER:\\SQL\\$($env:computername)\\DEFAULT\" -Force"
+
+  powershell_script 'Enable-AlwaysOn' do
+    code ps_code
+    not_if "Import-Module SQLPS -DisableNameChecking;(get-item \"SQLSERVER:\\SQL\\$($env:computername)\\DEFAULT\").IsHadrEnabled"
+  end
+
+  sql_file = "#{Chef::Config[:file_cache_path]}/cookbooks/mssql/files/windows/Configure-AlwaysOn.sql"
+  cmd = "Invoke-Sqlcmd -InputFile \"#{sql_file}\" -Variable \"port=#{port}\""
+
+  powershell_script 'Configure-AlwaysOn' do
+    code cmd
+  end
+
+  #TO-DO use username and password from netscaler service
+  password_oneops = "5=rAuVHf%g"
+
+  sqlcmd = "IF NOT EXISTS (SELECT 1 FROM sys.server_principals WHERE name = 'oneops')
+        CREATE LOGIN [oneops] WITH PASSWORD = '#{password_oneops}'
+        ALTER SERVER ROLE [sysadmin] ADD MEMBER [oneops]"
+  cmd = "Invoke-Sqlcmd -Query \"#{sqlcmd}\""
+
+  powershell_script 'add_oneops' do
+    code cmd
+  end
+
+end
+
+
 
 # If you have declared an agent account it will restart both the
 # agent service and the sql service. If not only the sql service

@@ -18,6 +18,7 @@ default['sql_server']['filestream_level'] = 0
 default['sql_server']['filestream_share_name'] = 'MSSQLSERVER'
 default['sql_server']['server']['installer_timeout'] = 1500
 default['sql_server']['server']['checksum'] = nil
+default['sql_server']['server']['mirroring_port'] = node['mssql']['mirroring_port']
 
 version = node['mssql']['version'][6..9]
 default['sql_server']['accept_eula'] = true
@@ -32,7 +33,7 @@ end
 default['sql_server']['sysadmins'] = sysadmins
 
 #Generate random sa password if needed
-password = node['mssql']['password']
+password = node['mssql']['password_sa']
 if password.nil? || password.size == 0
   password = SecureRandom.urlsafe_base64(14)
 end
