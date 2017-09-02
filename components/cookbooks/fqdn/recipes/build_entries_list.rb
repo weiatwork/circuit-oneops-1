@@ -42,17 +42,17 @@ os = node[:workorder][:payLoad][:DependsOn].select { |d| d[:ciClassName] =~ /Os/
 cluster = node[:workorder][:payLoad][:DependsOn].select { |d| d[:ciClassName] =~ /Cluster/ }
 
 #in windows domains some dns entries (vm hostname and cluster name) are accompanied with Active Directory objects 
-ad_ci = nil
+ad_object_name = nil
 if is_windows && os.size == 1
-  ad_ci = os
-  ad_object_name = 'hostname'
+  ad_object_name = os[0][:ciAttributes][:hostname]
 elsif is_windows && cluster.size == 1
-  ad_ci = cluster
-  ad_object_name = 'cluster_name'
+  ad_object_name = cluster[0][:ciAttributes][:cluster_name]
+elsif is_windows && lbs.size == 1
+  ad_object_name = lbs[0][:ciName]
 end
 
-if ad_ci
-  dns_name = (ad_ci[0][:ciAttributes][ad_object_name] + '.' + get_windows_domain).downcase
+if ad_object_name
+  dns_name = (ad_object_name + '.' + get_windows_domain).downcase
   is_hostname_entry = true if os.size == 1
 
 elsif node.workorder.payLoad.has_key?("Entrypoint")
@@ -142,8 +142,8 @@ end
 
 
 # platform-level remove cloud_dns_id for primary entry
-if ad_ci
-  primary_platform_dns_name = dns_name.split('.').first + get_customer_domain.split('.').select{|i| (i != service_attrs[:cloud_dns_id])}.join('.')
+if ad_object_name
+  primary_platform_dns_name = ad_object_name + customer_domain.split('.').select{|i| (i != service_attrs[:cloud_dns_id])}.join('.')
 else
   primary_platform_dns_name = dns_name.split('.').select{|i| (i != service_attrs[:cloud_dns_id])}.join('.')
 end
