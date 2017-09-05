@@ -172,7 +172,7 @@ attribute 'period',
                   }
 }
 
-attribute 'logTargetW3C',
+attribute 'logtargetw3c',
   :description => 'Log Event Destination',
   :default     => '1',
   :format      => {
@@ -530,8 +530,9 @@ attribute 'requestfiltering_file_extension_allow_unlisted',
 attribute 'logs_retention_days',
   :description => 'Logs retention in days',
   :default     => '7',
+  :required    => 'required',
   :format      => {
-    :help      => 'Specify the number of days for IIS logs retention',
+    :help      => 'Specify the number of days for IIS logs retention, Ex: 7',
     :category  => '9.IIS logs clean up',
     :order     => 1
   }

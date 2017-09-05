@@ -6,10 +6,6 @@ repository_url = application.repository_url
 output_directory = ::File.join(File.dirname(application.physical_path), "platform_deployment")
 Chef::Log.info "The output directory is #{output_directory}"
 
-directory output_directory do
-  action :create
-  recursive true
-end
 
 nuget = "C:\\ProgramData\\chocolatey\\lib\\NuGet.CommandLine\\tools\\NuGet.exe"
 oo_local_vars = node.workorder.payLoad.OO_LOCAL_VARS if node.workorder.payLoad.has_key?(:OO_LOCAL_VARS)
@@ -25,12 +21,24 @@ if version == 'latest'
   cmd.run_command
   version = cmd.stdout.split('\n')
   Chef::Log.fatal "The given package #{package_name} does not exist" unless version.size == 1
-  version = version[ 0 ].split(' ')[ 1 ]
+  version = version[0].split(' ')[1]
 end
 
 node.set['workorder']['rfcCi']['ciAttributes']['package_version'] = version
 Chef::Log.info "The package_version is #{node['workorder']['rfcCi']['ciAttributes']['package_version']}"
-package_path = "#{output_directory}\\#{package_name}.#{version}"
+package_path = ::File.join(output_directory,"#{package_name}.#{version}")
+
+[output_directory, ::File.join(application.physical_path, package_name)].each do |path|
+  directory path do path
+     action :delete
+     recursive true
+  end
+end
+
+directory output_directory do
+  action :create
+  recursive true
+end
 
 version_option = "-version #{version}"
 
