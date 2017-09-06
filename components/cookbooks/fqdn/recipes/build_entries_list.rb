@@ -123,6 +123,11 @@ end
 deps = node.workorder.payLoad[:DependsOn].select { |d| d[:ciAttributes].has_key? "dns_record" }
 values = get_dns_values(deps)
 
+# check if dependent component creation is a success or else fail the reciepe execution
+if values.nil? || values.empty?
+   exit_with_error "Empty dns_record. Please check whether the depends on component of FQDN sucessfully completed"
+end
+
 # cloud-level add entry - will loop thru and cleanup & create them later
 entries.push({:name => dns_name, :values => values })
 Chef::Log.info("cloud level dns: #{dns_name} values: "+values.to_s)
