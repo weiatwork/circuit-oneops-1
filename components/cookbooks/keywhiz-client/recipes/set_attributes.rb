@@ -1,9 +1,10 @@
 require 'rubygems'
 require 'net/https'
 require 'json'
+require 'securerandom'
 
 cloud_name = node[:workorder][:cloud][:ciName]
-keywhiz_cloud_service = node[:workorder][:services][:keywhiz][cloud_name][:ciAttributes]
+keywhiz_cloud_service = node[:workorder][:services][:secret][cloud_name][:ciAttributes]
 mgmt_domain = node[:mgmt_domain]
 node.set[:oneops_server] = mgmt_domain.split(".")[0]
 Chef::Log.info("oneops server: " + node[:oneops_server])
@@ -17,9 +18,7 @@ node.set[:keywhiz_sync_cert_domain] = meta_params["cert_domain"]
 node.set[:keywhiz_service_host] = keywhiz_service_host
 node.set[:keywhiz_service_port] = keywhiz_service_port
 
-node.set[:sync_cert_passphrase] = Array.new(4){[*("A".."Z"), *(0..9), *("a".."z")].sample}.join.to_s +
- "-" + Array.new(4){[*("A".."Z"), *(0..9), *("a".."z")].sample}.join.to_s +
-"@" + Array.new(4){[*(0..9)].sample}.join.to_s
+node.set[:sync_cert_passphrase] = SecureRandom.base64(3).to_s + "@" + SecureRandom.random_number(10000).to_s + "oO"
 #keywhiz_cloud_service[:sync_cert_passphrase]
 
 client_cert = keywhiz_cloud_service[:client_cert]
@@ -55,4 +54,5 @@ node.set[:env] = env
 ci_id = node.workorder.rfcCi.ciId
 node.set[:common_name] = "keysync-" + ci_id.to_s + "." + node[:workorder][:cloud][:ciName] + "." + mgmt_domain
 node.set[:print_cert_bom_attributes] = false # this is so that the cert bom RESULT* attributes are not printed
+node.set[:secrets_client_service_name] = 'keysync'
 

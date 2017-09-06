@@ -41,15 +41,18 @@ resource "iis-website",
     :help       => "Installs/Configure IIS"
   },
   :attributes   => {
-    "package_name"  => '',
-    "repository_url" => '',
-    "version" => 'latest',
-    "physical_path" => '$OO_LOCAL{app_directory}',
-    "log_file_directory" => '$OO_LOCAL{log_directory}',
-    "dc_file_directory" => '$OO_LOCAL{log_directory}\\IISTemporaryCompressedFiles',
-    "sc_file_directory" => '$OO_LOCAL{log_directory}\\IISTemporaryCompressedFiles',
-    "windows_authentication" => 'false',
-    "period"  => 'Daily'
+    "package_name"                      => '',
+    "repository_url"                    => '',
+    "version"                           => 'latest',
+    "physical_path"                     => '$OO_LOCAL{app_directory}',
+    "log_file_directory"                => '$OO_LOCAL{log_directory}',
+    "logformat"                         => 'W3C',
+    "period"                            => 'Daily',
+    "logtargetw3c"                      => '1',
+    "dc_file_directory"                 => '$OO_LOCAL{log_directory}\\IISTemporaryCompressedFiles',
+    "sc_file_directory"                 => '$OO_LOCAL{log_directory}\\IISTemporaryCompressedFiles',
+    "windows_authentication"            => 'false',
+    "requestfiltering_allow_high_bit_characters" => 'false'
   },
   :monitors => {
   'IISW3SVC' =>  { :description => 'W3SVC service status',
