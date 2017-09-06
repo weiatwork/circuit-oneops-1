@@ -218,7 +218,7 @@ node[:entries].each do |entry|
     end
     
     record = {
-       :name => dns_name,
+       :name => dns_name.downcase,
        :view => view_attribute,
        :ttl => ttl
     }
