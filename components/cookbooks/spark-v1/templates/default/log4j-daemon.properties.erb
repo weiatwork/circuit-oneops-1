@@ -4,14 +4,11 @@
   # This is the log4j configuration that is used for Spark services
   # on all nodes.
  %>
-<%
+# Specify the default log file.  This is overridden for the master and worker.
+spark.log.file=/tmp/spark-${user.name}.log
+
 # Set everything to be logged to the console
 #log4j.rootCategory=INFO, console
-%>
-# Specify the default log file.  This is overridden for the master and worker.
-spark.log.file=<%= @log_dir %>/spark-${user.name}.log
-
-# Send all log information to a file
 log4j.rootCategory=INFO, RFA
 log4j.appender.console=org.apache.log4j.ConsoleAppender
 log4j.appender.console.target=System.err
@@ -33,10 +30,6 @@ log4j.appender.RFA.immediateFlush=true
 log4j.appender.RFA.append=true
 log4j.appender.RFA.layout=org.apache.log4j.PatternLayout
 log4j.appender.RFA.layout.conversionPattern=%d{yy/MM/dd HH:mm:ss} %p %c{1}: %m%n
-
-# Turn off info logging for SparkContext. This allows the progress bar to show up
-# on the command line.
-log4j.logger.org.apache.spark.SparkContext=WARN
 
 # Set the default spark-shell log level to WARN. When running the spark-shell, the
 # log level for this class is used to overwrite the root logger's log level, so that
