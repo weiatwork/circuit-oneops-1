@@ -125,7 +125,7 @@ values = get_dns_values(deps)
 
 # check if dependent component creation is a success or else fail the reciepe execution
 if values.nil? || values.empty?
-   exit_with_error "Empty dns_record. Please check whether the depends on component of FQDN sucessfully completed"
+   exit_with_error "Empty dns_record. Please check whether the compute/lb deployment step passed successfully"
 end
 
 # cloud-level add entry - will loop thru and cleanup & create them later
