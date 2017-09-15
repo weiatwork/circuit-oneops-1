@@ -1,34 +1,13 @@
-# Copyright 2016, Walmart Stores, Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 
-#
-# volume::add
-#
+Chef::Log.info('RAID volume add recipe')
 
-# scan for available /dev/xvd* devices from dmesg
-# create a physical device in LVM (pvcreate) for each
-# create a volume group vgcreate with the name of the platform
-# create a logical volume lvcreate with the name of the resource /dev/<resource>
-# use storage dep to gen a raid and lvm ontop
+package "lsscsi"
 
-#Baremetal condition: Redirect to raid volume recipe
-compute_baremetal = node.workorder.payLoad.ManagedVia[0]["ciAttributes"]["is_baremetal"]
-if compute_baremetal =~/true/
-        Chef::Log.info("This is a baremetal compute. Should have RAID config")
-        `sudo touch /var/tmp/expected_devices`
-        include_recipe "volume::add_raid"
-        return
+#List the devices available on baremetal node
+bash "execute_RAID" do
+  code <<-EOH
+     /usr/bin/lsscsi | grep -v `df -h |grep sd | awk -F\/ '{print $3}' | awk '{print $1}' | cut -c1-3` | grep "/dev/sd" | sed 's#.*/dev/\\(sd[[:alnum:]]\\).*#\\1#g' | sort | uniq > /var/tmp/expected_devices
+  EOH
 end
 
 if node.platform =~ /windows/
@@ -441,11 +420,12 @@ ruby_block 'create-ephemeral-volume-on-azure-vm' do
     `echo "pvcreate -f #{ephemeralDevice}" >> #{script_fullpath_name}`
     `echo "vgcreate #{platform_name}-eph #{ephemeralDevice}" >> #{script_fullpath_name}`
 
+
     l_switch = "-L"
     if size =~ /%/
       l_switch = "-l"
     end
-    `echo ""yes" | lvcreate #{l_switch} #{size} -n #{logical_name} #{platform_name}-eph" >> #{script_fullpath_name}`
+    `echo ""yes" | lvcreate -i6 -I32 #{l_switch} #{size} -n #{logical_name} #{platform_name}-eph" >> #{script_fullpath_name}`
     `echo "if [ ! -d #{_mount_point}/lost+found ]" >> #{script_fullpath_name}`
     `echo "then" >> #{script_fullpath_name}`
     if node[:platform_family] == "rhel" && (node[:platform_version]).to_i >= 7
@@ -498,27 +478,29 @@ ruby_block 'create-ephemeral-volume-ruby-block' do
 
 
     devices = Array.new
-    # c,d are used on aws m1.medium - j,k are set on aws rhel 6.3 L
-    device_set = ["b","c","d","e","f","g","h","i","j","k"]
-
-    # aws
-    device_prefix = "/dev/xvd"
+    device_set = Array.new
+    device_prefix = "/dev/"
     case token_class
 
       when /openstack/
-        device_prefix = "/dev/vd"
-        device_set = ["b"]
-        Chef::Log.info("using openstack vdb")
-
+        File.open("/var/tmp/expected_devices", "r") do |f|
+          f.lines.each do |line|
+            device_set.push(*line.split.map(&:to_s))
+          end
+        end
+        Chef::Log.info("using openstack device")
+        no_of_lv = device_set.size
+        Chef::Log.info("No. of logical volumes: #{no_of_lv}")
+      
       when /vsphere/
-        device_prefix = "/dev/sd"
-        device_set = ["b"]
-        Chef::Log.info("using vsphere sdb")
+      device_set = ["sdb"]
+      Chef::Log.info("using vsphere sdb")
     end
 
     df_out = `df -k`.to_s
     device_set.each do |ephemeralIndex|
       ephemeralDevice = device_prefix+ephemeralIndex
+      Chef::Log.info("Ephemeral device #{ephemeralDevice}")
       if ::File.exists?(ephemeralDevice) && df_out !~ /#{ephemeralDevice}/
         # remove partitions - azure and rackspace add them
         `parted #{ephemeralDevice} rm 1`
@@ -553,7 +535,7 @@ ruby_block 'create-ephemeral-volume-ruby-block' do
     if $?.to_i == 0
       `lvdisplay /dev/#{platform_name}-eph/#{logical_name}`
       if $?.to_i != 0
-        execute_command("yes | lvcreate #{l_switch} #{size} -n #{logical_name} #{platform_name}-eph")
+        execute_command("yes | lvcreate -i#{no_of_lv} -I32 #{l_switch} #{size} -n #{logical_name} #{platform_name}-eph")
       else
         Chef::Log.warn("logical volume #{platform_name}-eph/#{logical_name} already exists and hence cannot recreate .. prefer replacing compute")
       end
@@ -624,7 +606,7 @@ ruby_block 'create-storage-non-ephemeral-volume' do
     `lvdisplay /dev/#{platform_name}/#{logical_name}`
 
     if $?.to_i != 0
-      execute_command("yes | lvcreate #{l_switch} #{size} -n #{logical_name} #{platform_name}")
+      execute_command("yes | lvcreate -i#{no_of_lv} -I32 #{l_switch} #{size} -n #{logical_name} #{platform_name}")
     else
         Chef::Log.warn("logical volume #{platform_name}/#{logical_name} already exists and hence cannot recreate .. prefer replacing compute")
     end
