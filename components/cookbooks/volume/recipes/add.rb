@@ -24,7 +24,7 @@
 
 #Baremetal condition: Redirect to raid volume recipe
 compute_baremetal = node.workorder.payLoad.ManagedVia[0]["ciAttributes"]["is_baremetal"]
-if compute_baremetal =~/true/
+if !compute_baremetal.nil? && compute_baremetal =~/true/
         Chef::Log.info("This is a baremetal compute. Should have RAID config")
         `sudo touch /var/tmp/expected_devices`
         include_recipe "volume::add_raid"

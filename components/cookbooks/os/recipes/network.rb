@@ -317,7 +317,7 @@ compute_baremetal = node.workorder.payLoad.ManagedVia[0]["ciAttributes"]["is_bar
 case node.platform
 
   when "fedora","redhat","centos"
-    if compute_baremetal =~/true/
+    if !compute_baremetal.nil? && compute_baremetal =~/true/
       Chef::Log.info("This is a baremetal compute. Interface will be detected dynamically.")
       active_interface = "`ip route list|grep default |awk '{print $5}'`"
       Chef::Log.info("Active interface is #{active_interface}")
