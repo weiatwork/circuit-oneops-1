@@ -8,5 +8,6 @@ attribute :arguments, kind_of: Array, default: []
 attribute :dependencies, kind_of: Array, default: nil
 attribute :username, kind_of: String
 attribute :password, kind_of: String
+attribute :wait_for_status, kind_of: String
 
 attr_accessor :exists, :status

@@ -17,7 +17,7 @@ Array(oo_local_vars).each do |var|
 end
 
 if version == 'latest'
-  cmd = Mixlib::ShellOut.new("#{nuget} list #{package_name} -source #{repository_url}")
+  cmd = Mixlib::ShellOut.new("#{nuget} list #{package_name} -source #{repository_url} -p")
   cmd.run_command
   version = cmd.stdout.split('\n')
   Chef::Log.fatal "The given package #{package_name} does not exist" unless version.size == 1
