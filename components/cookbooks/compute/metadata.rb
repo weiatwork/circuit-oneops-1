@@ -330,6 +330,15 @@ attribute 'private_ipv6',
     :order => 11
   }
 
+attribute 'is_baremetal',
+  :description => "Baremetal Compute",
+  :grouping => 'bom',
+  :format => {
+    :important => true,
+    :help => 'Compute is baremetal',
+    :category => '10.Additional Properties',
+    :order => 1
+  }
 
 recipe "status", "Compute Status"
 recipe "reboot", "Reboot Compute"
