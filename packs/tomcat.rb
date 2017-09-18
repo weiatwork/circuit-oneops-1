@@ -292,6 +292,13 @@ relation "tomcat-daemon::depends_on::keystore",
   :to_resource => 'keystore',
   :attributes => {"propagate_to" => "from", "flex" => false, "min" => 1, "max" => 1}
 
+relation "tomcat-daemon::depends_on::certificate",
+  :relation_name => 'DependsOn',
+  :from_resource => 'tomcat-daemon',
+  :to_resource => 'certificate',
+  :attributes => {"propagate_to" => "from", "flex" => false, "min" => 1, "max" => 1}
+
+
 relation "keystore::depends_on::certificate",
   :relation_name => 'DependsOn',
   :from_resource => 'keystore',

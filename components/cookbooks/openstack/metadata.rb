@@ -278,5 +278,15 @@ attribute 'max_secgroups',
     :editable => false
   }
 
+attribute 'additional_properties',
+  :description => "Additional Properties",
+  :data_type => "hash",
+  :default => '{}',
+  :format => {
+    :help => 'Additional Properties',
+    :category => '6.Additional Properties',
+    :order => 1
+  }
+
 recipe "validate", "Validate Service Configuration"
 recipe "status", "Check Service Status"

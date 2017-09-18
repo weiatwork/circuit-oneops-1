@@ -9,10 +9,10 @@
 #log4j.rootCategory=INFO, console
 %>
 # Specify the default log file.  This is overridden for the master and worker.
-spark.log.file=/tmp/spark-${user.name}.log
+spark.log.file=<%= @log_dir %>/spark-${user.name}.log
 
 # Send all log information to a file
-log4j.rootCategory=INFO, file
+log4j.rootCategory=INFO, RFA
 log4j.appender.console=org.apache.log4j.ConsoleAppender
 log4j.appender.console.target=System.err
 log4j.appender.console.layout=org.apache.log4j.PatternLayout
@@ -24,6 +24,15 @@ log4j.appender.file.immediateFlush=true
 log4j.appender.file.append=true
 log4j.appender.file.layout=org.apache.log4j.PatternLayout
 log4j.appender.file.layout.conversionPattern=%d{yy/MM/dd HH:mm:ss} %p %c{1}: %m%n
+
+log4j.appender.RFA=org.apache.log4j.RollingFileAppender
+log4j.appender.RFA.file=${spark.log.file}
+log4j.appender.RFA.maxFileSize=<%= @max_file_size %>
+log4j.appender.RFA.maxBackupIndex=<%= @num_log_backups %>
+log4j.appender.RFA.immediateFlush=true
+log4j.appender.RFA.append=true
+log4j.appender.RFA.layout=org.apache.log4j.PatternLayout
+log4j.appender.RFA.layout.conversionPattern=%d{yy/MM/dd HH:mm:ss} %p %c{1}: %m%n
 
 # Turn off info logging for SparkContext. This allows the progress bar to show up
 # on the command line.

@@ -22,6 +22,15 @@
 # create a logical volume lvcreate with the name of the resource /dev/<resource>
 # use storage dep to gen a raid and lvm ontop
 
+#Baremetal condition: Redirect to raid volume recipe
+compute_baremetal = node.workorder.payLoad.ManagedVia[0]["ciAttributes"]["is_baremetal"]
+if !compute_baremetal.nil? && compute_baremetal =~/true/
+        Chef::Log.info("This is a baremetal compute. Should have RAID config")
+        `sudo touch /var/tmp/expected_devices`
+        include_recipe "volume::add_raid"
+        return
+end
+
 if node.platform =~ /windows/
   include_recipe "volume::windows_vol_add"
   return
@@ -661,7 +670,9 @@ ruby_block 'create-storage-non-ephemeral-volume' do
       end
 
       #will not run if there is no change in updated volume size
-      if size != "0G"
+      if (size == "0G" || ((!storageUpdated) && size =~ /%/))
+        Chef::Log.info("Storage is not extended")
+      else
         execute_command("yes |lvextend #{l_switch} +#{size} /dev/#{platform_name}/#{logical_name}")
       end
 
