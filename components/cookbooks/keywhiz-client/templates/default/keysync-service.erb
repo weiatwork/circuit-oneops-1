@@ -6,13 +6,10 @@
 [Unit]
 Description=keywhiz Keysync Service
 Documentation=https://github.com/square/keysync
-After=network.target
+After=network.target secrets.mount
 
 [Service]
 Type=simple
-# EnvironmentFile=-/etc/sysconfig/keysync
-# Environment=name=keysync
-# Environment=PATH=/usr/bin:/usr/sbin
 WorkingDirectory=/opt/oneops/keywhiz/keysync
 ExecStart=/opt/oneops/keywhiz/keysync/keysync --config=/opt/oneops/keywhiz/keysync/config.yaml
 ExecReload=/bin/kill -s HUP $MAINPID
@@ -23,11 +20,11 @@ StandardError=syslog
 SyslogIdentifier=oneops-keysync
 User=root
 Group=root
-LimitNOFILE=1048576
-LimitNPROC=1048576
-LimitCORE=infinity
 TimeoutStartSec=0
 MountFlags=slave
+# EnvironmentFile=-/etc/sysconfig/keysync
+# Environment=name=keysync
+# Environment=PATH=/usr/bin:/usr/sbin
 
 [Install]
 WantedBy=multi-user.target

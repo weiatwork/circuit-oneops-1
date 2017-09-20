@@ -11,11 +11,32 @@
 ### END INIT INFO
 
 START_CMD="/opt/oneops/keywhiz/keysync/keysync --config=/opt/oneops/keywhiz/keysync/config.yaml > /var/log/keysync/keysync.log 2>&1 &"
+USER="root"
 NAME="keysync"
 PGREP_STRING="/opt/oneops/keywhiz/keysync/keysync"
-USER="root"
+SECRETS_MOUNT=<%= @secrets_dir %>
 
 CUR_USER=`whoami`
+
+# Creates tmpfs mount if not exists.
+mount_tmpfs() {
+  fs_type=$(stat  --format="%T" --file-system "$SECRETS_MOUNT")
+  ret=$?
+
+  if ! [[ "$ret" == "0" && "$fs_type" == "tmpfs" ]]; then
+      log_success_msg "Mount the tmpfs..."
+      opts="uid=root,gid=root,nodev,nosuid,noexec,size=100M,nr_inodes=100k,mode=0755"
+      mount -t tmpfs tmpfs "$SECRETS_MOUNT" -o "$opts"
+      if [ $? -eq 0 ]; then
+         log_success_msg "Successfully mounted tmpfs on $SECRETS_MOUNT"
+      else
+        log_failure_msg "Mount tmpfs failed. Exiting."
+        exit -1
+      fi
+  else
+      log_success_msg "$SECRETS_MOUNT tmpfs mount exists."
+  fi
+}
 
 killproc() {
   pkill -u $USER -f $PGREP_STRING
@@ -47,7 +68,9 @@ start_script() {
     exit -1
   fi
 
+  mount_tmpfs
   check_proc
+
   if [ $? -eq 0 ]; then
     log_success_msg "$NAME is already running."
     exit 0
