@@ -876,7 +876,21 @@ resource "firewall",
 resource "secrets-client",
    :cookbook => "oneops.1.secrets-client",
    :design => true,
-   :requires => {"constraint" => "0..1", 'services' => '*certificate,*secret'}
+   :requires => {"constraint" => "0..1", 'services' => '*certificate,*secret'},
+   :monitors => {
+       'SecretsClientProcess' => {:description => 'SecretsClientProcess',
+                     :source => '',
+                     :chart => {'min' => '0', 'max' => '100', 'unit' => 'Percent'},
+                     :cmd => 'check_process!:::node.secrets_client_service_name:::!true',
+                     :cmd_line => '/opt/nagios/libexec/check_process.sh "$ARG1$" "$ARG2$"',
+                     :metrics => {
+                         'up' => metric(:unit => '%', :description => 'Percent Up'),
+                     },
+                     :thresholds => {
+                         'SecretsClientProcessDown' => threshold('1m', 'avg', 'up', trigger('<=', 98, 1, 1), reset('>', 95, 1, 1),'unhealthy')
+                     }
+       }
+    }
 
 resource "artifact",
   :cookbook => "oneops.1.artifact",
