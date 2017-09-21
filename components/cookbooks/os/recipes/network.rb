@@ -319,7 +319,7 @@ case node.platform
   when "fedora","redhat","centos"
     if !compute_baremetal.nil? && compute_baremetal =~/true/
       Chef::Log.info("This is a baremetal compute. Interface will be detected dynamically.")
-      active_interface = "`ip route list|grep default |awk '{print $5}'`"
+      active_interface = `ip route list|grep default |awk '{print $5}'`
       Chef::Log.info("Active interface is #{active_interface}")
       file = "/etc/sysconfig/network-scripts/ifcfg-#{active_interface}"
       `grep PERSISTENT_DHCLIENT #{file}`
