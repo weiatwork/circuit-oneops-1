@@ -45,9 +45,11 @@ ostype = node.workorder.payLoad.os[0].ciAttributes["ostype"]
 additional_properties = JSON.parse(node.workorder.services.compute[cloud_name][:ciAttributes][:additional_properties])
 Chef::Log.info("additional_properties: #{additional_properties.inspect}")
 
-additional_properties.each_pair do |k,v|
+if !additional_properties.nil? && !additional_properties.empty?
+  additional_properties.each_pair do |k,v|
     if k.downcase =~/baremetal/ && v.downcase =~/true/
         puts "***RESULT:is_baremetal=" "true"
+    end
   end
 end
 
