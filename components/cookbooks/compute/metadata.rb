@@ -338,7 +338,7 @@ attribute 'is_baremetal',
   :format => {
     :important => true,
     :help => 'Compute is baremetal',
-    :category => '10.Additional Properties',
+    :category => '5.Additional Properties',
     :order => 1
   }
 

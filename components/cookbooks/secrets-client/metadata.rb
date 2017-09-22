@@ -17,6 +17,7 @@ attribute 'secretsmount',
               :important => true,
               :help => 'Directory path where the secrets can be accessed',
               :category => '1.General',
+              :editable => false,
               :order => 1
           }
 
