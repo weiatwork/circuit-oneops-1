@@ -48,11 +48,20 @@ node.loadbalancers.each do |loadbalancer|
 
   members = initialize_members(subnet_id, iport)
   pool = initialize_pool(iprotocol, iport, lb_attributes[:lbmethod], lb_name, members, health_monitor, stickiness, persistence_type)
-  if !barbican_container_name.nil? && !barbican_container_name.empty? && (vprotocol == 'TERMINATED_HTTPS' || vprotocol == 'HTTPS')
-    secret_manager = SecretManager.new(service_lb_attributes[:endpoint], service_lb_attributes[:username],service_lb_attributes[:password], service_lb_attributes[:tenant] )
-    container_ref = secret_manager.get_container(barbican_container_name)
-    Chef::Log.info("Container_ref : #{container_ref}")
-    listeners.push(initialize_listener('TERMINATED_HTTPS', vport, lb_name, pool, connection_limit, container_ref))
+  if (vprotocol == 'TERMINATED_HTTPS' || vprotocol == 'HTTPS')
+    if !barbican_container_name.nil? && !barbican_container_name.empty?
+      secret_manager = SecretManager.new(service_lb_attributes[:endpoint], service_lb_attributes[:username],service_lb_attributes[:password], service_lb_attributes[:tenant] )
+      container_ref = secret_manager.get_container(barbican_container_name)
+      Chef::Log.info("Container_ref : #{container_ref}")
+      if iprotocol == 'HTTP'
+        listeners.push(initialize_listener("TERMINATED_HTTPS", vport, lb_name, pool, connection_limit, container_ref))
+      elsif iprotocol == 'HTTPS'
+        listeners.push(initialize_listener("HTTPS", vport, lb_name, pool, connection_limit))
+      end
+    else
+      Chef::Log.error('Barbican cert container not found for HTTPS type protocol')
+      raise Exception, 'Barbican cert container not found for HTTPS type protocol'
+    end
   else
     listeners.push(initialize_listener(vprotocol, vport, lb_name, pool, connection_limit))
   end
