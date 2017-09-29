@@ -3,6 +3,9 @@ Chef::Log.info('RAID volume add recipe')
 
 package "lsscsi"
 
+raid_type = node.workorder.rfcCi.ciAttributes["raid_options"]
+
+
 #List the devices available on baremetal node
 bash "execute_RAID" do
   code <<-EOH
@@ -511,37 +514,127 @@ ruby_block 'create-ephemeral-volume-ruby-block' do
 
     total_size = 0
     device_list = ""
-    existing_dev = `pvdisplay -s`
-    devices.each do |device|
-      dev_short = device.split("/").last
-      if existing_dev !~ /#{dev_short}/
-        Chef::Log.info("pvcreate #{device} ..."+`pvcreate -f #{device}`)
-        device_list += device+" "
+
+    if raid_type == "RAID 1"
+    Chef::Log.info("Raid type is #{raid_type}")
+    
+    has_created_raid = false
+    exec_count = 0
+    max_retry = 10
+      if !devices.empty? && device_set.size%2 == 0
+        devices.each do |device|
+           device_list += device+" "
+           Chef::Log.info("Device list is #{device_list}")
+        end
+           # mdadm create for RAID1
+           #Check if mdadm create is already done
+        mdadm_tmp = "sudo mdadm --detail --scan | grep ARRAY"
+        out = `#{mdadm_tmp}`
+        mdadm_tmp_code = $?.to_i
+        Chef::Log.info("mdadm_tmp_code: "+mdadm_tmp_code.to_s+" out: "+out)
+        if mdadm_tmp_code != 0
+    	  cmd = "yes |sudo mdadm --create --verbose #{raid_device} --level=10 --assume-clean --chunk=256 --raid-devices=#{no_of_lv} #{device_list} 2>&1"
+    	  until ::File.exists?(raid_device) || has_created_raid || exec_count > max_retry do
+             Chef::Log.info(raid_device+" being created with: "+cmd)    
+             out = `#{cmd}`
+             exit_code = $?.to_i
+             Chef::Log.info("exit_code: "+exit_code.to_s+" out: "+out)
+             if exit_code == 0
+                  has_created_raid = true                  
+                  # mdadm.conf creation for persistence after reboot also
+                  `sudo mkdir -p /etc/mdadm`
+                  `sudo touch /etc/mdadm/mdadm.conf`
+                  `sudo mdadm --detail --scan > /etc/mdadm/mdadm.conf`
+                  mdadm_device = `grep ARRAY /etc/mdadm/mdadm.conf | awk '{print $2}'`
+                  Chef::Log.info("mdadm_device is #{mdadm_device}")
+                  #pvcreate for RAID1
+                  existing_dev = `pvdisplay -s`
+                  Chef::Log.info("existing_dev is #{existing_dev}")
+                if existing_dev !~ /#{mdadm_device}/
+                  Chef::Log.info("pvcreate #{mdadm_device} ..."+`pvcreate -f #{mdadm_device}`)
+                else
+                  Chef::Log.info("Physical volume #{mdadm_device} is existing already.")    
+                end
+                #vgcreate for RAID1
+                `vgdisplay #{platform_name}-eph`
+                if $?.to_i != 0
+                  Chef::Log.info("Volume group #{platform_name}-eph is not existing.")
+                  Chef::Log.info("vgcreate #{platform_name}-eph #{mdadm_device} ..."+`vgcreate -f #{platform_name}-eph #{mdadm_device}`)
+                else
+                  Chef::Log.warn("Volume group #{platform_name}-eph is existing already and hence cannot create ..")
+                end             
+             else
+               exec_count += 1
+                 sleep 10    
+                 ccmd = "for f in /dev/md*; do mdadm --stop $f; done"
+                 Chef::Log.info("cleanup bad arrays: "+ccmd)
+                 Chef::Log.info(`#{ccmd}`)    
+                 ccmd = "mdadm --zero-superblock #{dev_list}"
+                 Chef::Log.info("cleanup incase re-using: "+ccmd)
+                 Chef::Log.info(`#{ccmd}`)
+             end
+          end
+            node.set["raid_device"] = raid_device
+        else
+          sleep 10
+        end
+      else
+          Chef::Log.info("One or more device/s are in error state or no ephemerals.")
+          raid_device = no_raid_device
+          node.set["raid_device"] = no_raid_device    
       end
-    end
-
-    if device_list != ""
-      Chef::Log.info("vgcreate #{platform_name}-eph #{device_list} ..."+`vgcreate -f #{platform_name}-eph #{device_list}`)
     else
-      Chef::Log.info("no ephemerals.")
+       mdadm_chk = "sudo mdadm --detail --scan | grep ARRAY"
+       out = `#{mdadm_chk}`
+       mdadm_chk_code = $?.to_i
+       Chef::Log.info("mdadm_chk_code: "+mdadm_chk_code.to_s+" out: "+out)
+       if mdadm_chk_code != 0
+          Chef::Log.info("Raid type is RAID 0")
+          #pvcreate for RAID0
+          existing_dev = `pvdisplay -s`
+          Chef::Log.info("existing_dev is #{existing_dev}")
+          devices.each do |device|
+            dev_short = device.split("/").last
+            Chef::Log.info("dev_short is #{dev_short}")
+            if existing_dev !~ /#{dev_short}/
+              Chef::Log.info("pvcreate #{device} ..."+`pvcreate -f #{device}`)
+              device_list += device+" "
+              Chef::Log.info("device_list is #{device_list}")
+            end
+          end
+          #vgcreate for RAID0
+          if device_list != ""
+            Chef::Log.info("vgcreate #{platform_name}-eph #{device_list} ..."+`vgcreate -f #{platform_name}-eph #{device_list}`)
+          else
+            Chef::Log.info("no ephemerals.")
+          end 
+       else
+          Chef::Log.info("Raid type is RAID 1") 
+          sleep 10  
+       end 
     end
-
+    
+    #lvcreate
+    
     l_switch = "-L"
     if size =~ /%/
       l_switch = "-l"
     end
-
+    
     `vgdisplay #{platform_name}-eph`
     if $?.to_i == 0
       `lvdisplay /dev/#{platform_name}-eph/#{logical_name}`
       if $?.to_i != 0
-        execute_command("yes | lvcreate -i#{no_of_lv} -I32 #{l_switch} #{size} -n #{logical_name} #{platform_name}-eph")
+        `sudo mdadm --detail --scan | grep ARRAY`
+        if raid_type == "RAID 1" || $?.to_i == 0
+          execute_command("yes | lvcreate #{l_switch} #{size} -n #{logical_name} #{platform_name}-eph")
+        else
+          execute_command("yes | lvcreate -i#{no_of_lv} -I32 #{l_switch} #{size} -n #{logical_name} #{platform_name}-eph")
+        end
       else
         Chef::Log.warn("logical volume #{platform_name}-eph/#{logical_name} already exists and hence cannot recreate .. prefer replacing compute")
       end
-
     end
-
   end
 end
 

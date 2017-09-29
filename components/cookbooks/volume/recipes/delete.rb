@@ -82,6 +82,43 @@ ruby_block 'lvremove ephemeral' do
    end
 end unless is_windows
 
+#Baremetal condition for vgremove, pvremove and mdadm disable
+
+compute_baremetal = node.workorder.payLoad.ManagedVia[0]["ciAttributes"]["is_baremetal"]
+raid_type = node.workorder.rfcCi.ciAttributes["raid_options"]
+if !compute_baremetal.nil? && compute_baremetal =~/true/
+ ruby_block 'baremetal vgremove pvremove ephemeral' do
+   block do
+     # compute_baremetal = node.workorder.payLoad.ManagedVia[0]["ciAttributes"]["is_baremetal"]
+     # raid_type = node.workorder.rfcCi.ciAttributes["raid_options"]
+     # if !compute_baremetal.nil? && compute_baremetal =~/true/
+        if ::File.exists?("/dev/#{platform_name}-eph/#{node.workorder.rfcCi.ciName}")
+          Chef::Log.info("lvremove is not yet completed")
+        else
+          Chef::Log.info("lvremove is completed")
+          #vgremove
+          volume_group = `vgs | grep -v "VG" | awk '{print $1}'`
+          Chef::Log.info("Executing vgremove for volume group #{volume_group}")
+          sleep 10
+          `sudo vgremove -f #{volume_group} 2>&1 &`
+          #pvremove
+          sleep 10
+          physical_volume = `pvs | awk '{print $1}'| grep -v "PV"`
+          Chef::Log.info("Executing pvremove for #{physical_volume}")
+          `sudo pvremove -f #{physical_volume} 2>&1 &`
+          #mdadm stop for RAID1
+          `sudo mdadm --detail --scan | grep ARRAY`
+          if raid_type == "RAID 1" || $?.to_i == 0
+            mdadm_device = `mdadm --detail -scan | grep ARRAY | awk '{print $2}'`
+            Chef::Log.info("Stopping mdadm #{mdadm_device}")
+            `sudo mdadm --stop #{mdadm_device}`
+          end
+        end
+     # end
+   end
+ end unless is_windows
+end
+
 supported = true
 if provider_class =~ /virtualbox|vagrant|docker/
   Chef::Log.info(" virtual box vagrant and docker don't support iscsi/ebs via api yet - skipping")
