@@ -1,7 +1,9 @@
 
 Chef::Log.info('RAID volume add recipe')
 
-package "lsscsi"
+if node.platform !~ /windows/
+  package "lsscsi"
+end
 
 raid_type = node.workorder.rfcCi.ciAttributes["raid_options"]
 
