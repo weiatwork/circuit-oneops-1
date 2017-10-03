@@ -41,15 +41,18 @@ resource "iis-website",
     :help       => "Installs/Configure IIS"
   },
   :attributes   => {
-    "package_name"  => '',
-    "repository_url" => '',
-    "version" => 'latest',
-    "physical_path" => '$OO_LOCAL{app_directory}',
-    "log_file_directory" => '$OO_LOCAL{log_directory}',
-    "dc_file_directory" => '$OO_LOCAL{log_directory}\\IISTemporaryCompressedFiles',
-    "sc_file_directory" => '$OO_LOCAL{log_directory}\\IISTemporaryCompressedFiles',
-    "windows_authentication" => 'false',
-    "period"  => 'Daily'
+    "package_name"                      => '',
+    "repository_url"                    => '',
+    "version"                           => 'latest',
+    "physical_path"                     => '$OO_LOCAL{app_directory}',
+    "log_file_directory"                => '$OO_LOCAL{log_directory}',
+    "logformat"                         => 'W3C',
+    "period"                            => 'Daily',
+    "logtargetw3c"                      => '1',
+    "dc_file_directory"                 => '$OO_LOCAL{log_directory}\\IISTemporaryCompressedFiles',
+    "sc_file_directory"                 => '$OO_LOCAL{log_directory}\\IISTemporaryCompressedFiles',
+    "windows_authentication"            => 'false',
+    "requestfiltering_allow_high_bit_characters" => 'false'
   },
   :monitors => {
   'IISW3SVC' =>  { :description => 'W3SVC service status',
@@ -173,6 +176,17 @@ resource "chocolatey-package",
      :restart       => ''
 }
 
+resource "chocopackage",
+  :cookbook      => "oneops.1.chocopackage",
+  :design        => true,
+  :requires      => {
+    :constraint  => "0..*",
+    :help        => "Installs chocolatey package"
+  },
+  :attributes       => {
+    "chocolatey_package_source" => 'https://chocolatey.org/api/v2/'
+  }
+
 resource "nuget-package",
   :cookbook      => "oneops.1.artifact",
   :design        => true,
@@ -290,7 +304,8 @@ resource "volume",
   { :from => 'nuget-package', :to => 'iis-website' },
   { :from => 'windowsservice', :to => 'iis-website' },
   { :from => 'dotnetframework', :to => 'os' },
-  { :from => 'chocolatey-package', :to => 'volume' } ].each do |link|
+  { :from => 'chocolatey-package', :to => 'volume' },
+  { :from => 'chocopackage', :to => 'os' } ].each do |link|
   relation "#{link[:from]}::depends_on::#{link[:to]}",
     :relation_name => 'DependsOn',
     :from_resource => link[:from],
@@ -304,7 +319,7 @@ relation "iis-website::depends_on::certificate",
   :to_resource => 'certificate',
   :attributes => {"propagate_to" => "from", "flex" => false, "min" => 1, "max" => 1}
 
-[ 'iis-website', 'taskscheduler', 'dotnetframework', 'nuget-package', 'windowsservice' , 'chocolatey-package' , 'volume', 'os' ].each do |from|
+[ 'iis-website', 'taskscheduler', 'dotnetframework', 'nuget-package', 'windowsservice' , 'chocolatey-package' , 'volume', 'os', 'chocopackage' ].each do |from|
   relation "#{from}::managed_via::compute",
     :except => [ '_default' ],
     :relation_name => 'ManagedVia',
