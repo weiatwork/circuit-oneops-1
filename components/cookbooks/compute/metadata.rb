@@ -154,13 +154,15 @@ attribute 'size',
           ['4XL (Standard)','4XL'],
           ['L-BD (Big Data Optimized)','L-BD'],
           ['XL-BD (Big Data Optimized)','XL-BD'],
+          ['L-NoSQL (NoSQL Flavor)','L-NoSQL'],
+          ['XL-NoSQL (NoSQL Flavor)','XL-NoSQL'],
           ['L-LXD (LXD)','L-LXD'],
           ['L-IO-LXD (LXD)','L-IO-LXD'],
           ['XL-IO-LXD (LXD)','XL-IO-LXD'],
           ['XXL-IO-LXD (LXD)','XXL-IO-LXD'],
           ['S-MEM-LXD (LXD)','S-MEM-LXD'],
           ['L-MEM-LXD (LXD)','L-MEM-LXD'],
-          ['BM (Standard Baremetal)','BM'],
+          ['BM-V1-56 (Standard Baremetal)','BM-V1-56'],
           ['S-Win (Windows)','S-WIN'],
           ['M-Win (Windows)','M-WIN'],
           ['L-Win (Windows)','L-WIN'],
@@ -330,6 +332,15 @@ attribute 'private_ipv6',
     :order => 11
   }
 
+attribute 'is_baremetal',
+  :description => "Baremetal Compute",
+  :grouping => 'bom',
+  :format => {
+    :important => true,
+    :help => 'Compute is baremetal',
+    :category => '5.Additional Properties',
+    :order => 1
+  }
 
 recipe "status", "Compute Status"
 recipe "reboot", "Reboot Compute"

@@ -41,7 +41,10 @@ export HADOOP_CONF_DIR=<%= @hadoop_dir %>/etc/hadoop
 # The log4j configuration is shared across all components.
 LOG4J="-Dlog4j.configuration=file://$SPARK_CONF_DIR/log4j.properties"
 
-export SPARK_MASTER_OPTS=" $LOG4J -Dspark.log.file=<%= @spark_tmp_dir %>/logs/spark-master.log "
+# The log4j configuration shared across all daemons.
+LOG4J_DAEMON="-Dlog4j.configuration=file://$SPARK_CONF_DIR/log4j-daemon.properties"
+
+export SPARK_MASTER_OPTS=" $LOG4J_DAEMON -Dspark.log.file=<%= @spark_tmp_dir %>/logs/spark-master.log "
 
 # Add user-specified master options
 <% if configNode['master_opts'] != nil && configNode['master_opts'].size > 0 %>	
@@ -51,7 +54,7 @@ SPARK_MASTER_OPTS="$SPARK_MASTER_OPTS <%= opt %>"
 export SPARK_MASTER_OPTS
 <% end %>
 
-export SPARK_WORKER_OPTS=" $LOG4J -Dspark.log.file=<%= @spark_tmp_dir %>/logs/spark-worker.log "
+export SPARK_WORKER_OPTS=" $LOG4J_DAEMON -Dspark.log.file=<%= @spark_tmp_dir %>/logs/spark-worker.log "
 
 # Add user-specified worker options
 <% if configNode['worker_opts'] != nil && configNode['worker_opts'].size > 0 %>	
@@ -61,7 +64,7 @@ SPARK_WORKER_OPTS="$SPARK_WORKER_OPTS <%= opt %>"
 export SPARK_WORKER_OPTS
 <% end %>
 
-export SPARK_HISTORY_OPTS=" $LOG4J -Dspark.log.file=<%= @spark_tmp_dir %>/logs/spark-history.log "
+export SPARK_HISTORY_OPTS=" $LOG4J_DAEMON -Dspark.log.file=<%= @spark_tmp_dir %>/logs/spark-history.log "
 
 <%
   # Executor option defaults are not configurable at the server and

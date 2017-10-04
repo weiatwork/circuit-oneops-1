@@ -191,8 +191,15 @@ node[:entries].each do |entry|
 
          delete_record(dns_name, existing_entry)
       end
-    end
 
+      # First check to make sure we have dc_entry attribute
+      if node[:dc_entry] 
+        if dns_name.downcase.eql?(node[:dc_entry][:name].downcase)
+          # Delete existing entry only if it's not dc_entry (active dc_entry)
+          delete_record(dns_name, existing_entry) if !node[:dc_entry][:values].include?(existing_entry)
+        end
+      end
+    end
   end
 
   # delete workorder skips the create call
@@ -218,7 +225,7 @@ node[:entries].each do |entry|
     end
     
     record = {
-       :name => dns_name,
+       :name => dns_name.downcase,
        :view => view_attribute,
        :ttl => ttl
     }

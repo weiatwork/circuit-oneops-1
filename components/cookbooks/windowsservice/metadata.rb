@@ -112,6 +112,16 @@ attribute 'dependencies',
     :order     => 7
   }
 
+attribute 'wait_for_status',
+  :description => 'Wait for status',
+  :default     => '30',
+  :required    => 'required',
+  :format      => {
+    :help      => 'Time to wait for service to start in seconds.',
+    :category  => '2.General',
+    :order     => 8,
+  }
+
 attribute 'user_account',
   :description => 'User Account',
   :required    => 'required',

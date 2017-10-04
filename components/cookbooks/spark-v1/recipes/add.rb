@@ -38,6 +38,8 @@ spark_tmp_dir = configNode['spark_tmp_dir']
 
 spark_dir = "#{spark_base}/spark"
 
+client_log_dir = "#{spark_tmp_dir}/tmp"
+
 directory spark_cache_path do
   owner 'root'
   group 'root'
@@ -259,11 +261,67 @@ template "#{spark_dir}/conf/log4j.properties" do
   only_if { !is_client_only }
 end
 
+# Compute the maximum log file size
+#
+# When determining the maximum size, compute it by
+# using 10% of the temp volume size.  Don't use
+# more than 4Gb of disk space or less than 512Mb.
+#
+tmp_vol_size=`df |grep \"#{spark_tmp_dir}$\" |awk '{ print $2 }'`
+
+max_log_space=4 * 1024 * 1024
+min_log_space=512 * 1024
+num_log_backups=16
+
+if tmp_vol_size.empty?
+  # Couldn't detect the size. Use a default (1Gb). Compute in terms of 1K blocks.
+  log_max_size_total = 1024 * 1024
+else
+  # Start off with 10% of the tmp volume size
+  log_max_size_total = (0.1 * tmp_vol_size.to_i).to_i
+  #puts "START: #{log_max_size_total}"
+
+  #puts "MAX: #{max_log_space}"
+  #puts "MIN: #{min_log_space}"
+
+  # Restrict the computed size to the range
+  if log_max_size_total > max_log_space
+    #puts "Restricting to MAX"
+    log_max_size_total = max_log_space
+  elsif log_max_size_total < min_log_space
+    #puts "Restricting to MIN"
+    log_max_size_total = min_log_space
+  end
+end
+
+# Calculate the value to use in the log4j config
+max_file_size = log_max_size_total * 1024 / num_log_backups
+
+Chef::Log.info("tmp_vol_size=#{tmp_vol_size}")
+Chef::Log.info("log_max_size_total=#{log_max_size_total}")
+Chef::Log.info("max_file_size=#{max_file_size}")
+
+template "#{spark_dir}/conf/log4j-daemon.properties" do
+  source 'log4j-daemon.properties.erb'
+  mode   '0644'
+  owner  'spark'
+  group  'spark'
+  variables ({
+    :max_file_size => max_file_size,
+    :num_log_backups => num_log_backups
+  })
+end
+
 template "#{spark_dir}/conf/log4j.properties" do
   source 'log4j-client.properties.erb'
   mode   '0644'
   owner  'spark'
   group  'spark'
+  variables ({
+    :max_file_size => max_file_size,
+    :num_log_backups => num_log_backups,
+    :log_dir => client_log_dir
+  })
   only_if { is_client_only }
 end
 
