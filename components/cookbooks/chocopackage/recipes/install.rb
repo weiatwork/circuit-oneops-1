@@ -33,5 +33,5 @@ if node['platform_family'] == 'windows'
   end
 
 else
-  Chef::Log.fatal("The Chocolatey Package is not supported on #{node['platform_family']}")
+  Chef::Log.fatal("Chocopackage component is not supported on #{node['platform_family']}")
 end

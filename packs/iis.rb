@@ -180,7 +180,7 @@ resource "chocopackage",
   :cookbook      => "oneops.1.chocopackage",
   :design        => true,
   :requires      => {
-    :constraint  => "0..*",
+    :constraint  => "0..1",
     :help        => "Installs chocolatey package"
   },
   :attributes       => {
