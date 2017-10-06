@@ -76,10 +76,14 @@ end
 ruby_block 'lvremove ephemeral' do
   block do  
     if ::File.exists?("/dev/#{platform_name}-eph/#{node.workorder.rfcCi.ciName}")
-      `lvremove -f #{platform_name}-eph/#{node.workorder.rfcCi.ciName}`
-      execute_command("sudo rm -rf #{mount_point}")
+            Chef::Log.info("Removing Logical Volume")
+            lvremove = Mixlib::ShellOut.new("lvremove -f #{platform_name}-eph/#{node.workorder.rfcCi.ciName}")
+            lvremove.run_command
+            Chef::Log.info("#{lvremove.stdout}")
+            Chef::Log.warn("#{lvremove.stderr}")
+            execute_command("sudo rm -rf #{mount_point}")
     end
-   end
+  end
 end unless is_windows
 
 #Baremetal condition for vgremove, pvremove and mdadm disable
@@ -93,28 +97,70 @@ if !compute_baremetal.nil? && compute_baremetal =~/true/
      # raid_type = node.workorder.rfcCi.ciAttributes["raid_options"]
      # if !compute_baremetal.nil? && compute_baremetal =~/true/
         if ::File.exists?("/dev/#{platform_name}-eph/#{node.workorder.rfcCi.ciName}")
-          Chef::Log.info("lvremove is not yet completed")
+          Chef::Log.warn("lvremove is not yet completed")
         else
           Chef::Log.info("lvremove is completed")
+          #Find out the volume group
+          volume_group = Mixlib::ShellOut.new("sudo vgs | grep -v 'VG' | awk '{print $1}'")
+          volume_group.run_command
+          Chef::Log.warn("#{volume_group.stderr}")
+          Chef::Log.info("#{volume_group.stdout}")
+
+          sleep 10
           #vgremove
-          volume_group = `vgs | grep -v "VG" | awk '{print $1}'`
-          Chef::Log.info("Executing vgremove for volume group #{volume_group}")
+          Chef::Log.info("Executing vgremove for volume group #{volume_group.stdout}")
+          vgremove = Mixlib::ShellOut.new("sudo vgremove -f #{volume_group.stdout}")
+          vgremove.run_command
+          Chef::Log.info("#{vgremove.stdout}")
+          Chef::Log.warn("#{vgremove.stderr}")
+
           sleep 10
-          `sudo vgremove -f #{volume_group} 2>&1 &`
+
+          #Find out physical volume
+          physical_volume = Mixlib::ShellOut.new("sudo pvs | awk '{print $1}'| grep -v 'PV' > /var/tmp/pvdevice")
+          physical_volume.run_command
+          Chef::Log.info("#{physical_volume.stdout}")
+          Chef::Log.warn("#{physical_volume.stderr}")
+
           #pvremove
-          sleep 10
-          physical_volume = `pvs | awk '{print $1}'| grep -v "PV"`
-          Chef::Log.info("Executing pvremove for #{physical_volume}")
-          `sudo pvremove -f #{physical_volume} 2>&1 &`
-          #mdadm stop for RAID1
-          `sudo mdadm --detail --scan | grep ARRAY`
-          if raid_type == "RAID 1" || $?.to_i == 0
-            mdadm_device = `mdadm --detail -scan | grep ARRAY | awk '{print $2}'`
-            Chef::Log.info("Stopping mdadm #{mdadm_device}")
-            `sudo mdadm --stop #{mdadm_device}`
+          Chef::Log.info("Executing pvremove")
+          pvremove = Mixlib::ShellOut.new("cat /var/tmp/pvdevice | while read device; do sudo pvremove -f $device; done")
+          pvremove.run_command
+          Chef::Log.info("#{pvremove.stdout}")
+          Chef::Log.warn("#{pvremove.stderr}")
+
+          #mdadm check
+          mdadm_check = Mixlib::ShellOut.new("sudo mdadm --detail --scan | grep ARRAY")
+          mdadm_check.run_command
+          Chef::Log.info("#{mdadm_check.stdout}")
+          Chef::Log.warn("#{mdadm_check.stderr}")
+          puts "mdadm check exit code:" + "#{mdadm_check.exitstatus}"
+
+          #Proceeding below if RAID1
+          if mdadm_check.exitstatus == 0
+
+            #Find out the mdadm device
+            mdadm_device = Mixlib::ShellOut.new("sudo mdadm --detail -scan | grep ARRAY | awk '{print $2}'")
+            mdadm_device.run_command
+            Chef::Log.info("#{mdadm_device.stdout}")
+            Chef::Log.warn("#{mdadm_device.stderr}")
+
+            #Stop mdadm
+            Chef::Log.info("Stopping mdadm #{mdadm_device.stdout}")
+            stop_mdadm = Mixlib::ShellOut.new("sudo mdadm --stop #{mdadm_device.stdout}")
+            stop_mdadm.run_command
+            Chef::Log.info("#{stop_mdadm.stdout}")
+            Chef::Log.warn("#{stop_mdadm.stderr}")
+
+            #zerosupblock mdadm
+            Chef::Log.info("Stopping mdadm superblock")
+            mdadm_zerosupblock = Mixlib::ShellOut.new("cat /var/tmp/expected_devices | while read device; do sudo mdadm --zero-superblock /dev/$device; done")
+            mdadm_zerosupblock.run_command
+            Chef::Log.info("#{mdadm_zerosupblock.stdout}")
+            Chef::Log.warn("#{mdadm_zerosupblock.stderr}")
+            puts "mdadm_zerosupblock exit code:" + "#{mdadm_zerosupblock.exitstatus}"
           end
         end
-     # end
    end
  end unless is_windows
 end

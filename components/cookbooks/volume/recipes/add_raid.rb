@@ -7,7 +7,6 @@ end
 
 raid_type = node.workorder.rfcCi.ciAttributes["raid_options"]
 
-
 #List the devices available on baremetal node
 bash "execute_RAID" do
   code <<-EOH
@@ -517,9 +516,10 @@ ruby_block 'create-ephemeral-volume-ruby-block' do
     total_size = 0
     device_list = ""
 
-    if raid_type == "RAID 1"
+##Baremetal RAID config 
+    if node.workorder.rfcCi.ciAttributes.has_raid == 'true' && raid_type == "RAID 1"
     Chef::Log.info("Raid type is #{raid_type}")
-    
+
     has_created_raid = false
     exec_count = 0
     max_retry = 10
@@ -530,113 +530,186 @@ ruby_block 'create-ephemeral-volume-ruby-block' do
         end
            # mdadm create for RAID1
            #Check if mdadm create is already done
-        mdadm_tmp = "sudo mdadm --detail --scan | grep ARRAY"
-        out = `#{mdadm_tmp}`
-        mdadm_tmp_code = $?.to_i
-        Chef::Log.info("mdadm_tmp_code: "+mdadm_tmp_code.to_s+" out: "+out)
-        if mdadm_tmp_code != 0
-    	  cmd = "yes |sudo mdadm --create --verbose #{raid_device} --level=10 --assume-clean --chunk=256 --raid-devices=#{no_of_lv} #{device_list} 2>&1"
-    	  until ::File.exists?(raid_device) || has_created_raid || exec_count > max_retry do
-             Chef::Log.info(raid_device+" being created with: "+cmd)    
-             out = `#{cmd}`
-             exit_code = $?.to_i
-             Chef::Log.info("exit_code: "+exit_code.to_s+" out: "+out)
-             if exit_code == 0
-                  has_created_raid = true                  
-                  # mdadm.conf creation for persistence after reboot also
-                  `sudo mkdir -p /etc/mdadm`
-                  `sudo touch /etc/mdadm/mdadm.conf`
-                  `sudo mdadm --detail --scan > /etc/mdadm/mdadm.conf`
-                  mdadm_device = `grep ARRAY /etc/mdadm/mdadm.conf | awk '{print $2}'`
-                  Chef::Log.info("mdadm_device is #{mdadm_device}")
-                  #pvcreate for RAID1
-                  existing_dev = `pvdisplay -s`
-                  Chef::Log.info("existing_dev is #{existing_dev}")
-                if existing_dev !~ /#{mdadm_device}/
-                  Chef::Log.info("pvcreate #{mdadm_device} ..."+`pvcreate -f #{mdadm_device}`)
-                else
-                  Chef::Log.info("Physical volume #{mdadm_device} is existing already.")    
-                end
-                #vgcreate for RAID1
-                `vgdisplay #{platform_name}-eph`
-                if $?.to_i != 0
-                  Chef::Log.info("Volume group #{platform_name}-eph is not existing.")
-                  Chef::Log.info("vgcreate #{platform_name}-eph #{mdadm_device} ..."+`vgcreate -f #{platform_name}-eph #{mdadm_device}`)
-                else
-                  Chef::Log.warn("Volume group #{platform_name}-eph is existing already and hence cannot create ..")
-                end             
-             else
-               exec_count += 1
-                 sleep 10    
-                 ccmd = "for f in /dev/md*; do mdadm --stop $f; done"
-                 Chef::Log.info("cleanup bad arrays: "+ccmd)
-                 Chef::Log.info(`#{ccmd}`)    
-                 ccmd = "mdadm --zero-superblock #{dev_list}"
-                 Chef::Log.info("cleanup incase re-using: "+ccmd)
-                 Chef::Log.info(`#{ccmd}`)
-             end
+            mdadm_check = Mixlib::ShellOut.new("sudo mdadm --detail --scan | grep ARRAY")
+            mdadm_check.run_command
+            Chef::Log.info("#{mdadm_check.stdout}")
+            Chef::Log.warn("#{mdadm_check.stderr}")
+            puts "mdadm check exit code:" + "#{mdadm_check.exitstatus}"
+
+            if mdadm_check.exitstatus != 0
+              cmd = "yes |sudo mdadm --create --verbose #{raid_device} --level=10 --assume-clean --chunk=256 --raid-devices=#{no_of_lv} #{device_list} 2>&1"
+              until ::File.exists?(raid_device) || has_created_raid || exec_count > max_retry do
+              Chef::Log.info(raid_device+" being created with: "+cmd)
+              mdadm_create = Mixlib::ShellOut.new("yes |sudo mdadm --create --verbose #{raid_device} --level=10 --assume-clean --chunk=256 --raid-devices=#{no_of_lv} #{device_list} 2>&1")
+              mdadm_create.run_command
+              Chef::Log.info("#{mdadm_create.stdout}")
+              Chef::Log.warn("#{mdadm_create.stderr}")
+              puts "mdadm create exit code:" + "#{mdadm_create.exitstatus}"
+              mdadm_create.error!
+ 
+              if  mdadm_create.exitstatus == 0
+               has_created_raid = true
+               create_mdadmdir = Mixlib::ShellOut.new("sudo mkdir -p /etc/mdadm")
+               touch_mdadmconf = Mixlib::ShellOut.new("sudo touch /etc/mdadm/mdadm.conf")
+               create_mdadmconf = Mixlib::ShellOut.new("sudo mdadm --detail --scan > /etc/mdadm/mdadm.conf")
+               create_mdadmdir.run_command
+               touch_mdadmconf.run_command
+               create_mdadmconf.run_command
+               puts create_mdadmdir.stderr
+               puts touch_mdadmconf.stderr
+               puts create_mdadmconf.stderr
+               mdadm_device = Mixlib::ShellOut.new("grep ARRAY /etc/mdadm/mdadm.conf | awk '{print $2}'")
+               mdadm_device.run_command
+               Chef::Log.info("mdadm device is #{mdadm_device.stdout}")
+               Chef::Log.warn("#{mdadm_device.stderr}")
+
+               #pvcreate for RAID1
+               existing_dev = Mixlib::ShellOut.new("pvdisplay -s")
+               existing_dev.run_command
+               Chef::Log.info("existing_dev is #{existing_dev.stdout}")
+               Chef::Log.warn("#{existing_dev.stderr}")
+
+               if existing_dev.stdout !~ /#{mdadm_device.stdout}/
+                 Chef::Log.info("pvcreate #{mdadm_device.stdout} ...")
+                 create_pv = Mixlib::ShellOut.new("pvcreate -f #{mdadm_device.stdout}")
+                 create_pv.run_command
+                 Chef::Log.info("#{create_pv.stdout}")
+                 Chef::Log.warn("#{create_pv.stderr}")
+                 create_pv.error!
+               else
+                 Chef::Log.info("Physical volume #{mdadm_device.stdout} is existing already.")
+               end
+
+               #vgcreate for RAID1
+               vgdisplay = Mixlib::ShellOut.new("vgdisplay #{platform_name}-eph")
+               vgdisplay.run_command
+               Chef::Log.info("#{vgdisplay.stdout}")
+               Chef::Log.warn("#{vgdisplay.stderr}")
+               puts "vgdisplay exit code:" + "#{vgdisplay.exitstatus}"
+
+               if vgdisplay.exitstatus != 0
+                 Chef::Log.info("Volume group #{platform_name}-eph is not existing.")
+                 Chef::Log.info("vgcreate #{platform_name}-eph #{mdadm_device.stdout} ...")
+                 create_vg = Mixlib::ShellOut.new("vgcreate -f #{platform_name}-eph #{mdadm_device.stdout}")
+                 create_vg.run_command
+                 Chef::Log.info("#{create_vg.stdout}")
+                 Chef::Log.warn("#{create_vg.stderr}")
+                 create_vg.error!
+               else
+                 Chef::Log.warn("Volume group #{platform_name}-eph is existing already and hence cannot create ..")
+               end
+            else
+              exec_count += 1
+                sleep 10
+                badarray_cleanup = Mixlib::ShellOut.new("for f in /dev/md*; do mdadm --stop $f; done")
+                Chef::Log.info("cleanup bad arrays")
+                badarray_cleanup.run_command
+                Chef::Log.warn("#{badarray_cleanup.stderr}")
+            
+                mdadm_zerosupblock = Mixlib::ShellOut.new("mdadm --zero-superblock #{dev_list}")
+                mdadm_zerosupblock.run_command
+                Chef::Log.info("Delete mdadm superblock")
+                Chef::Log.warn("#{mdadm_zerosupblock.stderr}")
+            end
+
           end
             node.set["raid_device"] = raid_device
         else
           sleep 10
         end
       else
-          Chef::Log.info("One or more device/s are in error state or no ephemerals.")
+          Chef::Log.error("One or more device/s are in error state or no ephemerals.")
           raid_device = no_raid_device
           node.set["raid_device"] = no_raid_device    
       end
     else
-       mdadm_chk = "sudo mdadm --detail --scan | grep ARRAY"
-       out = `#{mdadm_chk}`
-       mdadm_chk_code = $?.to_i
-       Chef::Log.info("mdadm_chk_code: "+mdadm_chk_code.to_s+" out: "+out)
-       if mdadm_chk_code != 0
-          Chef::Log.info("Raid type is RAID 0")
+          sleep 10
+          mdadm_chk = Mixlib::ShellOut.new("sudo mdadm --detail --scan | grep ARRAY")
+          mdadm_chk.run_command
+          Chef::Log.info("#{mdadm_chk.stdout}")
+          Chef::Log.warn("#{mdadm_chk.stderr}")
+          puts "mdadm checking exit code:" + "#{mdadm_chk.exitstatus}"
+          if mdadm_chk.exitstatus != 0
+            Chef::Log.info("Raid type is RAID 0")
           #pvcreate for RAID0
-          existing_dev = `pvdisplay -s`
-          Chef::Log.info("existing_dev is #{existing_dev}")
-          devices.each do |device|
-            dev_short = device.split("/").last
-            Chef::Log.info("dev_short is #{dev_short}")
-            if existing_dev !~ /#{dev_short}/
-              Chef::Log.info("pvcreate #{device} ..."+`pvcreate -f #{device}`)
-              device_list += device+" "
-              Chef::Log.info("device_list is #{device_list}")
-            end
-          end
+
+            existing_pv = Mixlib::ShellOut.new("pvdisplay -s")
+            existing_pv.run_command
+            Chef::Log.info("existing_pv is #{existing_pv.stdout}")
+            Chef::Log.warn("#{existing_pv.stderr}")
+              devices.each do |device|
+                dev_short = device.split("/").last
+                Chef::Log.info("dev_short is #{dev_short}")
+                if existing_pv.stdout !~ /#{dev_short}/
+                  Chef::Log.info("pvcreate #{device} ...")
+                  pvcreate = Mixlib::ShellOut.new("pvcreate -f #{device}")
+                  pvcreate.run_command
+                  Chef::Log.info("#{pvcreate.stdout}")
+                  Chef::Log.warn("#{pvcreate.stderr}")
+                  pvcreate.error!
+                  device_list += device+" "
+                  Chef::Log.info("device_list is #{device_list}")
+                end
+              end
           #vgcreate for RAID0
-          if device_list != ""
-            Chef::Log.info("vgcreate #{platform_name}-eph #{device_list} ..."+`vgcreate -f #{platform_name}-eph #{device_list}`)
-          else
+            if device_list != ""
+                    Chef::Log.info("vgcreate #{platform_name}-eph #{device_list} ...")
+                    vgcreate = Mixlib::ShellOut.new("vgcreate -f #{platform_name}-eph #{device_list}")
+                    vgcreate.run_command
+                    Chef::Log.info("#{vgcreate.stdout}")
+                    Chef::Log.warn("#{vgcreate.stderr}")
+                    vgcreate.error!
+            else
             Chef::Log.info("no ephemerals.")
-          end 
-       else
+            end
+          else
           Chef::Log.info("Raid type is RAID 1") 
           sleep 10  
-       end 
+     end
     end
-    
+
     #lvcreate
-    
+
     l_switch = "-L"
     if size =~ /%/
       l_switch = "-l"
     end
-    
-    `vgdisplay #{platform_name}-eph`
-    if $?.to_i == 0
-      `lvdisplay /dev/#{platform_name}-eph/#{logical_name}`
-      if $?.to_i != 0
-        `sudo mdadm --detail --scan | grep ARRAY`
-        if raid_type == "RAID 1" || $?.to_i == 0
-          execute_command("yes | lvcreate #{l_switch} #{size} -n #{logical_name} #{platform_name}-eph")
-        else
-          execute_command("yes | lvcreate -i#{no_of_lv} -I32 #{l_switch} #{size} -n #{logical_name} #{platform_name}-eph")
-        end
-      else
-        Chef::Log.warn("logical volume #{platform_name}-eph/#{logical_name} already exists and hence cannot recreate .. prefer replacing compute")
-      end
-    end
+
+    vgdisplay = Mixlib::ShellOut.new("vgdisplay #{platform_name}-eph")
+    vgdisplay.run_command
+    Chef::Log.info("#{vgdisplay.stdout}")
+    Chef::Log.warn("#{vgdisplay.stderr}")
+    puts "vgdisplay exit code:" + "#{vgdisplay.exitstatus}"
+    if vgdisplay.exitstatus == 0
+       lvdisplay = Mixlib::ShellOut.new("lvdisplay /dev/#{platform_name}-eph/#{logical_name}")
+       lvdisplay.run_command
+       Chef::Log.info("#{lvdisplay.stdout}")
+       Chef::Log.warn("#{lvdisplay.stderr}")
+       puts "lvdisplay exit code:" + "#{lvdisplay.exitstatus}"
+       if lvdisplay.exitstatus != 0
+          mdadm_status = Mixlib::ShellOut.new("sudo mdadm --detail --scan | grep ARRAY")
+          mdadm_status.run_command
+          Chef::Log.info("#{mdadm_status.stdout}")
+          Chef::Log.warn("#{mdadm_status.stderr}")
+          puts "mdadm status exit code:" + "#{mdadm_status.exitstatus}"
+          # if raid_type == "RAID 1" || mdadm_status.exitstatus == 0
+         if mdadm_status.exitstatus == 0
+            Chef::Log.info("Creating logical volume #{logical_name} with  command - yes | lvcreate #{l_switch} #{size} -n #{logical_name} #{platform_name}-eph")
+            lvcreate_raid1 = Mixlib::ShellOut.new("yes | lvcreate #{l_switch} #{size} -n #{logical_name} #{platform_name}-eph")
+            lvcreate_raid1.run_command
+            Chef::Log.info("#{lvcreate_raid1.stdout}")
+            Chef::Log.warn("#{lvcreate_raid1.stderr}")
+         else
+            Chef::Log.info("Creating logical volume #{logical_name} with command - yes | lvcreate -i#{no_of_lv} -I32 #{l_switch} #{size} -n #{logical_name} #{platform_name}-eph")
+            lvcreate_raid0 = Mixlib::ShellOut.new("yes | lvcreate -i#{no_of_lv} -I32 #{l_switch} #{size} -n #{logical_name} #{platform_name}-eph")
+            lvcreate_raid0.run_command
+            Chef::Log.info("#{lvcreate_raid0.stdout}")
+            Chef::Log.warn("#{lvcreate_raid0.stderr}")
+         end
+       else
+          Chef::Log.warn("logical volume #{platform_name}-eph/#{logical_name} already exists and hence cannot recreate .. prefer replacing compute")
+       end
+     end
   end
 end
 
