@@ -18,14 +18,16 @@
 #
 is_windows = false
 is_windows = true if node[:platform] =~ /windows/
-Chef::Log.info("Is platform windows?: #{is_windows}")
 has_mounted = false
 cloud_name = node[:workorder][:cloud][:ciName]
 provider_class = node[:workorder][:services][:compute][cloud_name][:ciClassName].split(".").last.downcase
-Chef::Log.info("provider: #{provider_class}")
 rfcAttrs = node.workorder.rfcCi.ciAttributes
 platform_name = node.workorder.box.ciName
-Chef::Log.info("platform_name: #{platform_name}")
+logical_name = node[:workorder][:rfcCi][:ciName]
+
+Chef::Log.info("Platform_name         : #{platform_name}")
+Chef::Log.info("Is platform windows?  : #{is_windows}")
+Chef::Log.info("Provider              : #{provider_class}")
 
 if rfcAttrs.has_key?("mount_point") && !rfcAttrs["mount_point"].empty?
 
@@ -34,17 +36,18 @@ if rfcAttrs.has_key?("mount_point") && !rfcAttrs["mount_point"].empty?
 
   if !is_windows
 
-    `grep #{mount_point} /etc/mtab`
-    has_mounted = true if $? == 0
+    out = execute_command("grep #{mount_point} /etc/mtab").stdout
+    if !out.empty? && !out.nil?
+      has_mounted = true
+    end
 
-    case node[:platform]
-      when "centos","redhat","fedora","suse"
-        package "lsof"
+    package 'lsof' do
+      only_if {['centos','redhat','fedora','suse'].include?(node[:platform])}
     end
 
     ruby_block "killing open files at #{mount_point}" do
       block do
-        `lsof #{mount_point} | awk '{print $2}' | grep -v PID | uniq | xargs kill -9`
+       execute_command("lsof #{mount_point} | awk '{print $2}' | grep -v PID | uniq | xargs kill -9")
       end
       only_if { has_mounted }
     end
@@ -56,11 +59,10 @@ if rfcAttrs.has_key?("mount_point") && !rfcAttrs["mount_point"].empty?
     # clear the tmpfs ramdisk entries and/or volume entries from /etc/fstab
     if(rfcAttrs["fstype"] == "tmpfs") || provider_class =~ /azure/ || provider_class =~ /cinder/
       Chef::Log.info("clearing /etc/fstab entry for fstype tmpfs")
-      `grep -v #{mount_point} /etc/fstab > /tmp/fstab`
-      `mv /tmp/fstab /etc/fstab`
-      logical_name = node.workorder.rfcCi.ciName
-      `rm -rf '/opt/oneops/azure-restore-ephemeral-mntpts/#{logical_name}.sh'`
-      `cp /etc/rc.local tmpfile;sed -e "/\\/opt\\/oneops\\/azure-restore-ephemeral-mntpts\\/#{logical_name}.sh/d" tmpfile > /etc/rc.local;rm -rf tmpfile`
+      execute_command("grep -v #{mount_point} /etc/fstab > /tmp/fstab")
+      execute_command("mv /tmp/fstab /etc/fstab")
+      execute_command("rm -rf '/opt/oneops/azure-restore-ephemeral-mntpts/#{logical_name}.sh'")
+      execute_command("cp /etc/rc.local tmpfile;sed -e '/\\/opt\\/oneops\\/azure-restore-ephemeral-mntpts\\/#{logical_name}.sh/d' tmpfile > /etc/rc.local;rm -rf tmpfile")
     end
   else
     ps_volume_script = "#{Chef::Config[:file_cache_path]}/cookbooks/Volume/files/del_disk.ps1"
@@ -74,13 +76,13 @@ if rfcAttrs.has_key?("mount_point") && !rfcAttrs["mount_point"].empty?
 end
 
 ruby_block 'lvremove ephemeral' do
+  only_if {::File.exists?("/dev/#{platform_name}-eph/#{logical_name}")}
+  not_if {is_windows}
   block do
-    if ::File.exists?("/dev/#{platform_name}-eph/#{node.workorder.rfcCi.ciName}")
-      `lvremove -f #{platform_name}-eph/#{node.workorder.rfcCi.ciName}`
-      execute_command("sudo rm -rf #{mount_point}")
-    end
+    execute_command("lvremove -f #{platform_name}-eph/#{logical_name}")
+    execute_command("sudo rm -rf #{mount_point}")
   end
-end unless is_windows
+end
 
 supported = true
 if provider_class =~ /virtualbox|vagrant|docker/
@@ -98,78 +100,63 @@ end
 
 include_recipe "shared::set_provider"
 
+if (node[:provider_class] =~ /azure/)
+  require File.expand_path('../../../azure_base/libraries/utils.rb', __FILE__)
+  Utils.set_proxy(node[:workorder][:payLoad][:OO_CLOUD_VARS])
+  node.set[:resource_group] = (AzureBase::ResourceGroupManager.new(node)).rg_name
+end
+
+raid_device = "/dev/md/"+ logical_name
+ruby_block 'destroy raid' do
+  only_if {::File.exists?(raid_device)}
+  not_if {is_windows}
+  block do
+    max_retry_count = 3
+    retry_count = 0
+
+    while retry_count < max_retry_count && ::File.exists?(raid_device) do
+      execute_command("mdadm --stop #{raid_device}")
+      execute_command("mdadm --remove #{raid_device}")
+      retry_count += 1
+      if ::File.exists?(raid_device)
+        Chef::Log.info("waiting 10sec for raid array to stop/remove")
+        sleep 10
+      end
+    end
+
+    exit_with_error("raid device still exists after many mdadm --stop #{raid_device}") if ::File.exists?(raid_device)
+  end
+end #ruby_block 'destroy raid' do
+
 ruby_block 'lvremove storage' do
   block do
 
-    max_retry_count = 3
-
     if !is_windows
-      `lvremove -f #{platform_name}`
-
-      raid_device = "/dev/md/"+ node.workorder.rfcCi.ciName
-      retry_count = 0
-
-      if provider_class =~ /rackspace/
-        Chef::Log.info "no raid for rackspace"
-      else
-        while retry_count < max_retry_count && ::File.exists?(raid_device) do
-          `mdadm --stop #{raid_device}`
-          `mdadm --remove #{raid_device}`
-          retry_count += 1
-          if ::File.exists?(raid_device)
-            Chef::Log.info("waiting 10sec for raid array to stop/remove")
-            sleep 10
-          end
-        end
-        if ::File.exists?(raid_device)
-          exit_with_error "raid device still exists after many mdadm --stop #{raid_device}"
-        end
-      end
+      execute_command("lvremove -f #{platform_name}")
     end #if !is_windows
 
     provider = node.iaas_provider
     storage_provider = node.storage_provider
-    instance_id = node.workorder.payLoad.ManagedVia[0]["ciAttributes"]["instance_id"]
+    instance_id = node[:workorder][:payLoad][:ManagedVia][0][:ciAttributes][:instance_id]
+    instance_id = node[:workorder][:payLoad][:ManagedVia][0][:ciAttributes][:instance_name] if instance_id.nil?
     Chef::Log.info("instance_id: "+instance_id)
+    compute = get_compute(instance_id)
 
+    max_retry_count = 3
     change_count = 1
     retry_count = 0
     while change_count > 0 && retry_count < max_retry_count
       change_count = 0
 
       device_maps.each do |dev_vol|
-        vol_id = dev_vol.split(":")[0]
-        dev_id = dev_vol.split(":")[1]
+        vol_id,dev_id = dev_vol.split(":")
         Chef::Log.info("vol: "+vol_id)
 
-        if provider_class =~ /rackspace|ibm/
-          volume = storage_provider.volumes.get vol_id
-        elsif provider_class =~ /azure/ && !is_windows
-          Chef::Log.info("running: lvdisplay /dev/#{platform_name}/* ...")
-          out=`lvdisplay /dev/#{platform_name}/*`
-          Chef::Log.info("out: #{out}")
-          if $? != 0 #No more volumes, disk can be detached.
-            Chef::Log.info("There is no more volumes on the disk, so disk can be detached.")
-            run_context.include_recipe 'azuredatadisk::detach'
-          end
-        elsif provider_class =~ /azure/ && is_windows
-          Chef::Log.info("Windows: Assuming all volumes have been set offline.")
-          dd_manager = Datadisk.new(node) # using azuredatadisk library to detach, recipes cannot be called from the ruby block
-          dd_manager.detach()
-        else
-          volume = provider.volumes.get  vol_id
-        end
-
+        volume = get_volume(vol_id)
         Chef::Log.info( "volume:"+volume.inspect.gsub("\n",""))
 
         begin
-          if provider_class =~ /openstack/
-            vol_state = volume.status.downcase
-          elsif provider_class =~ /azure/
-            Chef::Log.info("azuredatadisk no action needed")
-          else
-            vol_state = volume.state.downcase
-          end
+          vol_state = get_volume_status(volume)
 
           if vol_state != "available" && vol_state != "detached"
             if vol_state != "detaching"
@@ -178,8 +165,13 @@ ruby_block 'lvremove storage' do
               case provider_class
                 when /openstack/
                   attached_instance_id = ""
-                  if volume.attachments.size >0
+                  Chef::Log.warn("volume: #{volume.inspect.gsub("\n","")}")
+				  Chef::Log.warn("Volume attachments size: #{volume.attachments.size}, attachments: #{volume.attachments.inspect.gsub("\n","")}")
+				  Chef::Log.warn("attachments: #{volume.attachments[0].inspect.gsub("\n","")}")
+				  Chef::Log.warn("serverId: #{volume.attachments[0]["serverId"]}")
+				  if volume.attachments.size >0
                     attached_instance_id = volume.attachments[0]["serverId"]
+					Chef::Log.warn("attached_instance_id: #{attached_instance_id}")
                   end
 
                   if attached_instance_id != instance_id
@@ -207,16 +199,14 @@ ruby_block 'lvremove storage' do
                   end
 
                 when /rackspace/
-                  compute = provider.servers.get instance_id
                   compute.attachments.each do |a|
                     Chef::Log.info "destroying: "+a.inspect
                     a.destroy
                   end
                 when /ibm/
-                  compute = provider.servers.get instance_id
                   compute.detach(volume.id)
                 when /azure/
-                  Chef::Log.info("azuredatadisk no action needed")
+                  compute.detach_managed_disk(volume.name)
                 else
                   # aws uses server_id
                   if volume.server_id == instance_id
