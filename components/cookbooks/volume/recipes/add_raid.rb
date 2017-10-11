@@ -1,6 +1,7 @@
 # This recipe works only for Openstack baremetal service
 Chef::Log.info('RAID volume add recipe')
 
+# Install lsscsi package for non-windows platform
 if node.platform =~ /windows/
   include_recipe "volume::windows_vol_add"
   return
@@ -57,14 +58,6 @@ node.set["raid_device"] = raid_device
 platform_name = node.workorder.box.ciName
 logical_name = node.workorder.rfcCi.ciName
 
-
-cloud_name = node[:workorder][:cloud][:ciName]
-token_class = node[:workorder][:services][:compute][cloud_name][:ciClassName].split(".").last.downcase
-
-if token_class !~ /openstack/
-  exit_with_error("Baremetal is only supported for Openstack")
-end
-
 ### filesystem - check for new attr and exit for backwards compat
 _mount_point = nil
 _device = nil
@@ -111,6 +104,7 @@ ruby_block 'create-ephemeral-volume-ruby-block' do
     device_set = Array.new
     device_prefix = "/dev/"
     
+    #Get the available devices in the baremetal node
     if ::File.exist?("/var/tmp/expected_devices")
         File.open("/var/tmp/expected_devices", "r") do |f|
           f.lines.each do |line|
@@ -292,7 +286,6 @@ ruby_block 'create-ephemeral-volume-ruby-block' do
     end
 
     #lvcreate
-
     l_switch = "-L"
     if size =~ /%/
       l_switch = "-l"
@@ -315,7 +308,6 @@ ruby_block 'create-ephemeral-volume-ruby-block' do
           Chef::Log.info("#{mdadm_status.stdout}")
           Chef::Log.warn("#{mdadm_status.stderr}")
           puts "mdadm status exit code:" + "#{mdadm_status.exitstatus}"
-          # if raid_type == "RAID 1" || mdadm_status.exitstatus == 0
          if mdadm_status.exitstatus == 0
             Chef::Log.info("Creating logical volume #{logical_name} with  command - yes | lvcreate #{l_switch} #{size} -n #{logical_name} #{platform_name}-eph")
             lvcreate_raid1 = Mixlib::ShellOut.new("yes | lvcreate #{l_switch} #{size} -n #{logical_name} #{platform_name}-eph")
