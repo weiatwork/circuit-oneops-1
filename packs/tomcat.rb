@@ -19,7 +19,7 @@ variable "artifactId",
          :value => 'hello-world'
 
 variable "appVersion",
-         :description => 'Artifact version (com.walmart.platform.config.appVersion)',
+         :description => 'Artifact version',
          :value => '1.0.0'
 
 variable "extension",
@@ -32,7 +32,7 @@ variable "repository",
 
 ##SHA version of the artifact
 variable "shaVersion",
-         :description => 'CheckSum for artifact download',
+         :description => 'Checksum for artifact download',
          :value => ''
 
 #The deployment context which application teams can set
@@ -182,14 +182,14 @@ resource "artifact",
   :design => true,
   :requires => { "constraint" => "0..*", "services" => "*maven" },
   :attributes => {
-  :repository => '$OO_LOCAL{repository}',
-             :location => '$OO_LOCAL{groupId}:$OO_LOCAL{artifactId}:$OO_LOCAL{extension}',
-             :version => '$OO_LOCAL{appVersion}',
-             :install_dir => '/opt/tomcat7/$OO_LOCAL{artifactId}',
-             :as_user => 'tomcat',
-             :as_group => 'tomcat',
-             :restart => "execute \"rm -fr /opt/tomcat7/webapps/$OO_LOCAL{deployContext}\" \n\nlink \"/opt/tomcat7/webapps/$OO_LOCAL{deployContext}\" do \n  to \"/opt/tomcat7/$OO_LOCAL{artifactId}/current\" \nend \n\n"
-         },
+     :repository => '$OO_LOCAL{repository}',
+     :location => '$OO_LOCAL{groupId}:$OO_LOCAL{artifactId}:$OO_LOCAL{extension}',
+     :version => '$OO_LOCAL{appVersion}',
+     :install_dir => '/opt/tomcat7/$OO_LOCAL{artifactId}',
+     :as_user => 'tomcat',
+     :as_group => 'tomcat',
+     :restart => "execute \"rm -fr /opt/tomcat7/webapps/$OO_LOCAL{deployContext}\" \n\nlink \"/opt/tomcat7/webapps/$OO_LOCAL{deployContext}\" do \n  to \"/opt/tomcat7/$OO_LOCAL{artifactId}/current\" \nend \n\n"
+   },
 
   :monitors => {
          'URL' => {:description => 'URL',
