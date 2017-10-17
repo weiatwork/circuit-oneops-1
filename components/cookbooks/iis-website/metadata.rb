@@ -9,6 +9,8 @@ supports 'windows'
 depends 'iis'
 depends 'artifact'
 depends 'taskscheduler'
+depends 'dotnet-platform'
+
 
 grouping 'default',
   :access   => 'global',

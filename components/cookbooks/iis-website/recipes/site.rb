@@ -1,3 +1,4 @@
+include_recipe "iis-website::install_dotnet_platform"
 site = node['iis-website']
 platform_name = node.workorder.box.ciName
 site_id = node.workorder.box.ciId
