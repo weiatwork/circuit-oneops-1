@@ -554,7 +554,7 @@ end
 
 file "/etc/profile.d/oneops_bigdata.sh" do
   content <<-EOF
-  export ONEOPS_BIGDATA_PLATFORM=#{bigdata_platform}
+  export ONEOPS_BIGDATA_PACK=#{bigdata_platform}
   export ONEOPS_BIGDATA_ROLE=#{bigdata_role}
   EOF
   mode    '0644'
