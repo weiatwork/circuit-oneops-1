@@ -562,6 +562,36 @@ file "/etc/profile.d/oneops_bigdata.sh" do
   group   'root'
 end
 
+file "/etc/default/telegraf" do
+  content <<-EOF
+    export ONEOPS_BIGDATA_PACK=#{bigdata_platform}
+    export ONEOPS_BIGDATA_ROLE=#{bigdata_role}
+    EOF
+  mode    '0644'
+  owner   'root'
+  group   'root'
+  notifies :run, "bash[restart_telegraf]", :delayed
+end
+
+bash "restart_telegraf" do
+  user "root"
+  code <<-EOF
+    TELEGRAF_SERVICES=`ls /etc/init.d |grep "^telegraf" |tr '\n' ' '`
+
+    echo "Checking restart Telegraf" >> /tmp/restart_telegraf.txt
+
+    if [ "$TELEGRAF_SERVICES" != "" ]; then
+      echo "Restarting Telegraf" >> /tmp/restart_telegraf.txt
+
+      for TELEGRAF_SERVICE in $TELEGRAF_SERVICES; do
+        echo "Restarting $TELEGRAF_SERVICE" >> /tmp/restart_telegraf.txt
+        service $TELEGRAF_SERVICE restart
+      done
+    fi
+  EOF
+  action :nothing
+end
+
 if actionName == "replace"
   # During a replace, save all start operations for the ring
   # component. This component will know the mapping of all masters to
