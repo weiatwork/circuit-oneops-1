@@ -1,11 +1,11 @@
 if node[:workorder][:services].has_key?('dotnet-platform')
 
-  chocolatey_package_details = JSON.parse(node[:workorder][:services]['dotnet-platform']['prod-ndc7']['ciAttributes']['chocolatey_package_details'])
-  chocolatey_package_source = node[:workorder][:services]['dotnet-platform']['prod-ndc7']['ciAttributes']['chocolatey_package_source']
+  cloud = node.workorder.cloud.ciName
+  chocolatey_package_details = JSON.parse(node[:workorder][:services]["dotnet-platform"][cloud]['ciAttributes']['chocolatey_package_details'])
+  chocolatey_package_source = node[:workorder][:services]['dotnet-platform'][cloud]['ciAttributes']['chocolatey_package_source']
 
   mirror_svc = node[:workorder][:services][:mirror]
   if !mirror_svc.nil?
-    cloud = node.workorder.cloud.ciName
     mirror = JSON.parse(mirror_svc[cloud][:ciAttributes][:mirrors])
     mirror_pkg_source_url = mirror['chocorepo']
   end
