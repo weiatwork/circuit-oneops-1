@@ -32,26 +32,34 @@ dest_file = "#{node.tomcat.tomcat_install_dir}/apache-tomcat-#{full_version}.tar
 cloud_name = node[:workorder][:cloud][:ciName]
 services = node[:workorder][:services]
 
-if services.nil? || !services.has_key?(:mirror)
-  Chef::Log.error("Please make sure  cloud '#{cloud_name}' has mirror service with 'apache' eg {apache=>http://archive.apache.org/dist}")
-  exit 1
-end
-mirrors = JSON.parse(services[:mirror][cloud_name][:ciAttributes][:mirrors])
-if mirrors.nil? || !mirrors.has_key?('apache')
-  Chef::Log.error("Please make sure  cloud '#{cloud_name}' has mirror service with 'apache' eg {apache=>http://archive.apache.org/dist}")
-  exit 1
-end
-mirrors = JSON.parse(node[:workorder][:services][:mirror][cloud_name][:ciAttributes][:mirrors])
-source_list = mirrors['apache'].split(",").map { |mirror| "#{mirror}/#{tarball}" }
-
-shared_download_http source_list.join(",") do
-  path dest_file
-  action :create
-end
-
-tar_flags = "--exclude webapps/ROOT"
-execute "tar #{tar_flags} -zxf #{dest_file}" do
-  cwd node.tomcat.tomcat_install_dir
+if File.directory?("/root/runtimes/tomcat") && ["7.0.82","8.5.23","9.0.1"].include?(full_version)
+  # if on fast deploy image copy tomcat instead of downloading
+  execute "cp -r /root/runtimes/tomcat/#{full_version} #{node.tomcat.tomcat_install_dir}/apache-tomcat-#{full_version}" do
+    cwd node.tomcat.tomcat_install_dir
+  end
+  execute "rm -rf #{node.tomcat.tomcat_install_dir}/apache-tomcat-#{full_version}/webapps/ROOT" do
+    cwd node.tomcat.tomcat_install_dir
+  end
+else
+  if services.nil? || !services.has_key?(:mirror)
+    Chef::Log.error("Please make sure  cloud '#{cloud_name}' has mirror service with 'apache' eg {apache=>http://archive.apache.org/dist}")
+    exit 1
+  end
+  mirrors = JSON.parse(services[:mirror][cloud_name][:ciAttributes][:mirrors])
+  if mirrors.nil? || !mirrors.has_key?('apache')
+    Chef::Log.error("Please make sure  cloud '#{cloud_name}' has mirror service with 'apache' eg {apache=>http://archive.apache.org/dist}")
+    exit 1
+  end
+  mirrors = JSON.parse(node[:workorder][:services][:mirror][cloud_name][:ciAttributes][:mirrors])
+  source_list = mirrors['apache'].split(",").map { |mirror| "#{mirror}/#{tarball}" }
+  shared_download_http source_list.join(",") do
+    path dest_file
+    action :create
+  end
+  tar_flags = "--exclude webapps/ROOT"
+  execute "tar #{tar_flags} -zxf #{dest_file}" do
+    cwd node.tomcat.tomcat_install_dir
+  end
 end
 
 execute "rm -fr tomcat#{major_version}" do
