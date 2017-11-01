@@ -38,7 +38,8 @@ resource "iis-website",
   :design       => true,
   :requires     => {
     :constraint => "1..1",
-    :help       => "Installs/Configure IIS"
+    :help       => "Installs/Configure IIS",
+    :services => "*dotnet-platform"
   },
   :attributes   => {
     "package_name"                      => '',
