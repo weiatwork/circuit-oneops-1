@@ -106,6 +106,10 @@ module Utils
         abbr = 'win'
       when 'westus'
         abbr = 'wus'
+      when 'ukwest'
+        abbr ='wuk'
+      when 'uksouth'
+        abbr = 'suk'
       else
         OOLog.fatal("Azure location/region, '#{region}' not found in Resource Group abbreviation List")
     end
