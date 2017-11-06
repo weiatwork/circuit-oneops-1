@@ -15,11 +15,6 @@ action :install do
   deployment_directory = new_resource.deployment_directory
   physical_path = new_resource.physical_path
 
-  chocolatey_package "nuget.commandline" do
-    action :install
-    options "--ignore-package-exit-codes=3010"
-  end
-
   if version == 'latest'
     cmd = Mixlib::ShellOut.new("#{nuget} list #{package_name} -source #{repository_url} -p")
     cmd.run_command
