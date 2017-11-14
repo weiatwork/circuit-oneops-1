@@ -32,15 +32,13 @@ dest_file = "#{node.tomcat.tomcat_install_dir}/apache-tomcat-#{full_version}.tar
 cloud_name = node[:workorder][:cloud][:ciName]
 services = node[:workorder][:services]
 
-if File.directory?("/root/runtimes/tomcat") && ["7.0.82","8.5.23","9.0.1"].include?(full_version)
+if File.file?("/etc/oneops-tools-inventory.yml") && YAML.load_file("/etc/oneops-tools-inventory.yml").key?("tomcat_#{full_version}")
+
   # if on fast deploy image copy tomcat instead of downloading
-  execute "cp -r /root/runtimes/tomcat/#{full_version} #{node.tomcat.tomcat_install_dir}/apache-tomcat-#{full_version}" do
-    cwd node.tomcat.tomcat_install_dir
-  end
-  execute "rm -rf #{node.tomcat.tomcat_install_dir}/apache-tomcat-#{full_version}/webapps/ROOT" do
-    cwd node.tomcat.tomcat_install_dir
-  end
+  runtimes = YAML.load_file("/etc/oneops-tools-inventory.yml")
+  dest_file = runtimes["tomcat_#{full_version}"]
 else
+
   if services.nil? || !services.has_key?(:mirror)
     Chef::Log.error("Please make sure  cloud '#{cloud_name}' has mirror service with 'apache' eg {apache=>http://archive.apache.org/dist}")
     exit 1
@@ -56,11 +54,13 @@ else
     path dest_file
     action :create
   end
+end
+
   tar_flags = "--exclude webapps/ROOT"
   execute "tar #{tar_flags} -zxf #{dest_file}" do
     cwd node.tomcat.tomcat_install_dir
   end
-end
+
 
 execute "rm -fr tomcat#{major_version}" do
   cwd node.tomcat.tomcat_install_dir
