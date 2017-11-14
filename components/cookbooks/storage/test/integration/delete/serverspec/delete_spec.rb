@@ -5,7 +5,7 @@ require "#{File.dirname(__FILE__)}/../../storage_helper"
 devices = $chef_node['storage']['device_map'].split(' ')
 
 #Execute provider specific code
-volumes_all = storage_provider.volumes.all if $storage_provider_class =~ /cinder/
+volumes_all = $storage_provider.volumes.all if $storage_provider_class =~ /cinder/
 
 #Assert each device from the device_map
 devices.each do |dev|
