@@ -37,7 +37,7 @@ if node.platform =~ /windows/
 end
 
 storage = nil
-storage,device_maps = get_storage()
+storage,device_maps = get_storage(node)
 
 rfcCi = node[:workorder][:rfcCi]
 attrs = rfcCi[:ciAttributes]
