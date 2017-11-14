@@ -1,5 +1,5 @@
 $circuit_path = '/opt/oneops/inductor'
-require "#{$circuit_path}/circuit-oneops-1/spec_helper.rb"
+require "#{$circuit_path}/circuit-oneops-1/components/spec_helper.rb"
 require "#{File.dirname(__FILE__)}/../../storage_helper"
 
 if $storage_provider_class =~ /azuredatadisk/
