@@ -36,7 +36,12 @@ if File.file?("/etc/oneops-tools-inventory.yml") && YAML.load_file("/etc/oneops-
 
   # if on fast deploy image copy tomcat instead of downloading
   runtimes = YAML.load_file("/etc/oneops-tools-inventory.yml")
-  dest_file = runtimes["tomcat_#{full_version}"]
+  if File.file?("#{runtimes["tomcat_#{full_version}"]}")
+    dest_file = runtimes["tomcat_#{full_version}"]
+  else
+    Chef::Log.error("Failed on Fast image. File #{runtimes["tomcat_#{full_version}"]} specified in /etc/oneops-tools-inventory.yml does not exist")
+    exit 1
+  end
 else
 
   if services.nil? || !services.has_key?(:mirror)
