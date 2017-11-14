@@ -16,7 +16,7 @@ def execute_command(command, force_failure = nil)
   result
 end
 
-def get_storage()
+def get_storage(node)
 
   storage = nil
   device_map = []
