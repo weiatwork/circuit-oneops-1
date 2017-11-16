@@ -170,7 +170,7 @@ if provider_class =~ /virtualbox|vagrant|docker/
 end
 
 storage = nil
-storage, device_maps = get_storage()
+storage, device_maps = get_storage(node)
 
 if storage.nil?
   Chef::Log.info("no DependsOn Storage.")
