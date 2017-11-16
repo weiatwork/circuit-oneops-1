@@ -7,7 +7,7 @@ if $storage_provider_class =~ /azuredatadisk/
 
   describe 'Azure managed data disks' do
     it 'are used' do
-      expect(managed_disks.size).to be >= $chef_node[:storage][:slice_count].to_i
+      expect(managed_disks.size).to be >= $node[:storage][:slice_count].to_i
     end
   end
 end

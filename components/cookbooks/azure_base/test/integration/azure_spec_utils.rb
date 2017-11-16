@@ -110,8 +110,8 @@ class AzureSpecUtils
     image_id
   end
   def set_attributes_on_node_required_for_vm_manager
-    @node['image_id'] = get_image_id
-    @node['platform-resource-group'] = get_resource_group_name
+    @node.set['image_id'] = get_image_id
+    @node.set['platform-resource-group'] = get_resource_group_name
   end
   def is_express_route_enabled
     set_attributes_on_node_required_for_vm_manager
