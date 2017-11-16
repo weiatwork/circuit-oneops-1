@@ -2,7 +2,7 @@ $circuit_path = '/opt/oneops/inductor'
 require "#{$circuit_path}/circuit-oneops-1/components/spec_helper.rb"
 require "#{File.dirname(__FILE__)}/../../storage_helper"
 
-devices = $chef_node['storage']['device_map'].split(' ')
+devices = $node['storage']['device_map'].split(' ')
 
 #Execute provider specific code
 volumes_all = $storage_provider.volumes.all if $storage_provider_class =~ /cinder/
