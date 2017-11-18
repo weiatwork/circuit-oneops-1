@@ -1,4 +1,5 @@
-$circuit_path = '/home/oneops'
+is_windows = ENV['OS']=='Windows_NT' ? true : false
+$circuit_path = "#{is_windows ? 'C:/Cygwin64' : ''}/home/oneops"
 require "#{$circuit_path}/circuit-oneops-1/components/spec_helper.rb"
 require "#{$circuit_path}/circuit-oneops-1/components/cookbooks/volume/test/integration/volume_helper.rb"
 
@@ -12,10 +13,11 @@ mount_hash = {}
 mount_hash[:type] = fs_type
 mount_hash[:device] = $ciAttr['device'] unless $ciAttr['device'].nil? || $ciAttr['device'].empty?
 mount_hash[:options] = options_hash unless options_hash.empty?
+$mount_point = is_windows ? "#{$mount_point[0]}:" : $mount_point
 
 describe file($mount_point) do
   it { should be_directory }
-  it { should be_mounted.with( mount_hash) }
+  it { should be_mounted.with( mount_hash) } unless is_windows #TO-DO Check with Powershell directly, if the $mount_point is actually mounted and set online
 end
 
 #assert each storage device from the map
@@ -34,13 +36,15 @@ $device_map.each do |dev|
     its(:content) {should match reg}
   end
 
-end if $storage
+end if $storage && !is_windows #TO-DO start using the service files for windows as well, then we can enable these tests
 
 #Assert volume size
 size_vm = `df -BG | grep #{$mount_point}| awk '{print $2}'`.chop.to_i
-vg = `vgdisplay -c`
-vg_size = ((vg.split(':')[11].to_f)/1024/1024).round(0).to_i
-vg_lvcount = vg.split(':')[5].to_i
+if !is_windows
+  vg = `vgdisplay -c`
+  vg_size = ((vg.split(':')[11].to_f)/1024/1024).round(0).to_i
+  vg_lvcount = vg.split(':')[5].to_i
+end
 
 size_wo_g = nil
 if size =~ /^\d+G$/           #size specified in Gb - 100G

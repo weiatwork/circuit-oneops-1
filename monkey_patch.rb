@@ -71,105 +71,29 @@ module Kitchen
   end
 end
 
-module Kitchen
-  module Verifier
-    class Base
-      include Configurable
-      include Logging
-      include ShellOut
-
-      def call(state)
-        create_sandbox
-
-        if config[:transport] && config[:transport].eql?("local")
-          sh = Mixlib::ShellOut.new(run_command)
-          sh.run_command
-          sh.stdout
-          sh.error!
-        else
-          sandbox_dirs = Dir.glob(File.join(sandbox_path, "*"))
-          instance.transport.connection(state) do |conn|
-            conn.execute(install_command)
-            conn.execute(init_command)
-            info("Transferring files to #{instance.to_str}")
-            conn.upload(sandbox_dirs, config[:root_path])
-            debug("Transfer complete")
-            conn.execute(prepare_command)
-            conn.execute(run_command)
-          end
-       end
-      rescue Kitchen::Transport::TransportFailed => ex
-        raise ActionFailed, ex.message
-      ensure
-        cleanup_sandbox
-      end
-    end
-  end
-end
-
-
-module Kitchen
-  module Driver
-    class SSHBase
-      def verify(state)
-        verifier = instance.verifier
-        verifier.create_sandbox
-        sandbox_dirs = Dir.glob(File.join(verifier.sandbox_path, "*"))
- 
-        if config[:transport] && config[:transport].eql?("local")
-          banner "Running verifier locally"
-          debug("#{verifier.run_command}")
-          sh = Mixlib::ShellOut.new(verifier.run_command)
-          sh.run_command
-          sh.stdout
-          sh.error!
-        else
-          instance.transport.connection(backcompat_merged_state(state)) do |conn|
-            conn.execute(env_cmd(verifier.init_command))
-            info("Transferring files to #{instance.to_str}")
-            conn.upload(sandbox_dirs, verifier[:root_path])
-            debug("Transfer complete")
-            conn.execute(env_cmd(verifier.prepare_command))
-            conn.execute(env_cmd(verifier.run_command))
-          end
-        end
-      rescue Kitchen::Transport::TransportFailed => ex
-        raise ActionFailed, ex.message
-      ensure
-        instance.verifier.cleanup_sandbox
-      end
-    end
-  end
-end
-
 require "kitchen/verifier/busser"
 
 module Kitchen
   module Verifier
     class Busser
-    def busser_env
+
+      def busser_env
         root = config[:sandbox] ? config[:sandbox] : config[:root_path] 
         busser_root = config[:busser_root] ? config[:busser_root] : root
         gem_home = config[:gem_home] ? config[:gem_home] : remote_path_join(root, "gems")
-        gem_path = config[:gem_path] ? config[:gem_path] : remote_path_join(root, "gems")
+        gem_path = config[:gem_path] ? config[:gem_path] : nil
         gem_cache = config[:gem_cache] ? config[:gem_cache] : remote_path_join(root, "cache")
 
-        if config[:transport] && config[:transport].eql?("local")
-          [
-            shell_env_var("BUSSER_ROOT", busser_root),
-            shell_env_var("WORKORDER", ENV['WORKORDER'])
-          ].join("\n")
+        array_env_var = [
+          shell_env_var("BUSSER_ROOT", busser_root),
+          shell_env_var("GEM_HOME", gem_home),
+          shell_env_var("GEM_CACHE", gem_cache),
+          shell_env_var("WORKORDER", ENV['WORKORDER'])
+        ]
+        array_env_var.push(shell_env_var("GEM_PATH", gem_path)) if gem_path
+
+        array_env_var.join("\n")
           .tap { |str| str.insert(0, reload_ps1_path) if windows_os? }
-        else
-          [
-            shell_env_var("BUSSER_ROOT", busser_root),
-            shell_env_var("GEM_HOME", gem_home),
-            shell_env_var("GEM_PATH", gem_path),
-            shell_env_var("GEM_CACHE", gem_cache),
-            shell_env_var("WORKORDER", ENV['WORKORDER'])
-          ].join("\n")
-          .tap { |str| str.insert(0, reload_ps1_path) if windows_os? }
-        end
       end
 
       def run_command
