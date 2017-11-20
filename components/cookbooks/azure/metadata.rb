@@ -6,7 +6,6 @@ maintainer_email 'support@oneops.com'
 license 'Apache License, Version 2.0'
 depends 'compute'
 depends 'azure_base'
-depends 'azuredatadisk'
 
 grouping 'default',
 :access => 'global',
