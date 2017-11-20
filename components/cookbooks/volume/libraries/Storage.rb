@@ -3,6 +3,7 @@ module VolumeComponent
   class Storage
     attr_accessor :storage_component,
                   :device_maps,
+                  :compute_provider,
                   :storage_provider,
                   :compute_service,
                   :storage_service,
@@ -17,11 +18,12 @@ module VolumeComponent
 
       @storage_component = storage_component
       @device_maps = device_maps
+      @compute_provider = node[:provider_class]
       @storage_provider = node[:storage_provider_class]
       @compute_service = node[:iaas_provider]
       @storage_service = node[:storage_provider]
-      @instance_id = node[:workorder][:payLoad][:ManagedVia][0][:ciAttributes][:instance_id]
-      @instance_id = node[:workorder][:payLoad][:ManagedVia][0][:ciAttributes][:instance_name] if instance_id.nil?
+      ciAttr = node[:workorder][:payLoad][:ManagedVia][0][:ciAttributes]
+      @instance_id = ciAttr[:instance_id].respond_to?('split') ? ciAttr[:instance_id].split('/').last : ciAttr[:instance_name]
       @resource_group_name = nil
 
       #set provider specific attributes
@@ -48,7 +50,7 @@ module VolumeComponent
     def get_compute(storage_provider, compute_service, instance_id, resource_group_name = nil)
      compute = nil
      if storage_provider =~ /azuredatadisk/
-       compute = compute_service.servers(resource_group: resource_group_name).get(resource_group_name, instance_id)
+       compute = compute_service.servers(:resource_group => resource_group_name).get(resource_group_name, instance_id)
      else
        compute = compute_service.servers.get(instance_id)
      end
@@ -84,29 +86,22 @@ module VolumeComponent
         @storage_id, @planned_device_id = device_maps_entry.split(':')
       end
 
-      @device_prefix = case @storage.storage_provider
-                         when /azuredatadisk/; '/dev/sd'
-                         when /cinder/; '/dev/vd'
+      @device_prefix = case @storage.compute_provider
+                         when /azure/; '/dev/sd'
+                         when /openstack/; '/dev/vd'
                          when /ibm/; '/dev/vd'
                          when /ec2/; '/dev/sd'
                          else '/dev/xvd'
                        end
 
       execute_command("touch /opt/oneops/storage_devices/#{@storage_id}", true)
-      line = execute_command("cat /opt/oneops/storage_devices/#{@storage_id}", true).stdout.chop
-      if line.split(':').size > 1
-        @assigned_device_id = line.split(':')[1]
-      else
-        @assigned_device_id = nil
-      end
+      get_assigned_device_id
       @status = nil
       @is_attached = false
       @object = nil
     end
 
     def set_provider_data
-      @object = get_object_from_provider
-      @status = get_status
       @is_attached = get_is_attached
     end
 
@@ -127,11 +122,12 @@ module VolumeComponent
         object = @storage.storage_service.volumes.get @storage_id
       end
 
+      @object = object
       object
     end
 
     def get_status
-      #TO-DO we may want to retire this method altogether, is_attached attribute should be enough for all processing
+      get_object_from_provider
       status = nil
       if @storage.storage_provider =~ /azuredatadisk/
         status = nil
@@ -140,10 +136,12 @@ module VolumeComponent
       else 
         status = @object.state
       end
+      @status = status
       status
     end
 
     def get_is_attached
+      get_object_from_provider
       is_attached = nil
 
       if @storage.storage_provider =~ /azuredatadisk/ && !@storage.managed_disk_storage_type
@@ -155,66 +153,153 @@ module VolumeComponent
       elsif @storage.storage_provider =~ /cinder/
         is_attached = true if !@object.attachments.nil? && @object.attachments.size > 0 && @object.attachments[0]['serverId'] == @storage.instance_id
 
-      elsif @storage.storage_provider =~ /ibm/
+      elsif @storage.compute_provider =~ /ibm/
         is_attached = true if @object.attached?
         
-      elsif @storage.storage_provider =~ /rackspace/
-        is_attached = true if @storage.compute.attachments[0].volume_id = @storage_id
+      elsif @storage.compute_provider =~ /rackspace/
+        is_attached = true unless @storage.compute.attachments.select{|a| (a.volume_id == @storage_id)}.empty?
       end
 
+      @is_attached = is_attached
       is_attached
     end
 
-    def attach
-      orig_device_list = execute_command("ls -1 #{@device_prefix}*").stdout.split("\n")
-
-      if @storage.storage_provider =~ /azuredatadisk/ && !@storage.managed_disk_storage_type
-        @storage.compute.attach_data_disk(@storage_id, @slice_size, @storage.compute.storage_account_name)
-
-      elsif @storage.storage_provider =~ /azuredatadisk/ && @storage.managed_disk_storage_type
-        @storage.compute.attach_managed_disk(@storage_id, @storage.resource_group_name)
-
-      elsif @storage.storage_provider =~ /cinder/
-        @object.attach @storage.instance_id, @planned_device_id
+    def get_assigned_device_id
+      assigned_device_id = nil
+      line = execute_command("cat /opt/oneops/storage_devices/#{@storage_id}", true).stdout.chop
+      if line.split(':').size > 1
+        assigned_device_id = line.split(':')[1]
+      else
+        assigned_device_id = nil
       end
-
-      @assigned_device_id = get_assigned_device_id(orig_device_list, 5, 10)
-      @is_attached = get_is_attached
-    end
-
-    def get_assigned_device_id (orig_device_list, max_retry_count, sleep_sec)
-      #device_list is an array of devices under /dev/#dev_prefix* folder, prior to executing attach command
-      #the function is called after attach command has been issued on the storage provider
-      #the below code watches /dev folder on the local VM and compares it to the device_list array
-      #once a difference is found, it's assumed to be the new device id
-      #the device_id value is stored in /opt/oneops/storage_devices/@storage_id file, to provide persistence between runs
-      device_list = execute_command("ls -1 #{@device_prefix}*").stdout.split("\n")
-      retry_count = 0
-      while (orig_device_list.size + 1) != device_list.size && retry_count < max_retry_count do
-        sleep sleep_sec
-        retry_count +=1
-        device_list = execute_command("ls -1 #{@device_prefix}*").stdout.split("\n")
-      end
-
-      if retry_count == max_retry_count && (orig_device_list.size + 1) != device_list.size
-        Chef::Log.error("Original device list: #{orig_device_list.inspect.gsub("\n"," ")}, latest device list: #{device_list.inspect.gsub("\n"," ")} ")
-        exit_with_error("Device_id could not be assigned in #{max_retry_count.to_s} attemts. ")
-      end
-
-      assigned_device_id = (device_list - orig_device_list).first
-      Chef::Log.info("Device_id has been assigned to: #{assigned_device_id}")
-      
-      execute_command("echo '#{@planned_device_id}:#{assigned_device_id}' > /opt/oneops/storage_devices/#{@storage_id}", true)
+      @assigned_device_id = assigned_device_id
       assigned_device_id
     end
 
-    def detach
-      if @storage.storage_provider =~ /azuredatadisk/ && !@storage.managed_disk_storage_type
-        @storage.compute.detach_data_disk(@storage_id)
-      elsif @storage.storage_provider =~ /azuredatadisk/ && @storage.managed_disk_storage_type
-        @storage.compute.detach_managed_disk(@storage_id)
+    def attach (max_retry_count = 5, sleep_sec = 10)
+
+      #storage is attached and device_id is not assigned (not determined) - means it was created with the old code - detach and re-attach
+      detach if (get_is_attached && !get_assigned_device_id)
+
+      #storage attached and device_id is assigned - just exit
+      return if (get_is_attached && get_assigned_device_id)
+
+      #capture current device list from /dev
+      start_time = Time.now.to_i
+      Chef::Log.info("Attaching storage device #{@storage_id} with provider #{@storage.storage_provider}")
+      orig_device_list = execute_command("ls -1 #{@device_prefix}*").stdout.split("\n")
+
+      #issue attach command
+      begin
+        if @storage.storage_provider =~ /azuredatadisk/ && !@storage.managed_disk_storage_type
+          @storage.compute.attach_data_disk(@storage_id, @slice_size, @storage.compute.storage_account_name)
+
+        elsif @storage.storage_provider =~ /azuredatadisk/ && @storage.managed_disk_storage_type
+          @storage.compute.attach_managed_disk(@storage_id, @storage.resource_group_name)
+
+        elsif @storage.storage_provider =~ /cinder/
+          @object.attach @storage.instance_id, @planned_device_id
+
+        elsif @storage.compute_provider =~ /ibm/
+          @storage.compute.attach(@storage_id)
+
+        elsif @storage.compute_provider =~ /rackspace/
+          rackspace_dev_id = @planned_device_id.gsub(/\d+/,"")
+          @storage.compute.attach_volume @storage_id, rackspace_dev_id
+
+        elsif @storage.compute_provider =~ /ec2/
+          vol.device = @planned_device_id.gsub("xvd","sd")
+          vol.server = @storage.compute
+
+        end
+      rescue  => e
+        exit_with_error("Failure attaching #{@storage_id}: #{e.message}" +"\n"+ "#{e.backtrace.inspect}")
       end
-      @is_attached = get_is_attached
+
+      #watch /dev to capture newly added device
+      #these 2 conditions have to be met to assume the attaching was successful: 
+      # a) we capture assigned device id from /dev
+      # b) attached status from provider is true
+      cnt = 0
+      while cnt < max_retry_count && !get_assigned_device_id
+        sleep sleep_sec
+
+        device_list = execute_command("ls -1 #{@device_prefix}*").stdout.split("\n")
+        if (orig_device_list.size + 1) == device_list.size
+          @assigned_device_id = (device_list - orig_device_list).first
+          execute_command("echo '#{@planned_device_id}:#{@assigned_device_id}' > /opt/oneops/storage_devices/#{@storage_id}", true)
+          Chef::Log.info("Device_id has been assigned to: #{@assigned_device_id}")
+        end
+        cnt += 1
+      end
+
+      #iterated max_retry_count time but conditions are still not met - raise an error
+      unless get_is_attached && @assigned_device_id
+        Chef::Log.error("Original device list: #{orig_device_list.inspect.gsub("\n"," ")}, latest device list: #{device_list.inspect.gsub("\n"," ")} ")
+        exit_with_error("Device_id could not be assigned in #{max_retry_count.to_s} attempts. ")
+      end
+      Chef::Log.info("Storage device #{@storage_id} has been successfully attached to: #{@assigned_device_id} in #{Time.now.to_i - start_time} seconds.")
+    end
+
+    def detach_base (max_retry_count = 10, sleep_sec = 10)
+      #Issue detach command
+      begin
+        Chef::Log.info("Detaching storage device #{@storage_id} with provider #{@storage.storage_provider}")
+        if @storage.storage_provider =~ /azuredatadisk/ && !@storage.managed_disk_storage_type
+          @storage.compute.detach_data_disk(@storage_id)
+        elsif @storage.storage_provider =~ /azuredatadisk/ && @storage.managed_disk_storage_type
+          @storage.compute.detach_managed_disk(@storage_id)
+        elsif @storage.storage_provider =~ /cinder/
+          @object.detach @storage.instance_id, @storage_id
+        elsif @storage.compute_provider =~ /rackspace/
+          @storage.compute.attachments.each do |a|
+            Chef::Log.info("Destroying: #{a.inspect}")
+            a.destroy
+          end
+        elsif @storage.compute_provider =~ /ibm/
+          @storage.compute.detach( @storage_id )
+        else
+          # aws uses server_id
+          if @object.server_id == instance_id
+             @object.server = nil
+          else
+            Chef::Log.info("attached_instance_id: #{volume.server_id} doesn't match this instance_id: "+instance_id)
+          end
+        end
+
+      rescue  => e
+        exit_with_error("Failure detaching #{@storage_id}: #{e.message}" +"\n"+ "#{e.backtrace.inspect}")
+      end
+
+      #wait until detached or timed out
+      for j in 0..max_retry_count
+        if get_is_attached
+          sleep sleep_sec
+        else
+          break
+        end
+      end
+
+      if get_is_attached
+        Chef::Log.error("Storage device #{storage_id} was not detached after #{sleep_sec * max_retry_count} seconds.")
+      else
+        execute_command("echo '#{@planned_device_id}:' > /opt/oneops/storage_devices/#{@storage_id}", true)
+      end
+    end
+
+    def detach (max_retry_count = 10, sleep_sec = 10)
+      start_time = Time.now.to_i
+      retry_count = 0
+      while retry_count < 3 && get_is_attached && get_status != 'detaching'
+        detach_base(max_retry_count,sleep_sec)
+        retry_count += 1
+      end
+
+      if get_is_attached
+        exit_with_error("Could not detach storage device #{@storage_id}")
+      else
+        Chef::Log.info("Storage device #{@storage_id} has been successfully detached in #{Time.now.to_i - start_time} seconds.")
+      end
     end
 
   end #class StorageDevice

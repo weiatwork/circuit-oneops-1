@@ -24,10 +24,18 @@ provider_class = node[:workorder][:services][:compute][cloud_name][:ciClassName]
 rfcAttrs = node.workorder.rfcCi.ciAttributes
 platform_name = node.workorder.box.ciName
 logical_name = node[:workorder][:rfcCi][:ciName]
+raid_device = "/dev/md/"+ logical_name
+compute_baremetal = node.workorder.payLoad.ManagedVia[0]["ciAttributes"]["is_baremetal"]
+raid_type = node.workorder.rfcCi.ciAttributes["raid_options"]
 
 Chef::Log.info("Platform_name         : #{platform_name}")
 Chef::Log.info("Is platform windows?  : #{is_windows}")
 Chef::Log.info("Provider              : #{provider_class}")
+
+package 'lvm2'
+package 'mdadm' do
+  only_if{::File.exists?(raid_device) || compute_baremetal =~/true/}
+end
 
 if rfcAttrs.has_key?("mount_point") && !rfcAttrs["mount_point"].empty?
 
@@ -85,9 +93,6 @@ ruby_block 'lvremove ephemeral' do
 end
 
 #Baremetal condition for vgremove, pvremove and mdadm disable
-
-compute_baremetal = node.workorder.payLoad.ManagedVia[0]["ciAttributes"]["is_baremetal"]
-raid_type = node.workorder.rfcCi.ciAttributes["raid_options"]
 if !compute_baremetal.nil? && compute_baremetal =~/true/
  ruby_block 'baremetal vgremove pvremove ephemeral' do
    block do
@@ -177,14 +182,13 @@ if storage.nil?
   return
 else
   include_recipe "shared::set_provider_new"
-  objStorage = VolumeComponent::Storage.new(node,storage,device_maps)        
-  objStorage.set_provider_data_all  
+  objStorage = VolumeComponent::Storage.new(node,storage,device_maps)
+  objStorage.set_provider_data_all
   storage_devices = objStorage.storage_devices
   compute = objStorage.compute
   instance_id = objStorage.instance_id
 end
 
-raid_device = "/dev/md/"+ logical_name
 ruby_block 'destroy raid' do
   only_if {::File.exists?(raid_device)}
   not_if {is_windows}
@@ -213,98 +217,8 @@ ruby_block 'lvremove storage' do
       execute_command("lvremove -f #{platform_name}")
     end #if !is_windows
 
-    provider = node.iaas_provider
-    storage_provider = node.storage_provider
-    Chef::Log.info("instance_id: "+instance_id)
-
-    max_retry_count = 3
-    change_count = 1
-    retry_count = 0
-    while change_count > 0 && retry_count < max_retry_count
-      change_count = 0
-
-      storage_devices.each do |storage_device|
-
-          vol_id = storage_device.storage_id
-          dev_id = storage_device.planned_device_id
-          Chef::Log.info("vol_id: #{vol_id}, planned dev_id: #{dev_id}, assigned dev_id: #{storage_device.assigned_device_id}")
-
-          volume = storage_device.object
-          Chef::Log.info("vol: "+ volume.inspect.gsub("\n"," ").gsub("<","").gsub(">","") )
-
-
-        begin
-
-          if storage_device.is_attached
-
-              Chef::Log.info("detaching "+vol_id)
-
-              case provider_class
-                when /openstack/
-                  attached_instance_id = ""
-
-                  if volume.attachments.size >0
-                    attached_instance_id = volume.attachments[0]["serverId"]
-                  end
-
-                  if attached_instance_id != instance_id
-                    Chef::Log.info("attached_instance_id: #{attached_instance_id} doesn't match this instance_id: "+instance_id)
-                  else
-                    volume.detach instance_id, vol_id
-                    sleep 10
-                    detached=false
-                    detach_wait_count=0
-
-                    while !detached && detach_wait_count<max_retry_count do
-                      volume = provider.volumes.get vol_id
-                      Chef::Log.info("vol state: "+volume.status)
-                      if volume.status == "available"
-                        detached=true
-                      else
-                        sleep 10
-                        detach_wait_count += 1
-                      end
-                    end
-
-                    #Could not detach in allocated number of tries
-                    exit_with_error("Could not detach volume #{vol_id}") unless detached
-
-                  end
-
-                when /rackspace/
-                  compute.attachments.each do |a|
-                    Chef::Log.info "destroying: "+a.inspect
-                    a.destroy
-                  end
-                when /ibm/
-                  compute.detach(volume.id)
-                when /azure/
-                  storage_device.detach
-                else
-                  # aws uses server_id
-                  if volume.server_id == instance_id
-                    volume.server = nil
-                  else
-                    Chef::Log.info("attached_instance_id: #{volume.server_id} doesn't match this instance_id: "+instance_id)
-                  end
-              end
-
-            change_count += 1
-          else
-            Chef::Log.info( "volume available.")
-          end
-        rescue  => e
-          exit_with_error("#{e.message}" +"\n"+ "#{e.backtrace.inspect}")
-        end
-      end
-
-      Chef::Log.info("this pass detach count: #{change_count}")
-      if change_count > 0
-        retry_sec = retry_count*10
-        Chef::Log.info( "sleeping "+retry_sec.to_s+" sec...")
-        sleep(retry_sec)
-      end
-      retry_count += 1
+    storage_devices.each do |storage_device|
+      storage_device.detach
     end
 
   end

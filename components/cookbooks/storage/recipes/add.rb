@@ -204,18 +204,18 @@ Array(1..slice_count).each do |i|
 
       if availability_set_response.sku_name == 'Aligned'
         volume = node.storage_provider.managed_disks.create(
-          name: vol_name,
-          location: rg_manager.location,
-          resource_group_name: rg_manager.rg_name,
-          account_type: account_type,
-          disk_size_gb: slice_size,
-          creation_data: { create_option: 'Empty' }
+          :name                => vol_name,
+          :location            => rg_manager.location,
+          :resource_group_name => rg_manager.rg_name,
+          :account_type        => account_type,
+          :disk_size_gb        => slice_size,
+          :creation_data       => { :create_option => 'Empty' }
         )
         Chef::Log.info("Managed disk created: #{volume.inspect.gsub("\n",'')}")
         volume_dev = [vol_name, dev].join(':')
       else
         #The old way - unmanaged disk
-        vm = node[:storage_provider].servers(resource_group: rg_manager.rg_name).get(rg_manager.rg_name, compute_attr[:instance_name])
+        vm = node[:storage_provider].servers(:resource_group => rg_manager.rg_name).get(rg_manager.rg_name, compute_attr[:instance_name])
         storage_account_name = vm.storage_account_name
         vhd_blobname = [storage_account_name,rfcCi[:ciId].to_s,'datadisk',dev.split('/').last.to_s].join('-')
 
