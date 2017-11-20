@@ -25,12 +25,11 @@ dev_map = node[:workorder][:rfcCi][:ciAttributes][:device_map]
 return if dev_map.nil?
 
 if provider_class =~ /azure/
-  #require File.expand_path('../../../azure_base/libraries/utils.rb', __FILE__)
   Utils.set_proxy(node[:workorder][:payLoad][:OO_CLOUD_VARS])
   rg_manager = AzureBase::ResourceGroupManager.new(node)
   resource_group = rg_manager.rg_name
   instance_name = node[:workorder][:payLoad][:DependsOn].select{|d| (d[:ciClassName].split('.').last == 'Compute') }.first[:ciAttributes][:instance_name]
-  server = node[:storage_provider].servers(resource_group: resource_group).get(resource_group, instance_name)
+  server = node[:storage_provider].servers(:resource_group => resource_group).get(resource_group, instance_name)
 end
 
 dev_map.split(" ").each do |dev|
@@ -60,12 +59,12 @@ dev_map.split(" ").each do |dev|
       end
 
       begin
-        if provider_class =~ /azure/ && vol_id =~ /datadisk/ && !volume.nil?
+        if provider_class =~ /azure/ && vol_id =~ /datadisk/
           Chef::Log.info("Detaching unmanaged data disk")
-          server.detach_data_disk(volume.name)        
-        elsif provider_class =~ /azure/ && volume.respond_to?('owner_id') && !volume.owner_id.nil?
+          server.detach_data_disk(volume.name) unless volume.nil?
+        elsif provider_class =~ /azure/ && volume.respond_to?('owner_id')
           Chef::Log.info("Detaching managed data disk")
-          server.detach_managed_disk(volume.name)
+          server.detach_managed_disk(volume.name) unless volume.owner_id.nil?
         elsif !volume.nil?
           data = { 'os-detach' => { 'volume_id' => "#{vol_id}" } }
           node.storage_provider.action(vol_id, data)
@@ -89,13 +88,13 @@ dev_map.split(" ").each do |dev|
           Chef::Log.error("volume destroy exception: "+e.message);
           ok = false
         end
-      end 
+      end
 
       retry_count += 1
-      if !ok            
+      if !ok
         sleep_sec = retry_count * 5
         Chef::Log.error("sleeping #{sleep_sec}sec between retries...")
-        sleep(sleep_sec) 
+        sleep(sleep_sec)
       end
     end
     if !ok
