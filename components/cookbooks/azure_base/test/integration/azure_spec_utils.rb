@@ -144,4 +144,58 @@ class AzureSpecUtils
 
     lb_name
   end
+
+  # Converts the hash given by the node according to the new syntax
+  def get_dns_attributes
+    cloud_name = get_cloud_name
+    dns_attributes = @node['workorder']['services']['dns'][cloud_name]['ciAttributes']
+
+    dns_attributes_hash = get_azure_creds
+    dns_attributes_hash[:subscription] = dns_attributes_hash[:subscription_id]
+    dns_attributes_hash[:zone] = dns_attributes['zone']
+    dns_attributes_hash[:cloud_dns_id] = dns_attributes['cloud_dns_id']
+
+    dns_attributes_hash.delete :subscription_id
+    dns_attributes_hash
+  end
+
+  # Returns name of a DNS record
+  def get_record_set_name
+    ns_path_parts = get_ns_path_parts
+    org = ns_path_parts[1]
+    assembly = ns_path_parts[2]
+    environment = ns_path_parts[3]
+    ci_name = @node['workorder']['box']['ciName']
+
+    dns_attributes = get_dns_attributes
+
+    record_set_name = "#{ci_name}.#{environment}.#{assembly}.#{org}.#{dns_attributes[:cloud_dns_id]}"
+    record_set_name.downcase!
+    record_set_name
+  end
+
+  # Gets public IPs of all VMs deployed
+  def get_all_vms_public_ips
+    ip_addresses = []
+    @node['workorder']['payLoad']['RequiresComputes'].each do |vm_data|
+      ip_addresses << vm_data['ciAttributes']['public_ip']
+    end
+
+    ip_addresses
+  end
+
+  # Get public IP of the LB deployed
+  def get_lb_public_ip
+    lb_ip_address = []
+    @node['workorder']['payLoad']['lb'].each do |lb_data|
+      lb_ip_address << lb_data['ciAttributes']['dns_record']
+    end
+
+    lb_ip_address
+  end
+
+  # checks the existence of load balancer in the deployment
+  def lb_exists?
+    $node['workorder']['payLoad'].key?('lb')
+  end
 end
