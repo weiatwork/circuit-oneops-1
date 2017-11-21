@@ -192,7 +192,7 @@ module AzureNetwork
         result = @application_gateway.gateways.get(@resource_group_name, @ag_name)
         end_time = Time.now.to_i
         duration = end_time - start_time
-      rescue => e
+      rescue Exception => e
         OOLog.info("Error getting ApplicationGateway '#{@ag_name}' in ResourceGroup '#{@resource_group_name}' ")
         OOLog.info("Error Message: #{e.message}")
         return nil
@@ -203,9 +203,9 @@ module AzureNetwork
 
     def exists?
       begin
-        OOLog.info("Checking application gateway exists")
+        OOLog.info('Checking application gateway exists')
         result = @application_gateway.gateways.check_application_gateway_exists(@resource_group_name, @ag_name)
-      rescue => e
+      rescue Exception => e
         OOLog.fatal("Error checking application gateway exists #{e.message}")
       end
 
