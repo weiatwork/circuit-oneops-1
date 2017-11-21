@@ -69,9 +69,10 @@ end
 
 storageUpdated = false
 if !storage.nil?
-  include_recipe "shared::set_provider_new"
   storageUpdated = storage.ciBaseAttributes.has_key?("size")
 end
+include_recipe "shared::set_provider_new"
+
 dev_list = ""
 logical_name = rfcCi[:ciName]
 raid_device = "/dev/md/#{logical_name}"
