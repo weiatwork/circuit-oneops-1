@@ -144,4 +144,21 @@ class AzureSpecUtils
 
     lb_name
   end
+
+  def get_application_gateway_name
+    "ag-#{@node['workorder']['box']['ciName'].gsub(/-/, '').downcase}"
+  end
+
+  def get_vm_count
+    @node['workorder']['payLoad']['DependsOn'].count
+  end
+
+  def get_vm_private_ip_addresses
+    ip_addresses = []
+    @node['workorder']['payLoad']['DependsOn'].each do |vm_data|
+      ip_addresses << vm_data['ciAttributes']['private_ip']
+    end
+
+    ip_addresses
+  end
 end

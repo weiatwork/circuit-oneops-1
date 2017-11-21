@@ -40,5 +40,8 @@ else
 
     when /azure_lb/
       include_recipe "lb::add"
+
+    when /azuregateway/
+      include_recipe "lb::add"
   end
 end
