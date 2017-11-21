@@ -11,7 +11,7 @@ include_recipe 'azure::get_platform_rg_and_as'
 def create_publicip(cred_hash, location, resource_group_name)
   pip_svc = AzureNetwork::PublicIp.new(cred_hash)
   pip_svc.location = location
-  public_ip_address = pip_svc.build_public_ip_object(node.workorder.rfcCi.ciId, 'lb_publicip', 5)
+  public_ip_address = pip_svc.build_public_ip_object(node.workorder.rfcCi.ciId, 'lb_publicip')
   pip = pip_svc.create_update(resource_group_name, public_ip_address.name, public_ip_address)
   pip
 end

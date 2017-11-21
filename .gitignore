@@ -3,6 +3,7 @@ Gemfile.lock
 .idea
 .chef
 .arcconfig
+.arclint
 **/.DS_Store
 .rspec
 .DS_Store

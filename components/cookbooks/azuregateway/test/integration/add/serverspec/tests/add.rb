@@ -10,8 +10,8 @@ describe 'azure gateway' do
   end
 
   it 'should exist' do
-    ag_svc = AzureNetwork::Gateway.new(@spec_utils.get_resource_group_name, @spec_utils.get_application_gateway_name, @spec_utils.get_azure_creds)
-    application_gateway = ag_svc.get
+    application_gateway_service = AzureNetwork::Gateway.new(@spec_utils.get_resource_group_name, @spec_utils.get_application_gateway_name, @spec_utils.get_azure_creds)
+    application_gateway = application_gateway_service.get
 
     expect(application_gateway).not_to be_nil
     expect(application_gateway.name).to eq(@spec_utils.get_application_gateway_name)
@@ -19,8 +19,8 @@ describe 'azure gateway' do
 
   context 'backend address pools' do
     it 'are not empty' do
-      ag_svc = AzureNetwork::Gateway.new(@spec_utils.get_resource_group_name, @spec_utils.get_application_gateway_name, @spec_utils.get_azure_creds)
-      application_gateway = ag_svc.get
+      application_gateway_service = AzureNetwork::Gateway.new(@spec_utils.get_resource_group_name, @spec_utils.get_application_gateway_name, @spec_utils.get_azure_creds)
+      application_gateway = application_gateway_service.get
       ip_address_count = application_gateway.backend_address_pools.first.ip_addresses.count
       vm_count = @spec_utils.get_vm_count
 
@@ -29,8 +29,8 @@ describe 'azure gateway' do
     end
 
     it 'contains private ip addresses of each vm' do
-      ag_svc = AzureNetwork::Gateway.new(@spec_utils.get_resource_group_name, @spec_utils.get_application_gateway_name, @spec_utils.get_azure_creds)
-      application_gateway = ag_svc.get
+      application_gateway_service = AzureNetwork::Gateway.new(@spec_utils.get_resource_group_name, @spec_utils.get_application_gateway_name, @spec_utils.get_azure_creds)
+      application_gateway = application_gateway_service.get
       application_gateway_vm_ip = []
       application_gateway.backend_address_pools.first.ip_addresses.each do |backend_address|
         application_gateway_vm_ip << backend_address.ip_address

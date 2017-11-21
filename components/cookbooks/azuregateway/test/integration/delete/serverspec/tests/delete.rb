@@ -10,8 +10,8 @@ describe 'azure gateway' do
   end
 
   it 'should not exist' do
-    ag_svc = AzureNetwork::Gateway.new(@spec_utils.get_resource_group_name, @spec_utils.get_application_gateway_name, @spec_utils.get_azure_creds)
-    application_gateway = ag_svc.exists?
+    application_gateway_service = AzureNetwork::Gateway.new(@spec_utils.get_resource_group_name, @spec_utils.get_application_gateway_name, @spec_utils.get_azure_creds)
+    application_gateway = application_gateway_service.exists?
 
     expect(application_gateway).to eq(false)
   end

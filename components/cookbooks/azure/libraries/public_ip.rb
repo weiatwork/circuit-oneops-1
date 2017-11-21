@@ -17,7 +17,7 @@ module AzureNetwork
 
     # this will build the public_ip object to be used for creating a public
     # ip in azure
-    def build_public_ip_object(ci_id, name = 'publicip', idle_timeout_in_minutes = nil)
+    def build_public_ip_object(ci_id, name = 'publicip', idle_timeout_in_minutes = 5)
       public_ip_address = Fog::Network::AzureRM::PublicIp.new
       public_ip_address.location = @location
       public_ip_address.idle_timeout_in_minutes = idle_timeout_in_minutes unless idle_timeout_in_minutes.nil?
