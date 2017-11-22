@@ -65,7 +65,7 @@ if rfcAttrs.has_key?("mount_point") && !rfcAttrs["mount_point"].empty?
     end
 
     # clear the tmpfs ramdisk entries and/or volume entries from /etc/fstab
-    if(rfcAttrs["fstype"] == "tmpfs") || provider_class =~ /azure/ || provider_class =~ /cinder/
+    if(rfcAttrs["fstype"] == "tmpfs") || provider_class =~ /azure/ || provider_class =~ /cinder|openstack/
       Chef::Log.info("clearing /etc/fstab entry for fstype tmpfs")
       execute_command("grep -v #{mount_point} /etc/fstab > /tmp/fstab")
       execute_command("mv /tmp/fstab /etc/fstab")

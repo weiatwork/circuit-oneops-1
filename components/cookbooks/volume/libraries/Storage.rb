@@ -27,7 +27,7 @@ module VolumeComponent
       @resource_group_name = nil
 
       #set provider specific attributes
-      if @storage_provider =~ /azuredatadisk/
+      if @storage_provider =~ /azure/
         Utils.set_proxy(node[:workorder][:payLoad][:OO_CLOUD_VARS])
         #AzureBase module is located in azure_base cookbook, volume::metadata.rb needs to depend on 'azure_base'
         #TO-DO we may want to store resource_group_name value somewhere (bom, local file, etc) so it can be re-used between cookbooks/recipes. 
@@ -37,7 +37,7 @@ module VolumeComponent
 
       @compute = get_compute(@storage_provider, @compute_service, @instance_id, @resource_group_name)
       @managed_disk_storage_type = nil
-      @managed_disk_storage_type = @compute.managed_disk_storage_type if @storage_provider =~ /azuredatadisk/
+      @managed_disk_storage_type = @compute.managed_disk_storage_type if @storage_provider =~ /azure/
 
       execute_command("mkdir -p /opt/oneops/storage_devices", true)
       @storage_devices = []
@@ -49,7 +49,7 @@ module VolumeComponent
 
     def get_compute(storage_provider, compute_service, instance_id, resource_group_name = nil)
      compute = nil
-     if storage_provider =~ /azuredatadisk/
+     if storage_provider =~ /azure/
        compute = compute_service.servers(:resource_group => resource_group_name).get(resource_group_name, instance_id)
      else
        compute = compute_service.servers.get(instance_id)
@@ -79,7 +79,7 @@ module VolumeComponent
       #device_maps_entry is an entry in device_maps, usually in form of storage_id:device (12345:/dev/sdc)
       #Parse device_maps_entry into storage_id and device_id:
       @storage = storage
-      if @storage.storage_provider =~ /azuredatadisk/ && device_maps_entry.split(':').size == 5
+      if @storage.storage_provider =~ /azure/ && device_maps_entry.split(':').size == 5
         master_rg, storage_account_name, ciID, @slice_size, @planned_device_id = device_maps_entry.split(':')
         @storage_id = [ciID, 'datadisk', @planned_device_id.split('/').last.to_s].join('-')
       else
@@ -109,13 +109,13 @@ module VolumeComponent
       #Make a fog call to the provider to retrieve volume/managed_disk object
       object = nil
 
-      if @storage.storage_provider =~ /azuredatadisk/ && !@storage.managed_disk_storage_type
+      if @storage.storage_provider =~ /azure/ && !@storage.managed_disk_storage_type
         object = nil
 
-      elsif @storage.storage_provider =~ /azuredatadisk/ && @storage.managed_disk_storage_type
+      elsif @storage.storage_provider =~ /azure/ && @storage.managed_disk_storage_type
         object = @storage.storage_service.managed_disks.get(@storage.resource_group_name, @storage_id)
 
-      elsif @storage.storage_provider =~ /cinder/
+      elsif @storage.storage_provider =~ /cinder|openstack/
         object = @storage.compute_service.volumes.get @storage_id
 
       else
@@ -129,9 +129,9 @@ module VolumeComponent
     def get_status
       get_object_from_provider
       status = nil
-      if @storage.storage_provider =~ /azuredatadisk/
+      if @storage.storage_provider =~ /azure/
         status = nil
-      elsif @storage.storage_provider =~ /cinder/
+      elsif @storage.storage_provider =~ /cinder|openstack/
         status = @object.status
       else 
         status = @object.state
@@ -144,13 +144,13 @@ module VolumeComponent
       get_object_from_provider
       is_attached = nil
 
-      if @storage.storage_provider =~ /azuredatadisk/ && !@storage.managed_disk_storage_type
+      if @storage.storage_provider =~ /azure/ && !@storage.managed_disk_storage_type
         is_attached = true if !@storage.compute.data_disks.select{|dd| (dd.name == @storage_id)}.empty?
 
-      elsif @storage.storage_provider =~ /azuredatadisk/ && @storage.managed_disk_storage_type
+      elsif @storage.storage_provider =~ /azure/ && @storage.managed_disk_storage_type
         is_attached = true if @object.respond_to?('owner_id') && !@object.owner_id.nil?
 
-      elsif @storage.storage_provider =~ /cinder/
+      elsif @storage.storage_provider =~ /cinder|openstack/
         is_attached = true if !@object.attachments.nil? && @object.attachments.size > 0 && @object.attachments[0]['serverId'] == @storage.instance_id
 
       elsif @storage.compute_provider =~ /ibm/
@@ -191,13 +191,13 @@ module VolumeComponent
 
       #issue attach command
       begin
-        if @storage.storage_provider =~ /azuredatadisk/ && !@storage.managed_disk_storage_type
+        if @storage.storage_provider =~ /azure/ && !@storage.managed_disk_storage_type
           @storage.compute.attach_data_disk(@storage_id, @slice_size, @storage.compute.storage_account_name)
 
-        elsif @storage.storage_provider =~ /azuredatadisk/ && @storage.managed_disk_storage_type
+        elsif @storage.storage_provider =~ /azure/ && @storage.managed_disk_storage_type
           @storage.compute.attach_managed_disk(@storage_id, @storage.resource_group_name)
 
-        elsif @storage.storage_provider =~ /cinder/
+        elsif @storage.storage_provider =~ /cinder|openstack/
           @object.attach @storage.instance_id, @planned_device_id
 
         elsif @storage.compute_provider =~ /ibm/
@@ -245,11 +245,11 @@ module VolumeComponent
       #Issue detach command
       begin
         Chef::Log.info("Detaching storage device #{@storage_id} with provider #{@storage.storage_provider}")
-        if @storage.storage_provider =~ /azuredatadisk/ && !@storage.managed_disk_storage_type
+        if @storage.storage_provider =~ /azure/ && !@storage.managed_disk_storage_type
           @storage.compute.detach_data_disk(@storage_id)
-        elsif @storage.storage_provider =~ /azuredatadisk/ && @storage.managed_disk_storage_type
+        elsif @storage.storage_provider =~ /azure/ && @storage.managed_disk_storage_type
           @storage.compute.detach_managed_disk(@storage_id)
-        elsif @storage.storage_provider =~ /cinder/
+        elsif @storage.storage_provider =~ /cinder|openstack/
           @object.detach @storage.instance_id, @storage_id
         elsif @storage.compute_provider =~ /rackspace/
           @storage.compute.attachments.each do |a|
