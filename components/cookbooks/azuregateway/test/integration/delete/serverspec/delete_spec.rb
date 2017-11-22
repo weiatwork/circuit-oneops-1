@@ -5,5 +5,5 @@ require "#{CIRCUIT_PATH}/components/spec_helper.rb"
 require "#{COOKBOOKS_PATH}/azure_base/test/integration/azure_spec_utils"
 
 # run the tests
-tests = File.expand_path("tests", File.dirname(__FILE__))
+tests = File.expand_path('tests', File.dirname(__FILE__))
 Dir.glob("#{tests}/*.rb").each { |test| require test }

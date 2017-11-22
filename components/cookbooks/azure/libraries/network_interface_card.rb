@@ -29,7 +29,7 @@ module AzureNetwork
       if ip_type == 'public'
         @publicip.location = @location
         # get public ip object
-        public_ip_address = @publicip.build_public_ip_object(@ci_id, 'publicip')
+        public_ip_address = @publicip.build_public_ip_object(@ci_id)
         # create public ip
         public_ip_if = @publicip.create_update(@rg_name, public_ip_address.name, public_ip_address)
         # set the public ip on the nic ip config
