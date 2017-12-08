@@ -24,7 +24,7 @@ module AzureCompute
       @location = @compute_service[:location]
       @initial_user = @compute_service[:initial_user]
       @express_route_enabled = @compute_service['express_route_enabled']
-      @secgroup_name = node['workorder']['payLoad']['DependsOn'][0]['ciName']
+      @secgroup_name = get_security_group_name(node)
       @image_id = node['image_id'].split(':')
       @size_id = node['size_id']
       @oosize_id = node[:oosize_id]
@@ -212,5 +212,16 @@ module AzureCompute
       end
       return storage_account, vhd_uri, datadisk_uri
     end
+
+    def get_security_group_name(node)
+      secgroup = node['workorder']['payLoad']['DependsOn'].detect { |d| d['ciClassName'] =~ /Secgroup/ }
+      if secgroup.nil?
+        OOLog.fatal("No Secgroup found in workorder. This is required for VM creation.")
+      else
+        return secgroup['ciName']
+      end
+    end
+
+    private :get_security_group_name
   end
 end
