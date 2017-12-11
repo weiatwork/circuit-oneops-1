@@ -1,0 +1,20 @@
+# .bash_profile
+
+# Get the aliases and functions
+if [ -f ~/.bashrc ]; then
+	. ~/.bashrc
+fi
+
+# User specific environment and startup programs
+export CASSANDRA_HOME=/app/cassandra/current
+export CASSANDRA_CONF=$CASSANDRA_HOME/conf
+export CASSANDRA_LOG_DIR=/var/log/cassandra
+export CASSANDRA_LOG=/var/log/cassandra
+export CASSANDRA_HEAPDUMP_DIR=/tmp
+export LOCAL_JMX=both
+PATH=$CASSANDRA_HOME/bin:$HOME/bin:$PATH
+
+# Alias
+alias system.log='less $CASSANDRA_LOG_DIR/system.log'
+alias cassandra.yaml='less $CASSANDRA_HOME/conf/cassandra.yaml'
+alias cassandra-env.sh='less $CASSANDRA_HOME/conf/cassandra-env.sh'
