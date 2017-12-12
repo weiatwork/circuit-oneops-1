@@ -454,32 +454,28 @@ resource "artifact",
              }
          }
 
-# resource "jolokia_proxy",
-#          :cookbook => "jolokia_proxy",
-#          :source => Chef::Config[:register],
-#          :design => true,
-#          :requires => {
-#            "constraint" => "0..1",
-#            :services => "mirror"
-#          },
-#          :attributes => {
-#            version => "0.1"
-#          },
-#          :monitors => {
-#            'JolokiaProxyProcess' => {
-#              :description => 'JolokiaProxyProcess',
-#              :source => '',
-#              :chart => {'min' => '0', 'max' => '100', 'unit' => 'Percent'},
-#              :cmd => 'check_process!jolokia_proxy!false!/opt/metrics_collector/jetty_base/jetty.state',
-#              :cmd_line => '/opt/nagios/libexec/check_process.sh "$ARG1$" "$ARG2$" "$ARG3$"',
-#              :metrics => {
-#                'up' => metric(:unit => '%', :description => 'Percent Up'),
-#              },
-#              :thresholds => {
-#                'JolokiaProxyProcessDown' => threshold('1m', 'avg', 'up', trigger('<=', 98, 1, 1), reset('>', 95, 1, 1),'unhealthy')
-#              }
-#            }
-#          }
+resource "jolokia_proxy",
+         :cookbook => "oneops.1.jolokia_proxy",
+         :design => true,
+         :requires => {
+           "constraint" => "0..1",
+           :services => "mirror"
+         },
+         :monitors => {
+           'JolokiaProxyProcess' => {
+             :description => 'JolokiaProxyProcess',
+             :source => '',
+             :chart => {'min' => '0', 'max' => '100', 'unit' => 'Percent'},
+             :cmd => 'check_process!jolokia_proxy!false!/opt/metrics_collector/jetty_base/jetty.state',
+             :cmd_line => '/opt/nagios/libexec/check_process.sh "$ARG1$" "$ARG2$" "$ARG3$"',
+             :metrics => {
+               'up' => metric(:unit => '%', :description => 'Percent Up'),
+             },
+             :thresholds => {
+               'JolokiaProxyProcessDown' => threshold('1m', 'avg', 'up', trigger('<=', 98, 1, 1), reset('>', 95, 1, 1),'unhealthy')
+             }
+           }
+         }
 
 # depends_on
 [ { :from => 'apache_cassandra', :to => 'os' },
@@ -492,9 +488,9 @@ resource "artifact",
   { :from => 'daemon',    :to => 'apache_cassandra'  },
   { :from => 'artifact',  :to => 'apache_cassandra'  },
   { :from => 'daemon',    :to => 'artifact'  },
-  # {:from => 'jolokia_proxy', :to => 'compute'},
+  {:from => 'jolokia_proxy', :to => 'compute'},
   {:from => 'java', :to => 'compute'},
-  # {:from => 'jolokia_proxy', :to => 'java'},
+  {:from => 'jolokia_proxy', :to => 'java'},
   {:from => 'apache_cassandra', :to => 'telegraf' },
   {:from => 'apache_cassandra', :to => 'compute' },  
   {:from => 'keyspace', :to => 'apache_cassandra' },
@@ -535,8 +531,7 @@ relation "apache_cassandra::depends_on::java",
     :attributes    => { :propagate_to => 'from', "flex" => false, "min" => 1, "max" => 1}
 
 
-#['user-cassandra','java', 'jolokia_proxy', 'apache_cassandra','keyspace', 'artifact'].each do |from|
-['user-cassandra','java', 'apache_cassandra','keyspace', 'artifact'].each do |from|    
+['user-cassandra','java', 'jolokia_proxy', 'apache_cassandra','keyspace', 'artifact'].each do |from|
   relation "#{from}::managed_via::compute",
     :except => [ '_default' ],
     :relation_name => 'ManagedVia',
