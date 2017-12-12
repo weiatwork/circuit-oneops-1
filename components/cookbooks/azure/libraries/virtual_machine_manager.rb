@@ -24,9 +24,10 @@ module AzureCompute
       @location = @compute_service[:location]
       @initial_user = @compute_service[:initial_user]
       @express_route_enabled = @compute_service['express_route_enabled']
-      @secgroup_name = node['workorder']['payLoad']['DependsOn'][0]['ciName']
+      @secgroup_name = get_security_group_name(node)
       @image_id = node['image_id'].split(':')
       @size_id = node['size_id']
+      @oosize_id = node[:oosize_id]
       @ip_type = node['ip_type']
       @platform = @compute_service['ostype'].include?('windows') ? 'windows' : 'linux'
       @platform_ci_id = node['workorder']['box']['ciId']
@@ -85,7 +86,9 @@ module AzureCompute
       vm_hash[:location] = @compute_service[:location]
 
       # hardware profile values
-      vm_hash[:vm_size] = @size_id
+      vm_hash[:vm_size] = @size_id if @availability_set_response.sku_name.eql? 'Aligned'
+      vm_hash[:vm_size] = @storage_profile.get_old_azure_mapping(@oosize_id) if @availability_set_response.sku_name.eql? 'Classic'
+
 
       # storage profile values
 
@@ -125,7 +128,8 @@ module AzureCompute
       @private_ip = @network_profile.private_ip
       # create the virtual machine
       begin
-        @virtual_machine_lib.create_update(vm_hash)
+       @virtual_machine_lib.create_update(vm_hash)
+
       rescue MsRestAzure::AzureOperationError => e
         OOLog.debug("Error Body: #{e.body}")
         OOLog.fatal('Error creating/updating VM')
@@ -208,5 +212,16 @@ module AzureCompute
       end
       return storage_account, vhd_uri, datadisk_uri
     end
+
+    def get_security_group_name(node)
+      secgroup = node['workorder']['payLoad']['DependsOn'].detect { |d| d['ciClassName'] =~ /Secgroup/ }
+      if secgroup.nil?
+        OOLog.fatal("No Secgroup found in workorder. This is required for VM creation.")
+      else
+        return secgroup['ciName']
+      end
+    end
+
+    private :get_security_group_name
   end
 end

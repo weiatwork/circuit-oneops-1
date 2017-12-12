@@ -1,4 +1,4 @@
-default['mcrouter']['root_dir'] = '/opt/meghacache'
+default['mcrouter']['root_dir'] = '/opt/mcrouter'
 default['mcrouter']['src_dir'] = "#{node['mcrouter']['root_dir']}/mcrouter"
 default['mcrouter']['log_dir'] = "#{node['mcrouter']['root_dir']}/log"
 default['mcrouter']['install_dir'] = '/opt/mcrouter/install'
@@ -44,6 +44,7 @@ default['mcrouter']['enable_logging_route'] = 'false'
 default['mcrouter']['num_proxies'] = '1'
 default['mcrouter']['server_timeout'] = '1000'
 default['mcrouter']['verbosity'] = 'disabled'
+default['mcrouter']['miss_limit'] = '2'
 default['mcrouter']['additional_cli_opts'] = '[]'
 
     
