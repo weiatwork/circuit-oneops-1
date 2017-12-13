@@ -62,16 +62,6 @@ elsif mode == 'raid10' && (device_maps.size < 4 || device_maps.size%2 != 0)
   exit_with_error("Minimum of 4 storage slices and storage slice count mod 2 are required for #{mode}")
 end
 
-include_recipe "shared::set_provider_new"
-
-if !storage.nil?
-  include_recipe "shared::set_provider_new"
-  objStorage = VolumeComponent::Storage.new(node,storage,device_maps)        
-  objStorage.set_provider_data_all  
-  storage_devices = objStorage.storage_devices
-  compute = objStorage.compute
-end
-
 package 'lvm2'
 package 'mdadm' do
   not_if{mode == 'no-raid'}
@@ -79,9 +69,11 @@ end
 
 storageUpdated = false
 if !storage.nil?
-   storageUpdated = storage.ciBaseAttributes.has_key?("size")
+  storageUpdated = storage.ciBaseAttributes.has_key?("size")
 end
-newDevicesAttached = ""
+include_recipe "shared::set_provider_new"
+
+dev_list = ""
 logical_name = rfcCi[:ciName]
 raid_device = "/dev/md/#{logical_name}"
 rfc_action = rfcCi[:rfcAction]
@@ -103,132 +95,53 @@ ruby_block 'create-iscsi-volume-ruby-block' do
   not_if {storage.nil?}
   block do
 
-        vols = Array.new
-        dev_list = ""
+    objStorage = VolumeComponent::Storage.new(node,storage,device_maps)
+    objStorage.set_provider_data_all
+    storage_devices = objStorage.storage_devices
+    compute = objStorage.compute
 
-        storage_devices.each do |storage_device|
+    storage_devices.each do |storage_device|
+      storage_device.attach
+      dev_list += storage_device.assigned_device_id + " "
+    end
 
-          vol_id = storage_device.storage_id
-          dev_id = storage_device.planned_device_id
-          Chef::Log.info("vol_id: #{vol_id}, planned dev_id: #{dev_id}, assigned dev_id: #{storage_device.assigned_device_id}")
+    has_created_raid = false
+    exec_count = 0
+    max_retry = 10
 
-          vol = storage_device.object
-          Chef::Log.info("vol: "+ vol.inspect.gsub("\n"," ").gsub("<","").gsub(">","") )
+    if storage_devices.size > 1 && mode != 'no-raid'
 
-          begin
-            #TO-DO move the rest of providers attach action to attach method of StorageDevice object
+      cmd = "yes |mdadm --create -l#{level} -n#{storage_devices.size.to_s} --assume-clean --chunk=256 #{raid_device} #{dev_list} 2>&1"
+      until ::File.exists?(raid_device) || has_created_raid || exec_count > max_retry do
+        Chef::Log.info(raid_device+" being created with: "+cmd)
 
-            case token_class
-              when /ibm/
-                if vol.attached?
-                  Chef::Log.error("attached already, no way to determine device")
-                  # mdadm sometime reassembles with _0
-                  new_raid_device = execute_command("ls -1 #{raid_device}* 2>/dev/null").stdout.chop
-                  if new_raid_device.empty?
-                    exit 1
-                  else
-                    raid_device = new_raid_device
-                    node.set["raid_device"] = raid_device
-                    break
-                  end
-                end
+        out = `#{cmd}`
+        exit_code = $?.to_i
+        Chef::Log.info("exit_code: "+exit_code.to_s+" out: "+out)
+        if exit_code == 0
+          has_created_raid = true
+          # really always need to readahead 64k?
+          # TODO: analyze impact of 64k read-ahead - extra cost to perf
+          #`blockdev --setra 65536 /dev/md/#{node.workorder.rfcCi.ciName}`
+        else
+          exec_count += 1
+          sleep 10
 
-                # determine new device by watching /dev because ibm (kvm) doesn't attach it to the specified device
-                orig_device_list = execute_command('ls -1 /dev/vd*').stdout.split("\n")
-                compute.attach(vol.id)
-                dev_id = get_device_id(orig_device_list, 'vd', 30, 10)
-                Chef::Log.info "device: "+dev_id
-                node.set["raid_device"] = dev_id
+          ccmd = "for f in /dev/md*; do mdadm --stop $f; done"
+          Chef::Log.info("cleanup bad arrays: "+ccmd)
+          Chef::Log.info(`#{ccmd}`)
 
-              when /openstack/
-                storage_device.attach unless storage_device.is_attached
-                dev_id = storage_device.assigned_device_id
-
-              when /rackspace/
-                rackspace_dev_id = dev_id.gsub(/\d+/,"")
-                is_attached = false
-                compute.attachments.each do |a|
-                  is_attached = true if a.volume_id = vol.id
-                end
-                if !is_attached
-                  compute.attach_volume vol.id, rackspace_dev_id
-                end
-
-                node.set["raid_device"] = rackspace_dev_id
-
-              when /ec2/
-                vol.device = dev_id.gsub("xvd","sd")
-                vol.server = compute
-
-              when /azure/
-                storage_device.attach unless storage_device.is_attached
-                dev_id = storage_device.assigned_device_id
-
-            end
-          rescue Fog::Compute::AWS::Error=>e
-            if e.message =~ /VolumeInUse/
-              Chef::Log.info("already added")
-            else
-              Chef::Log.info(e.inspect)
-              exit 1
-            end
-          end
-
-          Chef::Log.info("storage: #{storage_device.storage_id}, attached?: #{storage_device.is_attached}, Planned dev_id: #{storage_device.planned_device_id}, Assigned dev_id: #{storage_device.assigned_device_id}")
-
-          # wait until all are attached
-          max_retry = 10
-          retry_count = 0
-          while !storage_device.is_attached && retry_count < max_retry do
-            storage_device.set_provider_data
-            retry_count += 1
-            sleep 10 unless storage_device.is_attached
-          end
-
-          exit_with_error("Could not determined assigned device_id for storage #{storage_device.storage_id}") if dev_id.nil?
-          vols.push vol_id
-          dev_list += dev_id+" "
-        end #storage_devices.each do |storage_device|
-
-
-      newDevicesAttached = dev_list
-      has_created_raid = false
-      exec_count = 0
-      max_retry = 10
-
-      if vols.size > 1 && mode != 'no-raid'
-        
-        cmd = "yes |mdadm --create -l#{level} -n#{vols.size.to_s} --assume-clean --chunk=256 #{raid_device} #{dev_list} 2>&1"
-        until ::File.exists?(raid_device) || has_created_raid || exec_count > max_retry do
-          Chef::Log.info(raid_device+" being created with: "+cmd)
-
-          out = `#{cmd}`
-          exit_code = $?.to_i
-          Chef::Log.info("exit_code: "+exit_code.to_s+" out: "+out)
-          if exit_code == 0
-            has_created_raid = true
-            # really always need to readahead 64k?
-            # TODO: analyze impact of 64k read-ahead - extra cost to perf
-            #`blockdev --setra 65536 /dev/md/#{node.workorder.rfcCi.ciName}`
-          else
-            exec_count += 1
-            sleep 10
-
-            ccmd = "for f in /dev/md*; do mdadm --stop $f; done"
-            Chef::Log.info("cleanup bad arrays: "+ccmd)
-            Chef::Log.info(`#{ccmd}`)
-
-            ccmd = "mdadm --zero-superblock #{dev_list}"
-            Chef::Log.info("cleanup incase re-using: "+ccmd)
-            Chef::Log.info(`#{ccmd}`)
-          end
+          ccmd = "mdadm --zero-superblock #{dev_list}"
+          Chef::Log.info("cleanup incase re-using: "+ccmd)
+          Chef::Log.info(`#{ccmd}`)
         end
-        node.set["raid_device"] = raid_device
-      else
-        Chef::Log.info("No Raid Device ID :" +no_raid_device)
-        raid_device = no_raid_device
-        node.set["raid_device"] = no_raid_device
-      end #if vols.size > 1 && mode != 'no-raid'
+      end
+      node.set["raid_device"] = raid_device
+    else
+      Chef::Log.info("No Raid Device ID :" +no_raid_device)
+      raid_device = no_raid_device
+      node.set["raid_device"] = no_raid_device
+    end #if storage_devices.size > 1 && mode != 'no-raid'
 
   end
 end
@@ -415,7 +328,7 @@ ruby_block 'create-storage-non-ephemeral-volume' do
     if mode != "no-raid"
       raid_devices = node.raid_device
     else
-      raid_devices = newDevicesAttached
+      raid_devices = dev_list
     end
     devices = Array.new
     raid_devices.split(" ").each do |raid_device|
@@ -501,7 +414,7 @@ ruby_block 'create-storage-non-ephemeral-volume' do
       end
 
       #cheecks if user is increasing or decreasing size
-      if new_size =~ /G/ && old_size =~ /G/
+      if new_size =~ /\d+G/ && old_size =~ /\d+G/
         new_size = new_size.gsub!(/[^0-9]/, '')
         old_size = old_size.gsub!(/[^0-9]/, '')
         size = new_size.to_i - old_size.to_i
@@ -616,7 +529,7 @@ ruby_block 'filesystem' do
         fstab.puts("#{_device} #{_mount_point} #{_fstype} #{_options} 1 1")
         Chef::Log.info("adding to fstab #{_device} #{_mount_point} #{_fstype} #{_options} 1 1")
       end
-      `mv /tmp/fstab /etc/fstab` 
+      `mv /tmp/fstab /etc/fstab`
 
       if token_class =~ /azure/
         `sudo mkdir /opt/oneops/workorder`

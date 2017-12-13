@@ -2,21 +2,24 @@
 This spec has tests that validates a successfully completed oneops-azure deployment
 =end
 
-COOKBOOKS_PATH ||="/opt/oneops/inductor/circuit-oneops-1/components/cookbooks"
+COOKBOOKS_PATH ||= "/opt/oneops/inductor/circuit-oneops-1/components/cookbooks"
 
 require 'chef'
 require 'fog/azurerm'
 (
-  Dir.glob("#{COOKBOOKS_PATH}/azure/libraries/*.rb") +
-  Dir.glob("#{COOKBOOKS_PATH}/azure_base/libraries/*.rb")
+Dir.glob("#{COOKBOOKS_PATH}/azure/libraries/*.rb") +
+    Dir.glob("#{COOKBOOKS_PATH}/azure_base/libraries/*.rb")
 ).each {|lib| require lib}
 require "#{COOKBOOKS_PATH}/azuresecgroup/libraries/network_security_group.rb"
+
+#load spec utils
+require "#{COOKBOOKS_PATH}/azure_base/test/integration/azure_spec_utils"
 
 RSpec.configure do |c|
   c.filter_run_excluding :express_route_enabled => !AzureSpecUtils.new($node).is_express_route_enabled
 end
 
-describe "vm on azure" do
+describe "azure node::create" do
 
   before(:each) do
     @spec_utils = AzureSpecUtils.new($node)
@@ -44,6 +47,48 @@ describe "vm on azure" do
       expect(vm.name).to eq(server_name)
     end
 
+    context "compute size" do
+      it "should exist" do
+        credentials = @spec_utils.get_azure_creds
+        virtual_machine_lib = AzureCompute::VirtualMachine.new(credentials)
+
+        resource_group_name = @spec_utils.get_resource_group_name
+        server_name = @spec_utils.get_server_name
+        vm = virtual_machine_lib.get(resource_group_name, server_name)
+
+        availability_set = AzureBase::AvailabilitySetManager.new($node)
+        avg = availability_set.get
+
+        if avg.sku_name.eql? 'Classic'
+          storage_profile = AzureCompute::StorageProfile.new(credentials)
+          expect(vm.vm_size).to eq(storage_profile.get_old_azure_mapping($node[:workorder][:rfcCi][:ciAttributes][:size]))
+        elsif if avg.sku_name.eql? 'Aligned'
+
+                cloud_name = $node[:workorder][:cloud][:ciName]
+                cloud = $node[:workorder][:services][:compute][cloud_name][:ciAttributes]
+
+                sizemap = JSON.parse(cloud[:sizemap])
+                size_id = sizemap[$node[:workorder][:rfcCi]["ciAttributes"]["size"]]
+
+                expect(vm.vm_size).to eq(size_id)
+              end
+        end
+      end
+    end
+
+    context "instance type" do
+      it "should exist" do
+        credentials = @spec_utils.get_azure_creds
+        virtual_machine_lib = AzureCompute::VirtualMachine.new(credentials)
+
+        resource_group_name = @spec_utils.get_resource_group_name
+        server_name = @spec_utils.get_server_name
+        vm = virtual_machine_lib.get(resource_group_name, server_name)
+        compute_instance = (vm.offer + "-" + vm.sku.to_s).downcase
+        expect(compute_instance).to eq($node[:workorder][:payLoad][:os][0][:ciAttributes]['ostype'].downcase)
+      end
+    end
+
     it "has oneops org and assembly tags" do
       tags_from_work_order = Utils.get_resource_tags($node)
 
@@ -54,6 +99,19 @@ describe "vm on azure" do
       tags_from_work_order.each do |key, value|
         expect(vm.tags).to include(key => value)
       end
+    end
+  end
+
+  context "Fault and Update domain" do
+    it "Fault and Update domain returns" do
+
+      credentials = @spec_utils.get_azure_creds
+      virtual_machine_lib = AzureCompute::VirtualMachine.new(credentials)
+      resource_group_name = @spec_utils.get_resource_group_name
+      server_name = @spec_utils.get_server_name
+      vm = virtual_machine_lib.get(resource_group_name, server_name)
+      expect(vm.platform_fault_domain).not_to be_nil
+      expect(vm.platform_update_domain).not_to be_nil
     end
   end
 
@@ -123,7 +181,6 @@ describe "vm on azure" do
       primary_nic_name = Hash[*(primary_nic_id.split('/'))[1..-1]]['networkInterfaces']
 
       nic_svc = AzureNetwork::NetworkInterfaceCard.new(credentials)
-      nic_svc.ci_id = $node['workorder']['rfcCi']['ciId']
       nic_svc.rg_name = @spec_utils.get_resource_group_name
       nic = nic_svc.get(primary_nic_name)
 
@@ -134,7 +191,7 @@ describe "vm on azure" do
     it "has oneops org and assembly tags" do
       tags_from_work_order = Utils.get_resource_tags($node)
 
-      nic_svc = AzureNetwork::NetworkInterfaceCard.new( @spec_utils.get_azure_creds)
+      nic_svc = AzureNetwork::NetworkInterfaceCard.new(@spec_utils.get_azure_creds)
       nic_svc.ci_id = $node['workorder']['rfcCi']['ciId']
       nic_svc.rg_name = @spec_utils.get_resource_group_name
       nic_name = Utils.get_component_name('nic', nic_svc.ci_id)

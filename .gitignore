@@ -1,12 +1,15 @@
 Gemfile.lock
 .project
-.idea
 .chef
 .arcconfig
 .arclint
 **/.DS_Store
 .rspec
 .DS_Store
+
+# Intellij IDEA
+.idea
+.iml
 
 # Berkshelf
 .vagrant

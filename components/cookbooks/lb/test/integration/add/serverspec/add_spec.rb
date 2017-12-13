@@ -9,7 +9,7 @@ require "#{COOKBOOKS_PATH}/azure_base/test/integration/spec_utils"
 provider = SpecUtils.new($node).get_provider
 if provider =~ /azure/
   require "#{COOKBOOKS_PATH}/azure_base/test/integration/azure_spec_utils"
-
+  
   cloud_service = SpecUtils.new($node).get_cloud_service['ciClassName'].split('.').last.downcase
   case cloud_service
   when /azure_lb/

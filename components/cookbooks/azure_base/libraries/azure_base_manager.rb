@@ -33,10 +33,10 @@ module AzureBase
       if @creds.nil?
         OOLog.info("Creds do NOT exist, creating...")
         @creds = {
-            tenant_id: @service['tenant_id'],
-            client_id: @service['client_id'],
-            client_secret: @service['client_secret'],
-            subscription_id: @service['subscription']
+            :tenant_id => @service[:tenant_id],
+            :client_id => @service[:client_id],
+            :client_secret => @service[:client_secret],
+            :subscription_id => @service[:subscription]
         }
       else
         OOLog.info('Creds EXIST, no need to create.')
