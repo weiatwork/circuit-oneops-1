@@ -58,11 +58,13 @@ dest_file = "#{tmp}/#{tgz_file}"
 if actionName == 'upgrade'
   `curl -o #{dest_file} #{cassandra_download_url}`
 else
-  shared_download_http cassandra_download_url do
-    path dest_file
-    action :create
-    if node[:apache_cassandra][:checksum] && !node[:apache_cassandra][:checksum].empty?
-      checksum node[:apache_cassandra][:checksum]
+  unless File.exists?(dest_file)
+    shared_download_http cassandra_download_url do
+      path dest_file
+      action :create
+      if node[:apache_cassandra][:checksum] && !node[:apache_cassandra][:checksum].empty?
+        checksum node[:apache_cassandra][:checksum]
+      end
     end
   end
 end

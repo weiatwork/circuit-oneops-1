@@ -1,10 +1,9 @@
 include_pack "generic_ring"
 
-name "apache_cassandra_ajweave"
+name "apache_cassandra"
 description "Apache Cassandra"
 type "Platform"
-#category "Database NoSQL"
-category "Other"
+category "Database NoSQL"
 
 platform :attributes => {'autoreplace' => 'false'}
 
@@ -492,9 +491,7 @@ resource "jolokia_proxy",
   {:from => 'java', :to => 'compute'},
   {:from => 'jolokia_proxy', :to => 'java'},
   {:from => 'apache_cassandra', :to => 'telegraf' },
-  {:from => 'apache_cassandra', :to => 'compute' },  
-  {:from => 'keyspace', :to => 'apache_cassandra' },
-  {:from => 'keyspace', :to => 'ring' }
+  {:from => 'apache_cassandra', :to => 'compute' }
  ].each do |link|
   relation "#{link[:from]}::depends_on::#{link[:to]}",
     :relation_name => 'DependsOn',
@@ -530,8 +527,22 @@ relation "apache_cassandra::depends_on::java",
     :to_resource   => 'java',
     :attributes    => { :propagate_to => 'from', "flex" => false, "min" => 1, "max" => 1}
 
+relation "keyspace::depends_on::apache_cassandra",
+    :except => ['redundant'],
+    :relation_name => 'DependsOn',
+    :from_resource => 'keyspace',
+    :to_resource   => 'apache_cassandra',
+    :attributes    => { :propagate_to => 'from', "flex" => false, "min" => 0, "max" => 1}
 
-['user-cassandra','java', 'jolokia_proxy', 'apache_cassandra','keyspace', 'artifact'].each do |from|
+relation 'keyspace::depends_on::ring',
+    :except        => ['_default', 'single'],
+    :relation_name => 'DependsOn',
+    :from_resource => 'keyspace',
+    :to_resource   => 'ring',
+    :attributes    => {:propagate_to => 'from', :flex => false, :min => 0, :max => 1}
+
+
+['user-cassandra','java', 'jolokia_proxy', 'apache_cassandra', 'artifact'].each do |from|
   relation "#{from}::managed_via::compute",
     :except => [ '_default' ],
     :relation_name => 'ManagedVia',

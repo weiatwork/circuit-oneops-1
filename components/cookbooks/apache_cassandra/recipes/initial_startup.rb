@@ -96,17 +96,28 @@ end
 # may only be set in OneOps to reflect the _actual_ password that's been set on the cluster 
 # outside of OneOps.
 ruby_block "set_superuser_password" do
+  retries 3
+  retry_delay 15
   block do
-    r = `/opt/cassandra/bin/cqlsh -u cassandra -p cassandra --no-color -e "ALTER USER '#{ci.ciAttributes.username}' WITH PASSWORD '#{ci.ciAttributes.password}';"`
-    rc = $?
-    Chef::Log.info("cqlsh rc #{rc} from setting superuser password: #{r}")    
-    if rc == 0
-      Chef::Log.warn("cqlsh output from setting superuser password: #{r}")
-      puts "***FAULT:FATAL=Failed to set the superuser password.  Please ensure the cluster is up and running."
-      e = Exception.new("no backtrace")
-      e.set_backtrace("")
-      raise e
+    #test with desired password
+    Chef::Log.info("Checking password")
+    r = `/opt/cassandra/bin/cqlsh -u '#{ci.ciAttributes.username}' -p '#{ci.ciAttributes.password}' --no-color -e "DESCRIBE CLUSTER;"`
+    rc = $?.exitstatus
+    Chef::Log.info("Password check exited with #{rc}, output: #{r}")
+    if rc == 1 #failed with desired password
+      Chef::Log.info("Setting superuser password")
+      r = `/opt/cassandra/bin/cqlsh -u cassandra -p cassandra --no-color -e "ALTER USER '#{ci.ciAttributes.username}' WITH PASSWORD '#{ci.ciAttributes.password}';"`
+      rc = $?.exitstatus
+      Chef::Log.info("Superuser password set exited with #{rc}, output: #{r}")      
+      Chef::Log.info("cqlsh rc #{rc} from setting superuser password: #{r}")    
+      if rc != 0
+        Chef::Log.warn("cqlsh output from setting superuser password: #{r}")
+        puts "***FAULT:FATAL=Failed to set the superuser password.  Please ensure the cluster is up and running."
+        e = Exception.new("no backtrace")
+        e.set_backtrace("")
+        raise e
+      end
     end
   end
-  only_if { ci.ciAttributes.has_key?("auth_enabled") && ci.ciAttributes.auth_enabled.eql?("true") && Cassandra::Util.new_cluster?(node) }
+  only_if { ci.ciAttributes.has_key?("auth_enabled") && ci.ciAttributes.auth_enabled.eql?("true") && node[:initial_seeds].include?(private_ip) }
 end

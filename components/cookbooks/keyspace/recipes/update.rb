@@ -1,1 +1,1 @@
-include_recipe "wmt_keyspace::add"
+include_recipe "keyspace::add"
