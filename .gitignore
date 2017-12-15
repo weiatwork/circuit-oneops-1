@@ -2,7 +2,6 @@ Gemfile.lock
 .project
 .chef
 .arcconfig
-.arclint
 **/.DS_Store
 .rspec
 .DS_Store
