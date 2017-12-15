@@ -6,7 +6,7 @@ end
 
 def execute_command(command, force_failure = nil)
   result = Mixlib::ShellOut.new(command).run_command
-  if result.error?
+  if !result.valid_exit_codes.include?(result.exitstatus)
     if force_failure
       exit_with_error("Error in #{command}: #{result.stderr.gsub(/\n+/, '.')}")
     else
@@ -91,49 +91,6 @@ def get_storage(node)
   end #if node.platform !~ /windows/ else
 
   return storage, device_map
-end
-
-def get_compute (instance_id)
-  compute = nil
-  if node[:provider_class] =~ /azure/
-    compute = node[:iaas_provider].servers(resource_group: node[:resource_group]).get(node[:resource_group], instance_id)
-  else
-    compute = node[:iaas_provider].servers.get(instance_id)
-  end
-  return compute
-end
-
-def get_volume (vol_id, instance_id = nil)
-  volume = nil
-  if node[:storage_provider_class] =~ /azuredatadisk/
-    if vol_id =~ /datadisk/ 
-      volume = get_compute(instance_id).data_disks.select{|dd| (dd.name == vol_id)}[0]
-    else
-      volume = node[:storage_provider].managed_disks.get(node[:resource_group], vol_id)
-    end
-
-  elsif node[:storage_provider_class] =~ /cinder/
-    volume = node[:iaas_provider].volumes.get vol_id
-  else
-    volume = node[:storage_provider].volumes.get vol_id
-  end
-  return volume
-end
-
-def get_volume_status (volume)
-  status = nil
-  if node[:storage_provider_class] =~ /azuredatadisk/
-    if (volume.respond_to?('name') && volume.name =~ /datadisk/) || (volume.respond_to?('owner_id') && !volume.owner_id.nil?)
-      status = 'attached'
-    else
-      status = 'detached'
-    end
-  elsif node[:storage_provider_class] =~ /cinder/
-    status = volume.status
-  else
-    status = volume.state
-  end
-  return status.downcase
 end
 
 def get_device_id (orig_device_list, dev_prefix, max_retry_count, sleep_sec)

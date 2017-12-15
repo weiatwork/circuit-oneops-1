@@ -191,31 +191,32 @@ Array(1..slice_count).each do |i|
       #set the proxy if it exists as a cloud var
       Utils.set_proxy(node[:workorder][:payLoad][:OO_CLOUD_VARS])
 
+      rg_manager = AzureBase::ResourceGroupManager.new(node)
       compute_attr = node[:workorder][:payLoad][:DependsOn].select{|d| (d[:ciClassName].split('.').last == 'Compute') }.first[:ciAttributes]
-      if Utils.is_prm(compute_attr[:size], false) && ciAttr[:volume_type] == 'IOPS1'
+      vm = node[:storage_provider].servers(:resource_group => rg_manager.rg_name).get(rg_manager.rg_name, compute_attr[:instance_name])
+
+      if vm.vm_size =~ /(.*)GS(.*)|(.*)DS(.*)/ && ciAttr[:volume_type] == 'IOPS1'
         account_type = 'Premium_LRS'
       else
         account_type = 'Standard_LRS'
       end
       vol_name = rfcCi[:ciName] + '-' + rfcCi[:ciId].to_s + '-' + dev.split('/').last.to_s
-      rg_manager = AzureBase::ResourceGroupManager.new(node)
 
       availability_set_response = node[:storage_provider].availability_sets.get(rg_manager.rg_name, rg_manager.rg_name)
 
       if availability_set_response.sku_name == 'Aligned'
         volume = node.storage_provider.managed_disks.create(
-          name: vol_name,
-          location: rg_manager.location,
-          resource_group_name: rg_manager.rg_name,
-          account_type: account_type,
-          disk_size_gb: slice_size,
-          creation_data: { create_option: 'Empty' }
+          :name                => vol_name,
+          :location            => rg_manager.location,
+          :resource_group_name => rg_manager.rg_name,
+          :account_type        => account_type,
+          :disk_size_gb        => slice_size,
+          :creation_data       => { :create_option => 'Empty' }
         )
         Chef::Log.info("Managed disk created: #{volume.inspect.gsub("\n",'')}")
         volume_dev = [vol_name, dev].join(':')
       else
         #The old way - unmanaged disk
-        vm = node[:storage_provider].servers(resource_group: rg_manager.rg_name).get(rg_manager.rg_name, compute_attr[:instance_name])
         storage_account_name = vm.storage_account_name
         vhd_blobname = [storage_account_name,rfcCi[:ciId].to_s,'datadisk',dev.split('/').last.to_s].join('-')
 

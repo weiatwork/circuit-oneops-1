@@ -1,7 +1,6 @@
-
 def exit_with_error(msg)
-	puts "***FAULT:FATAL=#{msg}"
-	Chef::Application.fatal!(msg)
+  puts "***FAULT:FATAL=#{msg}"
+  Chef::Application.fatal!(msg)
 end
 
 def get_azure_storage_service(creds, resource_group, storage_account_name)
