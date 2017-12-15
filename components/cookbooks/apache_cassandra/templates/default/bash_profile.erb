@@ -15,6 +15,8 @@ export LOCAL_JMX=both
 PATH=$CASSANDRA_HOME/bin:$HOME/bin:$PATH
 
 # Alias
-alias system.log='less $CASSANDRA_LOG_DIR/system.log'
-alias cassandra.yaml='less $CASSANDRA_HOME/conf/cassandra.yaml'
-alias cassandra-env.sh='less $CASSANDRA_HOME/conf/cassandra-env.sh'
+alias system.log='tail -100f $CASSANDRA_LOG_DIR/system.log'
+alias cassandra.yaml='vi $CASSANDRA_HOME/conf/cassandra.yaml'
+
+# Set badge when using iTerm
+printf "\e]1337;SetBadgeFormat=%s\a" $(echo -n $ONEOPS_ASSEMBLY | base64)

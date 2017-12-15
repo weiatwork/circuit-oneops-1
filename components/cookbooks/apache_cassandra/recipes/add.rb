@@ -43,5 +43,3 @@ include_recipe "apache_cassandra::config_monitor"
 execute "Set CASSANDRA_HOME Ownership to Cassandra User" do
   command "chown -R cassandra:cassandra #{cassandra_current}"
 end
-
-include_recipe "apache_cassandra::config_telegraf"
