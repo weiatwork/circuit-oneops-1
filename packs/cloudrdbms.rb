@@ -41,21 +41,23 @@ resource 'user-app',
              'sudoer' => true
          }
 
-resource "java",
-         :cookbook => "oneops.1.java",
+resource 'java',
+         :cookbook => 'oneops.1.java',
          :design => true,
          :requires => {
-             :constraint => "1..1",
-             :help => "Java Programming Language Environment"
+             :constraint => '1..1',
+             :services => '*mirror',
+             :help => 'Java Programming Language Environment'
          },
          :attributes => {
-         :install_dir => "/usr/lib/jvm",
-             	:jrejdk => "jdk",
-             	:version => "8",
-             	:sysdefault => "true",
-             	:flavor => "openjdk"
-         }
-
+              :install_dir => "/usr/lib/jvm",
+              :jrejdk => "jdk",
+              :binpath => "",
+              :version => "8",
+              :sysdefault => "true",
+              :flavor => "oracle"
+          }
+          
 resource "artifact-app",
   :cookbook => "artifact",
   :design => true,
@@ -72,7 +74,7 @@ resource "volume-app",
                     "size"          => '100%FREE',
                     "device"        => '',
                     "fstype"        => 'ext4',
-                    "options"       => 'defaults,noatime,nodiratime'
+                    "options"       => 'defaults,noatime'
                  },
   :monitors => {
       'usage' =>  {'description' => 'Usage',
@@ -119,8 +121,7 @@ resource "lb",
 :except => [ 'single' ],
 :design => false,
 :attributes => {
-    "listeners"     => '["tcp 3306 tcp 3307"]',
-    "ecv_map"       => '{"3307":"port-check"}'
+    "listeners"     => '["tcp 3306 tcp 3307"]'
   }
 
 # we use this to have the hostnames stay the same after a compute REPLACE:
