@@ -2,7 +2,7 @@
 
 version=node['kafka_rest'][:version]
 
-
+cloud = node.workorder.cloud.ciName
 mirror_url_key = "kafkarest"
 Chef::Log.info("Getting mirror service for #{mirror_url_key}, cloud: #{cloud}")
 
@@ -71,9 +71,6 @@ bash 'add jmx rmi port' do
   EOH
 end
 
-service 'kafka-rest' do
-  provider Chef::Provider::Service::Systemd
-  service_name 'kafka-rest'
-  supports  :restart => true, :status => true, :stop => true, :start => true
-  action :restart
+execute 'kafka-rest' do
+  command "sudo service kafka-rest restart"
 end
