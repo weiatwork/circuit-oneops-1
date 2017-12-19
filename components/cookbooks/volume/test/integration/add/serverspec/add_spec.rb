@@ -7,7 +7,7 @@ size = $ciAttr['size']
 fs_type = $ciAttr['fstype']
 options = $ciAttr['options']
 if options.respond_to?('split')
-  options_hash = Hash[options.split(',').map {|i| [i.split('=')[0].to_sym, i.split('=')[1] ? i.split('=')[1] : true]}]
+  options_hash = Hash[options.split(',').select{|i| (i != 'defaults')}.map {|i| [i.split('=')[0].to_sym, i.split('=')[1] ? i.split('=')[1] : true]}]
 else
   options_hash = ''
 end
@@ -17,7 +17,7 @@ mount_hash = {}
 mount_hash[:type] = fs_type
 mount_hash[:device] = $ciAttr['device'] unless $ciAttr['device'].nil? || $ciAttr['device'].empty?
 mount_hash[:options] = options_hash unless options_hash.empty?
-$mount_point = is_windows ? "#{$mount_point[0]}:" : $mount_point
+$mount_point = is_windows ? "#{$mount_point[0]}:" : $mount_point.chomp('/')
 
 describe file($mount_point) do
   it { should be_directory }
