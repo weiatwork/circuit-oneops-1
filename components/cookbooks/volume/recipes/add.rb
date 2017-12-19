@@ -183,38 +183,38 @@ ruby_block 'create-ephemeral-volume-on-azure-vm' do
     l_switch = size =~ /%/ ? '-l' : '-L'
     f_switch = node[:platform_family] == 'rhel' && node[:platform_version].to_i >= 7 ? '' : '-f'
 
-    mount_script = "#!/bin/bash\n"                                                                            \
-                   "\n"                                                                                       \
-                   "EXIT_SUCCESS=0\n"                                                                         \
-                   "EXIT_CRITICAL=2\n"                                                                        \
-                   "IS_FORMATTED=0\n"                                                                         \
-                   "\n"                                                                                       \
-                   "umount #{initial_mountpoint}\n"                                                           \
-                   "pvcreate -f #{ephemeral_device}\n"                                                        \
-                   "vgcreate #{platform_name}-eph #{ephemeral_device}\n"                                      \
-                   "\"yes\" | lvcreate #{l_switch} #{size} -n #{logical_name} #{platform_name}-eph\n"         \
-                   "\n"                                                                                       \
-                   "mount /dev/#{platform_name}-eph/#{logical_name} #{_mount_point}\n"                        \
-                   "if [ ! -d #{_mount_point}/lost+found ]; then\n"                                           \
-                   "  mkfs -t #{_fstype} #{f_switch} /dev/#{platform_name}-eph/#{logical_name}\n"             \
-                   "  mkdir -p #{_mount_point}\n"                                                             \
-                   "  mount /dev/#{platform_name}-eph/#{logical_name} #{_mount_point}\n"                      \
-                   "  $IS_FORMATTED=1\n"                                                                      \
-                   "fi\n"                                                                                     \
-                   "\n"                                                                                       \
-                   "count=$(awk /#{logical_name}.sh/ #{rc_file_path} | wc -l)\n"                              \
-                   "if [ $count == 0 ]; then\n"                                                               \
-                   "  sudo echo \"sh #{script_file_path}\" >> #{rc_file_path}\n"                              \
-                   "  exit_status=$EXIT_SUCCESS\n"                                                            \
-                   "elif [ $IS_FORMATTED == 1 ]; then\n"                                                      \
-                   "  echo 'CRITICAL - Mount Points are restored but data is lost.'\n"                        \
-                   "  exit_status=$EXIT_CRITICAL\n"                                                           \
-                   "else\n"                                                                                   \
-                   "  exit_status=$EXIT_SUCCESS\n"                                                            \
-                   "fi\n"                                                                                     \
-                   "\n"                                                                                       \
-                   "exit $exit_status\n"                                                                      \
-                   "\n"
+    mount_script = <<-HEREDOC
+#!/bin/bash
+EXIT_SUCCESS=0
+EXIT_CRITICAL=2
+IS_FORMATTED=0
+
+umount #{initial_mountpoint}
+pvcreate -f #{ephemeral_device}
+vgcreate #{platform_name}-eph #{ephemeral_device}
+"yes" | lvcreate #{l_switch} #{size} -n #{logical_name} #{platform_name}-eph
+
+mount /dev/#{platform_name}-eph/#{logical_name} #{_mount_point}
+if [ ! -d #{_mount_point}/lost+found ]; then
+  mkfs -t #{_fstype} #{f_switch} /dev/#{platform_name}-eph/#{logical_name}
+  mkdir -p #{_mount_point}
+  mount /dev/#{platform_name}-eph/#{logical_name} #{_mount_point}
+  IS_FORMATTED=1
+fi
+
+count=$(awk /#{logical_name}.sh/ #{rc_file_path} | wc -l)
+if [ $count == 0 ]; then
+  sudo echo "sh #{script_file_path}" >> #{rc_file_path}
+  exit_status=$EXIT_SUCCESS
+elif [ $IS_FORMATTED == 1 ]; then
+  echo 'CRITICAL - Mount Points are restored but data is lost.'
+  exit_status=$EXIT_CRITICAL
+else
+  exit_status=$EXIT_SUCCESS
+fi
+
+exit $exit_status
+    HEREDOC
 
     Chef::Log.info("Writing mount points restoration script '#{script_file_path}'...")
     File.open(script_file_path, 'w') { |file| file.write(mount_script) }

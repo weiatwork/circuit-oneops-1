@@ -52,6 +52,7 @@ module AzureDns
       # there can be multiple A records on the record set
       # loop through and add each of them to the total array list
       # add the dns_values to the existing array
+      total_record_list.clear
       dns_values.each do |value|
         if dns_action == 'create'
           # if the value is already in the list, skip to the next value
