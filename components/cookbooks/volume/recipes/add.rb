@@ -160,6 +160,8 @@ if attrs.has_key?("mount_point")
   _fstype = attrs["fstype"]
 end
 
+_options = 'defaults' if _options.nil? || _options.empty?
+
 if node[:platform_family] == "rhel" && node[:platform_version].to_i >= 7
   Chef::Log.info("starting the logical volume manager.")
   service 'lvm2-lvmetad' do
@@ -194,11 +196,11 @@ pvcreate -f #{ephemeral_device}
 vgcreate #{platform_name}-eph #{ephemeral_device}
 "yes" | lvcreate #{l_switch} #{size} -n #{logical_name} #{platform_name}-eph
 
-mount /dev/#{platform_name}-eph/#{logical_name} #{_mount_point}
+mount -t #{_fstype} -o #{_options} /dev/#{platform_name}-eph/#{logical_name} #{_mount_point}
 if [ ! -d #{_mount_point}/lost+found ]; then
   mkfs -t #{_fstype} #{f_switch} /dev/#{platform_name}-eph/#{logical_name}
   mkdir -p #{_mount_point}
-  mount /dev/#{platform_name}-eph/#{logical_name} #{_mount_point}
+  mount -t #{_fstype} -o #{_options} /dev/#{platform_name}-eph/#{logical_name} #{_mount_point}
   IS_FORMATTED=1
 fi
 
@@ -469,10 +471,6 @@ ruby_block 'filesystem' do
           Chef::Log.info("_device #{_device} don't exists")
           next
         end
-      end
-
-      if _options == nil || _options.empty?
-        _options = "defaults"
       end
 
       case _fstype
