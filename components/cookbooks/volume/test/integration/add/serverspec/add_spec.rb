@@ -43,7 +43,12 @@ $device_map.each do |dev|
 end if $storage && !is_windows #TO-DO start using the service files for windows as well, then we can enable these tests
 
 #Assert volume size
-size_vm = `df -BG | grep #{$mount_point}| awk '{print $2}'`.chop.to_i
+if fs_type != 'tmpfs'
+  lvm_dev_id = `mount | grep #{$mount_point}| awk '{print $1}'`.chop
+  size_vm = `lvs --noheadings ---units g #{lvm_dev_id} | awk '{print $4}'`.chop.to_i
+else
+  size_vm = `df -BG | grep #{$mount_point}| awk '{print $2}'`.chop.to_i
+end
 if !is_windows
   vg = `vgdisplay -c`
   vg_size = ((vg.split(':')[11].to_f)/1024/1024).round(0).to_i
