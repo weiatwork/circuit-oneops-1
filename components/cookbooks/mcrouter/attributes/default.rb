@@ -31,6 +31,7 @@ default['mcrouter']['sha256'] = ''
 default['mcrouter']['port']        = '5000'
 default['mcrouter']['config-file'] = '/etc/mcrouter/mcrouter.json'
 default['mcrouter']['async-dir']   = "#{node['mcrouter']['log_dir']}/var/spool/mcrouter"
+default['mcrouter']['pool_group_by']   = 'Cloud'
 
 #log-path no longer used
 default['mcrouter']['log-path']    = "#{node['mcrouter']['log_dir']}/mcrouter/mcrouter.log"
