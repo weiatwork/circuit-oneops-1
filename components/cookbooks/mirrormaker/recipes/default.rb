@@ -130,7 +130,6 @@ execute "change permission" do
 	only_if { File.exists?('/var/tmp/check_logfiles') } 
 end
 
-service "mirrormaker" do
-  action [:restart, :enable]
-  supports :status => true, :restart => true, :reload => true
+execute "start mirrormaker" do
+	command "service mirrormaker restart"
 end

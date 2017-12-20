@@ -5,6 +5,7 @@ class Cloud
 end
 
 module McrouterRouteConfig
+  FAULT_DOMAIN_INFIX="FaultDomain"
 
   def self.get_mcrouter_cloud_config(node)
     if !node.workorder.has_key?("cloud")
@@ -14,6 +15,7 @@ module McrouterRouteConfig
       raise "DependsOn key not found within payload."
     end
 
+    @@pool_group_by = node['mcrouter']['pool_group_by']
     memcached=node.workorder.payLoad.DependsOn.select{ |d| d['ciClassName'] =~ /Memcached/ }
 
     mcrouter_port=5000
@@ -23,7 +25,7 @@ module McrouterRouteConfig
     }
 
     current_cloud_id   = node.workorder.cloud['ciId']
-    current_cloud_name = node.workorder.cloud['ciName']
+    current_cloud_id = exec_zone(current_cloud_id, (node.workorder.payLoad.has_key?("ManagedVia") ? node.workorder.payLoad.ManagedVia[0] : nil))
 
     cloud_dc = cloud_dc(node)
     cloud_computes = cloud_computes(node)
@@ -84,6 +86,18 @@ module McrouterRouteConfig
     })
   end
 
+  def self.exec_zone(cloud_id, compute)
+    if @@pool_group_by == "CloudFaultDomain"
+      zone = get_zone(compute)
+      if !zone.nil?
+        if zone.has_key?("fault_domain")
+          cloud_id = zone ? "#{cloud_id}#{McrouterRouteConfig::FAULT_DOMAIN_INFIX}#{zone['fault_domain']}" : cloud_id
+        end
+      end
+    end
+    cloud_id
+  end
+
   # build map for cloud id to dc name based on clouds list
   def self.cloud_dc(node)
     cloud_dc = {}
@@ -103,7 +117,11 @@ module McrouterRouteConfig
     cloud_computes = {}
     computes.each do |compute|
       next if compute[:ciAttributes][:public_ip].nil? || compute[:ciAttributes][:public_ip].empty?
+
       cloud_id = compute[:ciName].split('-').reverse[1]
+      cloud_id_with_zones = exec_zone(cloud_id, compute)
+      cloud_id = cloud_id_with_zones.nil? ? cloud_id : cloud_id_with_zones
+
       computeList = cloud_computes[cloud_id]
       if computeList == nil
         computeList = []
@@ -112,6 +130,16 @@ module McrouterRouteConfig
       cloud_computes[cloud_id] = computeList
     end
     cloud_computes
+  end
+
+  def self.get_zone(compute)
+    zone=nil
+    if (!compute.nil? && compute[:ciBaseAttributes].has_key?('zone') && !compute[:ciBaseAttributes][:zone].nil? && compute[:ciBaseAttributes][:zone].size > 2)
+      zone=JSON.parse(compute[:ciBaseAttributes][:zone])
+    elsif (!compute.nil? && compute[:ciAttributes].has_key?('zone') && !compute[:ciAttributes][:zone].nil? && compute[:ciAttributes][:zone].size > 2)
+      zone=JSON.parse(compute[:ciAttributes][:zone])
+    end
+    zone
   end
 
   def self.build_routes(cloud_pools)
@@ -220,7 +248,7 @@ module McrouterRouteConfig
     cc.cloud_id=key
     # current_cloud_id is of type Fixnum class, but key is String class
     cc.is_active_cloud = current_cloud_id.to_s == key ? true : false
-    cc.is_active_dc = cloud_dc[current_cloud_id.to_s] == cloud_dc[key] ? true : false
+    cc.is_active_dc = cloud_dc[current_cloud_id.to_s.gsub(/#{McrouterRouteConfig::FAULT_DOMAIN_INFIX}\d/, '')] == cloud_dc[key.gsub(/#{McrouterRouteConfig::FAULT_DOMAIN_INFIX}\d/, '')] ? true : false
     port = memcached_port
     cc.ip_with_port="#{c["ciAttributes"]["public_ip"]}:#{port}"
     cc.ip="#{c["ciAttributes"]["public_ip"]}"
