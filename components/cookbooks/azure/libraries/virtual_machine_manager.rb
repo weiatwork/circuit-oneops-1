@@ -94,10 +94,19 @@ module AzureCompute
 
       vm_hash[:storage_account_name] = @storage_profile.get_managed_osdisk_name if @availability_set_response.sku_name.eql? 'Aligned'
       vm_hash[:storage_account_name] = @storage_profile.get_storage_account_name if @availability_set_response.sku_name.eql? 'Classic'
-      vm_hash[:publisher] = @image_id[0]
-      vm_hash[:offer] = @image_id[1]
-      vm_hash[:sku] = @image_id[2]
-      vm_hash[:version] = @image_id[3]
+
+      if @image_id[0].eql? 'Custom'
+
+        image_ref = "/subscriptions/#{@compute_service['subscription']}/resourceGroups/#{@compute_service['resource_group']}/providers/Microsoft.Compute/images/#{@image_id[2]}"
+        vm_hash[:image_ref] = image_ref
+
+      else
+
+        vm_hash[:publisher] = @image_id[0]
+        vm_hash[:offer] = @image_id[1]
+        vm_hash[:sku] = @image_id[2]
+        vm_hash[:version] = @image_id[3]
+      end
 
       vm_hash[:platform] = @platform
 
@@ -115,20 +124,20 @@ module AzureCompute
 
       # network profile values
       nic_id = @network_profile.build_network_profile(@compute_service[:express_route_enabled],
-                                                                                    @compute_service[:resource_group],
-                                                                                    @compute_service[:network],
-                                                                                    @compute_service[:network_address].strip,
-                                                                                    (@compute_service[:subnet_address]).split(','),
-                                                                                    (@compute_service[:dns_ip]).split(','),
-                                                                                    @ip_type,
-                                                                                    @secgroup_name)
+                                                      @compute_service[:resource_group],
+                                                      @compute_service[:network],
+                                                      @compute_service[:network_address].strip,
+                                                      (@compute_service[:subnet_address]).split(','),
+                                                      (@compute_service[:dns_ip]).split(','),
+                                                      @ip_type,
+                                                      @secgroup_name)
 
       vm_hash[:network_interface_card_ids] = [nic_id]
 
       @private_ip = @network_profile.private_ip
       # create the virtual machine
       begin
-       @virtual_machine_lib.create_update(vm_hash)
+        @virtual_machine_lib.create_update(vm_hash)
 
       rescue MsRestAzure::AzureOperationError => e
         OOLog.debug("Error Body: #{e.body}")
@@ -150,7 +159,7 @@ module AzureCompute
         if vm.nil?
           OOLog.info("VM '#{@server_name}' was not found. Nothing to delete. ")
           os_disk_name = "#{@server_name.to_s}_os_disk"
-          return os_disk_name,nil
+          return os_disk_name, nil
         else
 
           os_disk = vm.os_disk_name
@@ -189,7 +198,7 @@ module AzureCompute
         vm = @virtual_machine_lib.get(@resource_group_name, @server_name) if vm_exists
         if vm.nil?
           OOLog.info("VM '#{@server_name}' was not found. Nothing to delete. ")
-          return nil,nil,nil
+          return nil, nil, nil
         else
           # retrive the vhd name from the VM properties and use it to delete the associated VHD in the later step.
           vhd_uri = vm.os_disk_vhd_uri
@@ -214,7 +223,7 @@ module AzureCompute
     end
 
     def get_security_group_name(node)
-      secgroup = node['workorder']['payLoad']['DependsOn'].detect { |d| d['ciClassName'] =~ /Secgroup/ }
+      secgroup = node['workorder']['payLoad']['DependsOn'].detect {|d| d['ciClassName'] =~ /Secgroup/}
       if secgroup.nil?
         OOLog.fatal("No Secgroup found in workorder. This is required for VM creation.")
       else
