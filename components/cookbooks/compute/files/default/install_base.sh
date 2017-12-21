@@ -201,7 +201,6 @@ if [ -n "$rubygems_proxy" ]; then
     gem source
 fi
 set -e
-gem install bundler --no-ri --no-rdoc
 EOF
 set -e
 
