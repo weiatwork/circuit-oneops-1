@@ -19,5 +19,5 @@ if provider =~ /azure/
     Dir.glob("#{AZURE_GATEWAY_TESTS_PATH}/*.rb").each { |test| require test }
   end
 elsif provider =~ /openstack/
-  Dir.glob("#{OPENSTACK_TESTS_PATH}/*.rb").each {|test| require test}
+  Dir.glob("#{OPENSTACK_TESTS_PATH}/*.rb").each { |test| require test }
 end

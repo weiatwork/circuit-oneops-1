@@ -121,7 +121,7 @@ class AzureSpecUtils < SpecUtils
     end
     ip_addresses
   end
-  
+
   # Converts the hash given by the node according to the new syntax
   def get_dns_attributes
     cloud_name = get_cloud_name

@@ -10,7 +10,7 @@ require "#{COOKBOOKS_PATH}/azure_base/test/integration/spec_utils"
 provider = SpecUtils.new($node).get_provider
 if provider =~ /azure/
   require "#{COOKBOOKS_PATH}/azure_base/test/integration/azure_spec_utils"
-  
+
   cloud_service = SpecUtils.new($node).get_cloud_service['ciClassName'].split('.').last.downcase
   case cloud_service
   when /azure_lb/
@@ -19,5 +19,5 @@ if provider =~ /azure/
     Dir.glob("#{AZURE_GATEWAY_TESTS_PATH}/*.rb").each { |test| require test }
   end
 elsif provider =~ /openstack/
-  Dir.glob("#{OPENSTACK_TESTS_PATH}/*.rb").each {|test| require test}
+  Dir.glob("#{OPENSTACK_TESTS_PATH}/*.rb").each { |test| require test }
 end
