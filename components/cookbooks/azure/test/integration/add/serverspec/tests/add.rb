@@ -19,6 +19,10 @@ RSpec.configure do |c|
   c.filter_run_excluding :express_route_enabled => !AzureSpecUtils.new($node).is_express_route_enabled
 end
 
+RSpec.configure do |c|
+  c.filter_run_excluding :custom_image => AzureSpecUtils.new($node).is_imagetypecustom
+end
+
 describe "azure node::create" do
 
   before(:each) do
@@ -46,6 +50,20 @@ describe "azure node::create" do
       expect(vm).not_to be_nil
       expect(vm.name).to eq(server_name)
     end
+
+    it "should created from custom image" , :custom_image  => true do
+
+    credentials = @spec_utils.get_azure_creds
+    virtual_machine_lib = AzureCompute::VirtualMachine.new(credentials)
+
+    resource_group_name = @spec_utils.get_resource_group_name
+    server_name = @spec_utils.get_server_name
+    vm = virtual_machine_lib.get(resource_group_name, server_name)
+
+    expect(vm.publisher).to be_nil
+
+    end
+
 
     context "compute size" do
       it "should exist" do
@@ -76,7 +94,7 @@ describe "azure node::create" do
       end
     end
 
-    context "instance type" do
+    context "instance type" , :custom_image  => false do
       it "should exist" do
         credentials = @spec_utils.get_azure_creds
         virtual_machine_lib = AzureCompute::VirtualMachine.new(credentials)
@@ -89,7 +107,7 @@ describe "azure node::create" do
       end
     end
 
-    it "has oneops org and assembly tags" do
+     it "has oneops org and assembly tags" do
       tags_from_work_order = Utils.get_resource_tags($node)
 
       credentials = @spec_utils.get_azure_creds

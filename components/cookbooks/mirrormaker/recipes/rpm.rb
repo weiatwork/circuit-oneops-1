@@ -52,8 +52,8 @@ remote_file "#{node['mirrormaker'][:rpm_dir]}/kafka.rpm" do
   action :create
 end
 
-rpm_package "#{node['mirrormaker'][:rpm_dir]}/kafka.rpm" do
-  action :install
+execute "Add kafka" do
+    command "rpm -i #{node['mirrormaker'][:rpm_dir]}/kafka.rpm --force"
 end
 
 # remove bwm-ng

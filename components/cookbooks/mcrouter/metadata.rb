@@ -180,6 +180,14 @@ attribute 'miss_limit',
         :order => 11,
         :pattern => '[0-9]*'
     }
+attribute 'pool_group_by',
+          :description => 'Pool Group By',
+          :default => 'Cloud',
+          :format => {
+              :category => '2.Advanced',
+              :help => "Pool Group By. Example Pool Group By: 'Cloud' or 'CloudFaultDomain'",
+              :order => 12,
+          }
 
 attribute 'additional_cli_opts',
     :description => "Additional CLI Options",
