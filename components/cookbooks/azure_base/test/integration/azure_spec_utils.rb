@@ -159,4 +159,32 @@ class AzureSpecUtils < SpecUtils
   def lb_exists?
     $node['workorder']['payLoad'].key?('lb')
   end
+
+  def is_imagetypecustom
+
+    cloud_name = @node[:workorder][:cloud][:ciName]
+    cloud = @node[:workorder][:services][:compute][cloud_name][:ciAttributes]
+    os = nil
+    ostype = "default-cloud"
+    if @node[:workorder][:payLoad].has_key?("os")
+      os = @node[:workorder][:payLoad][:os].first
+      ostype = os[:ciAttributes][:ostype]
+    else
+      Chef::Log.warn("missing os payload - using default-cloud")
+      if ostype == "default-cloud"
+        ostype = cloud[:ostype]
+      end
+    end
+    imagemap = JSON.parse( cloud[:imagemap] )
+    image_id = ''
+    if !os.nil? && os[:ciAttributes].has_key?("image_id") && !os[:ciAttributes][:image_id].empty?
+      image_id = os[:ciAttributes][:image_id]
+    else
+      image_id = imagemap[ostype]
+    end
+
+    imagidcustom = image_id.split(':')
+    imagidcustom.eql? 'Custom'
+
+  end
 end
