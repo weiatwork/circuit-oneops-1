@@ -11,10 +11,12 @@ kafka_version = node.workorder.rfcCi.ciAttributes.version
 
 Chef::Log.info("install patch")
 `sudo yum -y install patch`
-`yum -y install redhat-lsb-core`
+#`yum -y install redhat-lsb-core`
 
 Chef::Log.info("install zookeeper gem")
 `sudo gem install zookeeper --no-rdoc --no-ri`
+`sleep 20`
+
 Chef::Log.info("finished installing zookeeper gem")
 
 kafka_rpm = "kafka-#{kafka_version}.noarch.rpm"
