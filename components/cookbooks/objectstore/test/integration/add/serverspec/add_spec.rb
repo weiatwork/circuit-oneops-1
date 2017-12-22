@@ -25,15 +25,15 @@ describe command("fallocate -l #{TEST_BLOB_SIZE} #{TEST_BLOB_NAME}") do
   its(:exit_status) { should eq 0 }
 end
 
-describe command("objectstore upload #{TEST_BLOB_NAME} #{TEST_CONTAINER_NAME}") do
+describe command("#{OBJECTSTORE_EXE_FILE} upload #{TEST_BLOB_NAME} #{TEST_CONTAINER_NAME}") do
   its(:exit_status) { should eq 0 }
 end
 
-describe command("objectstore download #{TEST_CONTAINER_NAME}/#{TEST_BLOB_NAME} ./") do
+describe command("#{OBJECTSTORE_EXE_FILE} download #{TEST_CONTAINER_NAME}/#{TEST_BLOB_NAME} ./") do
   its(:exit_status) { should eq 0 }
 end
 
-describe command("objectstore delete #{TEST_CONTAINER_NAME}") do
+describe command("#{OBJECTSTORE_EXE_FILE} delete #{TEST_CONTAINER_NAME}") do
   its(:exit_status) { should eq 0 }
 end
 

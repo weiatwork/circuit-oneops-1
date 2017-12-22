@@ -210,13 +210,14 @@ end
 
 # Get creds from openrc s3, cloudfiles, etc will use
 creds = JSON.parse(File.read('/etc/objectstore_creds.json'))
+creds_sym = Hash[creds.map{|(k,v)| [k.to_sym,v]}]
 conn = nil
 
 case creds['provider']
 when /OpenStack/
   require 'fog'
-  puts "Connecting to #{creds['endpoint']} as #{creds['username']}..."
-  conn = Fog::Storage.new(creds)
+  puts "Connecting to #{creds['openstack_auth_url']} as #{creds['openstack_username']}..."
+  conn = Fog::Storage.new(creds_sym)
 when /Azure/
   require 'fog/azurerm'
   puts "Connecting to #{creds['azure_storage_account_name']}..."
