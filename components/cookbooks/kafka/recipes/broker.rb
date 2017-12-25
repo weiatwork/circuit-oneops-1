@@ -102,6 +102,26 @@ template "/opt/nagios/libexec/check_kafka_zk_conn.sh" do
     mode  '0755'
 end
 
+# create "kafka_logerrs.sh" script for nagios/telegraf
+ template "/usr/local/kafka/bin/kafka_logerrs.sh" do
+     source "kafka_logerrs.sh.erb"
+     owner "root"
+     group "root"
+     mode  '0777'
+ end
+ 
+ # adding permissions so that kafka_logerrs.sh will be executed without erros
+ bash "add permissions to kafka_logerrs.sh" do
+   user "root"
+   code <<-EOF
+     sudo chmod 777 /usr/local/kafka/bin/kafka_logerrs.sh
+     sudo mkdir -p /var/tmp/check_logfiles 
+     sudo touch /var/tmp/check_logfiles/check_logfiles._var_log_kafka_server.log.kafka_errlog
+     sudo chmod -R 777 /var/tmp/check_logfiles
+   EOF
+ end
+ 
+ 
 # broker log cleanup cron
 template "/etc/cron.d/delete_broker_logs" do
     source "delete_broker_logs.erb"
