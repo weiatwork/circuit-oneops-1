@@ -116,7 +116,7 @@ resource "kafka",
                                'up' => metric(:unit => '%', :description => 'Percent Up'),
                            },
                            :thresholds => {
-                               'KafkaProcessDown' => threshold('1m', 'avg', 'up', trigger('<=', 98, 1, 1), reset('>', 95, 1, 1))
+                               'KafkaProcessDown' => threshold('1m', 'avg', 'up', trigger('<=', 98, 1, 1), reset('>', 95, 1, 1),'unhealthy')
                            }
              },
             'jmxprocess' => {:description => 'JmxProcess',
@@ -128,7 +128,7 @@ resource "kafka",
                      'up' => metric(:unit => '%', :description => 'Percent Up'),
                  },
                  :thresholds => {
-                     'JmxProcessDown' => threshold('1m', 'avg', 'up', trigger('<=', 98, 1, 1), reset('>', 95, 1, 1))
+                     'JmxProcessDown' => threshold('1m', 'avg', 'up', trigger('<=', 98, 1, 1), reset('>', 95, 1, 1),'unhealthy')
                  }
              },
 #               'kafkazkconn' => {:description => 'KafkaZKConn',
@@ -226,7 +226,7 @@ resource "kafka-console",
 	             'up' => metric(:unit => '%', :description => 'Percent Up'),
              },
 			 :thresholds => {
-	           'KafkaManagerProcessDown' => threshold('1m', 'avg', 'up', trigger('<=', 98, 1, 1), reset('>', 95, 1, 1))
+	           'KafkaManagerProcessDown' => threshold('1m', 'avg', 'up', trigger('<=', 98, 1, 1), reset('>', 95, 1, 1),'unhealthy')
              }
         },
         'nginxprocess' => {:description => 'NginxProcess',
@@ -238,7 +238,7 @@ resource "kafka-console",
                 'up' => metric(:unit => '%', :description => 'Percent Up'),
             },
             :thresholds => {
-                'NginxProcessDown' => threshold('1m', 'avg', 'up', trigger('<=', 98, 1, 1), reset('>', 95, 1, 1))
+                'NginxProcessDown' => threshold('1m', 'avg', 'up', trigger('<=', 98, 1, 1), reset('>', 95, 1, 1),'unhealthy')
             }
         }
      }
@@ -328,8 +328,8 @@ resource "volume-persistent",
         'metrics' => {'space_used' => metric(:unit => '%', :description => 'Disk Space Percent Used'),
             'inode_used' => metric(:unit => '%', :description => 'Disk Inode Percent Used')},
         :thresholds => {
-            'LowDiskSpace' => threshold('1m', 'avg', 'space_used', trigger('>=', 90, 5, 2), reset('<', 85, 5, 1)),
-            'LowDiskInode' => threshold('1m', 'avg', 'inode_used', trigger('>=', 90, 5, 2), reset('<', 85, 5, 1))
+            'LowDiskSpace' => threshold('1m', 'avg', 'space_used', trigger('>=', 60, 5, 2), reset('<', 55, 5, 1)),
+            'LowDiskInode' => threshold('1m', 'avg', 'inode_used', trigger('>=', 60, 5, 2), reset('<', 55, 5, 1))
         }
     }
 }
@@ -356,8 +356,8 @@ resource "volume-kafka",
                   'metrics' => { 'space_used' => metric( :unit => '%', :description => 'Disk Space Percent Used'),
                                  'inode_used' => metric( :unit => '%', :description => 'Disk Inode Percent Used') },
                   :thresholds => {
-                    'LowDiskSpace' => threshold('5m','avg','space_used',trigger('>',90,5,1),reset('<',90,5,1)),
-                    'LowDiskInode' => threshold('5m','avg','inode_used',trigger('>',90,5,1),reset('<',90,5,1)),
+                    'LowDiskSpace' => threshold('5m','avg','space_used',trigger('>',60,5,1),reset('<',55,5,1)),
+                    'LowDiskInode' => threshold('5m','avg','inode_used',trigger('>',60,5,1),reset('<',55,5,1)),
                   },
                 }
     }
