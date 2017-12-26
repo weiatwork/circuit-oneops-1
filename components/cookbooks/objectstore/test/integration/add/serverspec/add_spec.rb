@@ -5,7 +5,7 @@ require "#{$circuit_path}/circuit-oneops-1/components/spec_helper.rb"
 OBJECTSTORE_EXE_FILE   = '/usr/local/bin/objectstore'.freeze
 OBJECTSTORE_CREDS_FILE = '/etc/objectstore_creds.json'.freeze
 
-TEST_CONTAINER_NAME    = 'objectstore-test-container'.freeze
+TEST_CONTAINER_NAME    = "test-#{$node['workorder']['rfcCi']['rfcId'].to_s}".freeze
 TEST_BLOB_NAME         = 'test-blob'.freeze
 TEST_BLOB_SIZE         = '10M'.freeze
 
