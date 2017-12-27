@@ -137,5 +137,23 @@ module AzureCompute
       OOLog.info("operation took #{duration} seconds")
       response
     end
+
+    def redeploy(resource_group_name, vm_name)
+      begin
+        OOLog.info("Redeploying VM: #{vm_name} in resource group: #{resource_group_name}")
+        start_time = Time.now.to_i
+        virtual_machine = @compute_service.servers.get(resource_group_name, vm_name)
+        response = virtual_machine.redeploy
+        end_time = Time.now.to_i
+        duration = end_time - start_time
+      rescue RuntimeError => e
+        OOLog.fatal("Error redeploying VM. #{vm_name}. Error Message: #{e.message}")
+      rescue => e
+        OOLog.fatal("Azure::Virtual Machine - Exception trying to redeploy virtual machine #{vm_name} from resource group: #{resource_group_name}\n\rAzure::Virtual Machine - Exception is: #{e.message}")
+      end
+
+      OOLog.info("operation took #{duration} seconds")
+      response
+    end
   end
 end
