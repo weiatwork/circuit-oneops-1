@@ -225,7 +225,7 @@ resource "volume",
                   'metrics' => { 'space_used' => metric( :unit => '%', :description => 'Disk Space Percent Used'),
                                  'inode_used' => metric( :unit => '%', :description => 'Disk Inode Percent Used') },
                   :thresholds => {
-                    'LowDiskSpace' => threshold('5m','avg','space_used',trigger('>',80,5,1),reset('<'70,5,1)),
+                    'LowDiskSpace' => threshold('5m','avg','space_used',trigger('>',80,5,1),reset('<',70,5,1)),
                     'LowDiskInode' => threshold('5m','avg','inode_used',trigger('>',80,5,1),reset('<',70,5,1)),
                   },
                 }

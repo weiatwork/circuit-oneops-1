@@ -111,7 +111,7 @@ resource "mirrormaker",
                                'up' => metric(:unit => '%', :description => 'Percent Up'),
                            },
                            :thresholds => {
-                               'MirrormakerProcessDown' => threshold('1m', 'avg', 'up', trigger('<=', 98, 1, 1), reset('>', 95, 1, 1))
+                               'MirrormakerProcessDown' => threshold('1m', 'avg', 'up', trigger('<=', 98, 1, 1), reset('>', 95, 1, 1),'unhealthy')
                            }
              },
              'mirrormakerlag' =>  {'description' => 'MirrorMaker Lag Monitoring',
@@ -189,7 +189,8 @@ resource "client-certs-download",
  {:from => 'keystore', :to => 'certificate'},
  {:from => 'mirrormaker', :to => 'user-mirrormaker'},
  {:from => 'user-mirrormaker', :to => 'volume-mirrormaker'},
- {:from => 'volume-mirrormaker', :to => 'os'},
+ {:from => 'volume-mirrormaker', :to => 'volume'},
+ {:from => 'volume', :to => 'os'},
  {:from => 'java', :to => 'os'},
  {:from => 'os', :to => 'compute'}
 ].each do |link|
@@ -237,7 +238,7 @@ relation "ring::depends_on::mirrormaker",
 end
 
 # managed_via
-['user-mirrormaker', 'artifact', 'mirrormaker', 'java', 'library', 'volume-mirrormaker', 'keystore', 'client-certs-download'].each do |from|
+['user-mirrormaker', 'artifact', 'mirrormaker', 'java', 'library', 'volume', 'volume-mirrormaker', 'keystore', 'client-certs-download'].each do |from|
   relation "#{from}::managed_via::compute",
            :except => ['_default'],
            :relation_name => 'ManagedVia',
