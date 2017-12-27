@@ -50,7 +50,8 @@ else
   size_vm = `df -BG | grep #{$mount_point}| awk '{print $2}'`.chop.to_f.round(0).to_i
 end
 if !is_windows
-  vg = `vgdisplay -c`
+  vg_name = execute_command("lvs | grep #{$node['workorder']['rfcCi']['ciName']}").stdout.split(' ')[1]
+  vg = `vgdisplay -c #{vg_name}`
   vg_size = ((vg.split(':')[11].to_f)/1024/1024).round(0).to_i
   vg_lvcount = vg.split(':')[5].to_i
 end
