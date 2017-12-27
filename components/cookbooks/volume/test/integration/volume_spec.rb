@@ -45,9 +45,9 @@ end if $storage && !is_windows #TO-DO start using the service files for windows 
 #Assert volume size
 if fs_type != 'tmpfs'
   lvm_dev_id = `mount | grep #{$mount_point}| awk '{print $1}'`.chop
-  size_vm = `lvs --noheadings ---units g #{lvm_dev_id} | awk '{print $4}'`.chop.to_i
+  size_vm = `lvs --noheadings ---units g #{lvm_dev_id} | awk '{print $4}'`.chop.to_f.round(0).to_i
 else
-  size_vm = `df -BG | grep #{$mount_point}| awk '{print $2}'`.chop.to_i
+  size_vm = `df -BG | grep #{$mount_point}| awk '{print $2}'`.chop.to_f.round(0).to_i
 end
 if !is_windows
   vg = `vgdisplay -c`

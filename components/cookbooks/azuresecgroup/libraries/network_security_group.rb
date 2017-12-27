@@ -136,7 +136,7 @@ module AzureNetwork
       @network_service.network_security_groups.check_net_sec_group_exists(resource_group_name, network_security_group_name)
     rescue MsRestAzure::AzureOperationError => e
       OOLog.fatal("AzureOperationError Exception trying to check existence of network security group #{network_security_group_name} response: #{e.body}")
-    rescue => e
+    rescue Exception => e
       OOLog.fatal("Exception trying to check existence of network security group #{network_security_group_name} #{e.body} Exception is: #{e.message}")
     end
     # end of class

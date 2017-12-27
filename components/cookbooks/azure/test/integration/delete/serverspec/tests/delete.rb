@@ -15,8 +15,8 @@ describe "azure vm::delete" do
     @spec_utils = AzureSpecUtils.new($node)
   end
 
-  context "virtual machine" do
-    it "shouldn't exist" do
+  context 'virtual machine' do
+    it 'should not exist' do
       credentials = @spec_utils.get_azure_creds
       virtual_machine_lib = AzureCompute::VirtualMachine.new(credentials)
 
