@@ -49,7 +49,6 @@ gems:
   - azure_mgmt_network
   - azure_mgmt_storage
   - azure_mgmt_resources
-  - azure
   - rack
 files:
   - name: /home/oneops/shared
@@ -174,7 +173,7 @@ files:
 # ---------------------------------------
   - name: /etc/cloud/cloud.cfg
     type: f
-    mode: 664
+    mode: 644
     owner: root
     group: root
 # ---------------------------------------
@@ -204,8 +203,7 @@ files:
 # ---------------------------------------
   - name: /etc/ssh/sshd_config.backup
     type: f
-    mode: 644
+    mode: 600
     owner: root
     group: root
 # ---------------------------------------
-

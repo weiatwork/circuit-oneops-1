@@ -17,7 +17,7 @@ end
 full_hostname = node[:full_hostname]
 _hosts[full_hostname] = node.workorder.payLoad.ManagedVia[0]["ciAttributes"]["private_ip"]
 
-execute("mkdir -p /etc/cloud")
+execute('mkdir -p /etc/cloud/cloud.cfg.d')
 
 bash "set-hostname" do
   code <<-EOH
