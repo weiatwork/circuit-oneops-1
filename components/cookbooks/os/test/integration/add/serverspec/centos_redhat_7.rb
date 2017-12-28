@@ -119,6 +119,6 @@ describe user("oneops") do
   it { should exist }
 end
 
-describe command('su - oneops -c "gem source" | grep -m 1 "http"') do
+describe command('gem source | grep -m 1 "http"') do
   its(:stdout) { should eq root_gem_source}
 end
