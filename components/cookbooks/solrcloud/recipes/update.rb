@@ -6,4 +6,3 @@
 #
 
 include_recipe 'solrcloud::add'
-
