@@ -925,6 +925,14 @@ resource "artifact",
   :design => true,
   :requires => { "constraint" => "0..*" }
 
+resource "service-mesh",
+	:cookbook => "oneops.1.service-mesh",
+	:design => true,
+	:requires => {
+    	"constraint" => "0..1",
+    	'services' => 'servicemeshcloudservice'
+     }
+
 # depends_on
 [ { :from => 'compute',     :to => 'secgroup' } ].each do |link|
   relation "#{link[:from]}::depends_on::#{link[:to]}",
@@ -964,7 +972,9 @@ end
   { :from => 'secrets-client',  :to => 'user'},
   { :from => 'secrets-client',  :to => 'certificate'},
   { :from => 'secrets-client',  :to => 'volume'},
-  { :from => 'objectstore',  :to => 'user'}
+  { :from => 'objectstore',  :to => 'user'},
+  { :from => 'service-mesh', :to => 'os'},
+  { :from => 'service-mesh', :to => 'volume'  }
 ].each do |link|
   relation "#{link[:from]}::depends_on::#{link[:to]}",
     :relation_name => 'DependsOn',
@@ -1011,7 +1021,7 @@ end
 
 # managed_via
 [ 'os', 'telegraf', 'filebeat', 'user', 'job', 'file', 'volume', 'share', 'download', 'library', 'daemon', 
-  'certificate', 'logstash', 'sensuclient', 'artifact', 'objectstore', 'secrets-client'].each do |from|
+  'certificate', 'logstash', 'sensuclient', 'artifact', 'objectstore', 'secrets-client', 'service-mesh'].each do |from|
   relation "#{from}::managed_via::compute",
     :except => [ '_default' ],
     :relation_name => 'ManagedVia',

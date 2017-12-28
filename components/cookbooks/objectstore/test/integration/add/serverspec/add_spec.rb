@@ -5,7 +5,7 @@ require "#{$circuit_path}/circuit-oneops-1/components/spec_helper.rb"
 OBJECTSTORE_EXE_FILE   = '/usr/local/bin/objectstore'.freeze
 OBJECTSTORE_CREDS_FILE = '/etc/objectstore_creds.json'.freeze
 
-TEST_CONTAINER_NAME    = 'objectstore-test-container'.freeze
+TEST_CONTAINER_NAME    = "test-#{$node['workorder']['rfcCi']['rfcId'].to_s}".freeze
 TEST_BLOB_NAME         = 'test-blob'.freeze
 TEST_BLOB_SIZE         = '10M'.freeze
 
@@ -25,15 +25,15 @@ describe command("fallocate -l #{TEST_BLOB_SIZE} #{TEST_BLOB_NAME}") do
   its(:exit_status) { should eq 0 }
 end
 
-describe command("objectstore upload #{TEST_BLOB_NAME} #{TEST_CONTAINER_NAME}") do
+describe command("#{OBJECTSTORE_EXE_FILE} upload #{TEST_BLOB_NAME} #{TEST_CONTAINER_NAME}") do
   its(:exit_status) { should eq 0 }
 end
 
-describe command("objectstore download #{TEST_CONTAINER_NAME}/#{TEST_BLOB_NAME} ./") do
+describe command("#{OBJECTSTORE_EXE_FILE} download #{TEST_CONTAINER_NAME}/#{TEST_BLOB_NAME} ./") do
   its(:exit_status) { should eq 0 }
 end
 
-describe command("objectstore delete #{TEST_CONTAINER_NAME}") do
+describe command("#{OBJECTSTORE_EXE_FILE} delete #{TEST_CONTAINER_NAME}") do
   its(:exit_status) { should eq 0 }
 end
 

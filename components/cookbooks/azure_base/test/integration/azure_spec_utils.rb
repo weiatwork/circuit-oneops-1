@@ -106,6 +106,22 @@ class AzureSpecUtils < SpecUtils
     ttl
   end
 
+  def get_application_gateway_name
+    "ag-#{@node['workorder']['box']['ciName'].gsub(/-/, '').downcase}"
+  end
+
+  def get_vm_count
+    @node['workorder']['payLoad']['DependsOn'].count
+  end
+
+  def get_vm_private_ip_addresses
+    ip_addresses = []
+    @node['workorder']['payLoad']['DependsOn'].each do |vm_data|
+      ip_addresses << vm_data['ciAttributes']['private_ip']
+    end
+    ip_addresses
+  end
+
   # Converts the hash given by the node according to the new syntax
   def get_dns_attributes
     cloud_name = get_cloud_name
@@ -141,7 +157,6 @@ class AzureSpecUtils < SpecUtils
     @node['workorder']['payLoad']['RequiresComputes'].each do |vm_data|
       ip_addresses << vm_data['ciAttributes']['public_ip']
     end
-
     ip_addresses
   end
 
@@ -158,5 +173,31 @@ class AzureSpecUtils < SpecUtils
   # checks the existence of load balancer in the deployment
   def lb_exists?
     $node['workorder']['payLoad'].key?('lb')
+  end
+
+  def is_imagetypecustom
+    cloud_name = @node[:workorder][:cloud][:ciName]
+    cloud = @node[:workorder][:services][:compute][cloud_name][:ciAttributes]
+    os = nil
+    ostype = "default-cloud"
+    if @node[:workorder][:payLoad].has_key?("os")
+      os = @node[:workorder][:payLoad][:os].first
+      ostype = os[:ciAttributes][:ostype]
+    else
+      Chef::Log.warn("missing os payload - using default-cloud")
+      if ostype == "default-cloud"
+        ostype = cloud[:ostype]
+      end
+    end
+    imagemap = JSON.parse( cloud[:imagemap] )
+    image_id = ''
+    if !os.nil? && os[:ciAttributes].has_key?("image_id") && !os[:ciAttributes][:image_id].empty?
+      image_id = os[:ciAttributes][:image_id]
+    else
+      image_id = imagemap[ostype]
+    end
+
+    imagidcustom = image_id.split(':')
+    imagidcustom.eql? 'Custom'
   end
 end
