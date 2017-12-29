@@ -40,6 +40,7 @@ end
 
 # enable daemon service
 service "#{service_name}" do
+  provider Chef::Provider::Service::Init::Redhat if node[:platform_family].include?("rhel")
   action :enable
 end
 
@@ -54,6 +55,7 @@ end
 
 # restart daemon service when pattern has been specified
 service "#{service_name}" do
+  provider Chef::Provider::Service::Init::Redhat if node[:platform_family].include?("rhel")
   pattern "#{pat}"
   action :restart
   only_if { !pat.empty? }
