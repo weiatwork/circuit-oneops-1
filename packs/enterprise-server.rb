@@ -1,4 +1,4 @@
-include_pack  "genericlb-oneops"
+include_pack  "genericlb"
 name          "enterprise-server"
 description   "Enterprise Server"
 type          "Platform"
@@ -54,7 +54,7 @@ variable "runOnEnv",
 
 #Enabling default http,https,ajp
 resource 'secgroup',
-         :cookbook   => 'secgroup',
+         :cookbook   => 'oneops.1.secgroup',
          :design     => true,
          :attributes => {
              :inbound => '["22 22 tcp 0.0.0.0/0", "8080 8080 tcp 0.0.0.0/0","8443 8443 tcp 0.0.0.0/0","8009 8009 tcp 0.0.0.0/0","5701 5701 tcp 0.0.0.0/0"]'
@@ -65,7 +65,7 @@ resource 'secgroup',
          }
 
 resource "keystore",
-         :cookbook => "keystore",
+         :cookbook => "oneops.1.keystore",
          :design => true,
          :requires => {"constraint" => "0..1"},
          :attributes => {
@@ -73,7 +73,7 @@ resource "keystore",
          }
 
 resource "user-app",
-         :cookbook => "user",
+         :cookbook => "oneops.1.user",
          :design => true,
          :requires => {"constraint" => "1..1"},
          :attributes => {
@@ -85,7 +85,7 @@ resource "user-app",
          }
 
 resource "rapidssl-keystore",
-         :cookbook => "download",
+         :cookbook => "oneops.1.download",
          :design => true,
          :requires => {
              :constraint => "0..1",
@@ -99,8 +99,7 @@ resource "rapidssl-keystore",
          }
 
 resource "enterprise_server",
-         :cookbook => "enterprise_server",
-         :source => Chef::Config[:register],
+         :cookbook => "oneops.1.enterprise_server",
          :design => true,
          :requires => {"constraint" => "1..1", :services => "mirror"},
          :attributes => {
@@ -206,7 +205,7 @@ resource "enterprise_server",
          }
 
 resource "artifact-app",
-         :cookbook => "artifact",
+         :cookbook => "oneops.1.artifact",
          :design => true,
          :requires => {
              :constraint => "1..*",
@@ -300,7 +299,7 @@ resource "os",
          }
 
 resource "java",
-           :cookbook => "java",
+           :cookbook => "oneops.1.java",
            :design => true,
            :requires => {
              :constraint => "1..1",
@@ -311,7 +310,7 @@ resource "java",
            }
 
 resource "es_daemon",
-      :cookbook => "daemon",
+      :cookbook => "oneops.1.daemon",
       :design => true,
       :requires => {
           :constraint => "1..1",
@@ -337,38 +336,8 @@ resource "es_daemon",
           }
        }
 
-resource 'message-resource',
-         :cookbook => 'tibcoresource',
-         :source => Chef::Config[:register],
-         :design => true,
-         :requires => {
-             :constraint => '0..*',
-             :help => 'Tibco Resource',
-             :services => 'maas'
-         },
-         :attributes => {
-             :appuser => 'maas_user'
-         }
-
-resource "soaregistry",
-         :cookbook => 'soaregistry',
-         :source => Chef::Config[:register],
-         :requires => {
-             :constraint => "0..1",
-             :help => "Onboards services to the pangaea service registry",
-             :services => "registryserver"
-         }
-
-resource "schema",
-         :cookbook => 'schema',
-         :source => Chef::Config[:register],
-         :requires => {
-             :constraint => "0..1",
-             :help => "Manage database code"
-         }
-
 resource "volume-log",
-         :cookbook => "volume",
+         :cookbook => "oneops.1.volume",
          :design => true,
          :requires => {"constraint" => "1..1", "services" => "compute"},
          :attributes => {"mount_point" => '/log',
@@ -392,7 +361,7 @@ resource "volume-log",
          }
 
 resource "volume-app",
-         :cookbook => "volume",
+         :cookbook => "oneops.1.volume",
          :design => true,
          :requires => {"constraint" => "1..1", "services" => "compute"},
          :attributes => {"mount_point" => '/app',
@@ -416,7 +385,7 @@ resource "volume-app",
          }
 
 resource "share",
-  :cookbook => "glusterfs",
+  :cookbook => "oneops.1.glusterfs",
   :design => true,
   :requires => {
     :constraint => "0..1",
@@ -430,8 +399,7 @@ resource "share",
                  }
 
 resource "telegraf",
- :cookbook => "telegraf",
- :source => Chef::Config[:register],
+ :cookbook => "oneops.1.telegraf",
  :design => true,
  :requires => {
       "constraint" => "0..10",
@@ -455,8 +423,7 @@ resource "telegraf",
  }
 
 resource "filebeat",
- :cookbook => "filebeat",
- :source => Chef::Config[:register],
+ :cookbook => "oneops.1.filebeat",
  :design => true,
  :requires => {
       "constraint" => "0..10",
@@ -480,19 +447,12 @@ resource "filebeat",
  }
 
 resource "sensuclient",
-         :cookbook => "sensuclient",
-         :source => Chef::Config[:register],
+         :cookbook => "oneops.1.sensuclient",
          :design => true,
          :requires => {"constraint" => "0..1"}
 
-resource "topo",
- :cookbook => "topo",
- :source => Chef::Config[:register],
- :design => true,
- :requires => { "constraint" => "1..1", "services" => "Topo" }
-
 resource "ramdisk",
- :cookbook => "volume",
+ :cookbook => "oneops.1.volume",
  :design => true,
  :requires => { "constraint" => "0..*", "services" => "compute" },
  :attributes => {  "mount_point"   => '',
@@ -516,8 +476,7 @@ resource "ramdisk",
 }
 
 resource "batch-job",
-  :cookbook => "baas-job",
-  :source => Chef::Config[:register],
+  :cookbook => "oneops.1.job",
   :design => true,
   :requires => {
     :constraint => "0..1",
@@ -538,7 +497,7 @@ resource "jolokia_proxy",
         :description => 'JolokiaProxyProcess',
         :source => '',
         :chart => {'min' => '0', 'max' => '100', 'unit' => 'Percent'},
-        :cmd => 'check_process!jolokia_proxy!true!/app/metrics_collector/pid/jetty.pid',
+        :cmd => 'check_process!jolokia_proxy!false!/opt/metrics_collector/jetty_base/jetty.state',
         :cmd_line => '/opt/nagios/libexec/check_process.sh "$ARG1$" "$ARG2$" "$ARG3$"',
         :metrics => {
             'up' => metric(:unit => '%', :description => 'Percent Up'),
@@ -557,12 +516,9 @@ resource "jolokia_proxy",
   {:from => 'user-app', :to => 'volume-app'},
   {:from => 'java', :to => 'os'},
   {:from => 'enterprise_server', :to => 'os'},
-  {:from => 'schema', :to => 'os'},
-  {:from => 'soaregistry', :to => 'os'},
   {:from => 'telegraf', :to => 'os'},
   {:from => 'filebeat', :to => 'os'},
   {:from => 'sensuclient', :to => 'os' },
-  {:from => 'topo', :to => 'os'},
   {:from => 'ramdisk', :to => 'os'},
   {:from => 'keystore', :to => 'java'},
   {:from => 'enterprise_server', :to => 'keystore'},
@@ -574,7 +530,6 @@ resource "jolokia_proxy",
   {:from => 'volume-log', :to => 'volume-app'},
   {:from => 'artifact-app', :to => 'volume-log'},
   {:from => 'artifact-app', :to => 'volume-app'},
-  {:from => 'message-resource', :to => 'user-app'},
   {:from => 'jolokia_proxy', :to => 'os'},
   {:from => 'jolokia_proxy', :to => 'java'},
   {:from => 'batch-job', :to => 'os'},
@@ -622,7 +577,7 @@ relation "keystore::depends_on::certificate",
 
 
 # managed_via
-['jolokia_proxy','batch-job','ramdisk','topo','sensuclient','filebeat','telegraf','share','user-app', 'enterprise_server', 'soaregistry', 'artifact-app', 'java', 'library', 'volume-log', 'volume-app', 'schema', 'keystore', 'message-resource', 'es_daemon', 'rapidssl-keystore'].each do |from|
+['jolokia_proxy','batch-job','ramdisk','sensuclient','filebeat','telegraf','share','user-app', 'enterprise_server', 'artifact-app', 'java', 'library', 'volume-log', 'volume-app', 'keystore', 'es_daemon', 'rapidssl-keystore'].each do |from|
   relation "#{from}::managed_via::compute",
            :except => ['_default'],
            :relation_name => 'ManagedVia',
