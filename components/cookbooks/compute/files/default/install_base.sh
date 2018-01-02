@@ -149,9 +149,9 @@ fi
 gem install json --version $gem_version --no-ri --no-rdoc
 if [ $? -ne 0 ]; then
     echo "gem install using local repo failed. reverting to rubygems proxy."
-    gem source --add $rubygems_proxy
     gem source --remove file://$local_gems
     gem source --remove 'http://rubygems.org/'
+    gem source --add $rubygems_proxy
     gem source
     gem install json --version $gem_version --no-ri --no-rdoc
     if [ $? -ne 0 ]; then
@@ -195,9 +195,9 @@ do
     $(set_env $@)
 done
 if [ -n "$rubygems_proxy" ]; then
-    gem source --add $rubygems_proxy
     gem source --remove 'http://rubygems.org/'
     gem source --remove 'https://rubygems.org/'
+    gem source --add $rubygems_proxy
     gem source
 fi
 set -e
