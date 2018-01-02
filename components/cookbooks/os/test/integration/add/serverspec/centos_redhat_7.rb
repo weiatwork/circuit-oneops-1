@@ -3,7 +3,7 @@ require "/home/oneops/circuit-oneops-1/components/cookbooks/os/libraries/util.rb
 
 rfcCi = $node['workorder']['rfcCi']
 host_name = "#{$node['workorder']['box']['ciName']}-#{$node['workorder']['cloud']['ciId']}-#{$node['workorder']['rfcCi']['ciName'].split('-').last.to_i.to_s}-#{rfcCi['ciId']}"
-fqdn_name = "#{host_name}.#{$node['customer_domain']}\n"
+fqdn_name = "#{host_name}.#{$node['customer_domain']}"
 
 data = YAML::load(File.read("/home/oneops/circuit-oneops-1/components/cookbooks/os/test/integration/add/serverspec/checklist.yml"))
 limits = {}
@@ -56,14 +56,14 @@ describe file('/etc/cloud/cloud.cfg') do
   its(:content) { should match /preserve_hostname: true/ }
 end
 describe file('/etc/cloud/cloud.cfg.d/99_hostname.cfg') do
-  its(:content) { should eq "hostname: #{host_name.downcase}\nfqdn: #{fqdn_name.downcase}" }
+  its(:content) { should eq "hostname: #{host_name.downcase}\nfqdn: #{fqdn_name.downcase}\n" }
 end
 describe file('/opt/oneops/domain') do
   its(:content) { should eq "#{$node['customer_domain']}\n" }
 end
 describe "FQDN" do
   it "Should equal #{fqdn_name.downcase}" do
-    expect(host_cmd).to be == fqdn_name.downcase
+    expect(host_cmd.downcase.strip).to be == fqdn_name.downcase.strip
   end
 end
 #--- network.rb
