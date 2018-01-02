@@ -160,6 +160,8 @@ end
 # sshd
 file '/etc/ssh/sshd_config.backup' do
   mode 0644
+  owner 'root'
+  group 'root'
   content ::File.open('/etc/ssh/sshd_config').read
 end
 
