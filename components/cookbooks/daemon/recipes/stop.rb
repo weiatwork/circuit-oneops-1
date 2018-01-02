@@ -16,6 +16,7 @@ end
 
 # stop daemon service when pattern has been specified
 service "#{service_name}" do
+	provider Chef::Provider::Service::Init::Redhat if node[:platform_family].include?("rhel")
 	pattern "#{pat}"
 	action :stop
 	only_if { !pat.empty? }
