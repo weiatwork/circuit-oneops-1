@@ -26,21 +26,14 @@ begin
 rescue
 ensure
 end
-solr_base_url = node['solr_base_url']
-Chef::Log.info("solr_base_url = #{solr_base_url}")
-if solr_base_url == nil || solr_base_url.empty?
-  msg = "solr_base_url is either empty or not configured at cloud mirror to download the solr binary."
-  puts "***FAULT:FATAL=#{msg}"
-  e = Exception.new(msg)
-  raise e
-end
+
 solr_package_type = "solr"
 solr_format = "tgz"
 
 solr_download_path = "/tmp";
 solr_file_name = "#{solr_package_type}-"+node['solr_version']+".#{solr_format}"
 solr_file_woext = "#{solr_package_type}-"+node['solr_version']
-solr_url = "#{solr_base_url}/#{solr_package_type}/"+node['solr_version']+"/#{solr_file_name}"
+solr_url = "#{node['solr_base_url']}/#{solr_package_type}/"+node['solr_version']+"/#{solr_file_name}"
 solr_filepath = "#{solr_download_path}/#{solr_file_name}"
 
 ns_path = node.workorder.rfcCi.nsPath.split(/\//)
@@ -367,6 +360,48 @@ if (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? 
       user 'root'
       action :delete
     end
+  end
+
+  # Adding solr custom component
+
+  solr_custom_comp_version = node['solr_custom_component_version']
+
+  artifact_descriptor = "#{node['solr_custom_params']['solr_custom_comp_artifact']}:#{solr_custom_comp_version}:jar"
+  
+  if (solr_custom_comp_version =~ /SNAPSHOT/)
+    artifact_urlbase = node['solr_custom_params']['snapshot_urlbase']
+  else
+    artifact_urlbase = node['solr_custom_params']['release_urlbase']
+  end
+
+  solr_custom_comp_url, solr_custom_comp_version = SolrCustomComponentArtifact::get_artifact_url(artifact_descriptor, artifact_urlbase)
+
+  Chef::Log.info( "solr_custom_comp_url - #{solr_custom_comp_url} and solr_custom_comp_version -  #{solr_custom_comp_version}")
+
+  if (solr_custom_comp_version.to_s =~ /SNAPSHOT/)
+    solr_custom_comp_version = solr_custom_comp_version.gsub('-SNAPSHOT', '')
+  end
+
+  solr_custom_comp_jar = "solr-custom-components-#{solr_custom_comp_version}.jar"
+  solr_plugins_dir = "/app/solr#{node['solrmajorversion']}/plugins"
+
+  ["#{solr_plugins_dir}"].each { |dir|
+    Chef::Log.info("creating #{dir}")
+    directory dir do
+      owner node['solr']['user']
+      group node['solr']['user']
+      mode "0755"
+      recursive true
+      action :create
+    end
+  }
+
+  # Fetch the custom solr component artifact
+  remote_file "#{solr_plugins_dir}/#{solr_custom_comp_jar}" do
+    user 'app'
+    group 'app'
+    source solr_custom_comp_url
+    only_if { ::File.directory?("#{solr_plugins_dir}") }
   end
 
   solr_restart_warning = ruby_block 'solr_restart_warning' do

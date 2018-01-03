@@ -6,7 +6,6 @@
 #
 
 include_recipe 'solr-collection::default'
-include_recipe 'solr-collection::validate_config'
 include_recipe 'solr-collection::schedule_backup'
 if node.workorder.has_key?("rfcCi")
   ci = node.workorder.rfcCi.ciAttributes

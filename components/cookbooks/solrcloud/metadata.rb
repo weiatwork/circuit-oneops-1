@@ -278,6 +278,7 @@ attribute 'graphite_logfiles_path',
 # Search Custom Component Specific Attributes
 attribute 'solr_custom_component_version',
           :description => 'Solr Custom Components Version',
+          :required => 'required',
           :format => {
               :help => 'Enter Version number example: 0.0.1, 0.0.1-SNAPSHOT',
               :category => '7.Solr Custom Component',

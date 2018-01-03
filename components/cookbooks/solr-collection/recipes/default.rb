@@ -30,17 +30,16 @@ rescue
 ensure
 end
 
-node.default[:solr_custom_params]  = {}
 services = node[:workorder][:services]
 # You must add solr-service at each cloud in order to access custom configurations
 if services.nil?  || !services.has_key?('solr-service')
-  Chef::Log.warn('solr-service has not been added to cloud hence no custom configurations will be applied on solr-collection.')
-else
-  cloud_name = node[:workorder][:cloud][:ciName]
-  cloud_services = services['solr-service'][cloud_name]
-  node.default[:solr_custom_params] = JSON.parse(cloud_services[:ciAttributes][:solr_custom_params])
+  Chef::Log.error('Please make sure your cloud has solr-service added.')
+  exit 1
 end
-Chef::Log.info("solr_custom_params = #{node['solr_custom_params'].to_json}")
+cloud_name = node[:workorder][:cloud][:ciName]
+cloud_services = services['solr-service'][cloud_name]
+node.default[:solr_custom_params] = JSON.parse(cloud_services[:ciAttributes][:solr_custom_params])
+Chef::Log.info("solr_custom_params = #{node['solr_custom_params'].to_json}") 
 
 node.set['action_name'] = actionName
 

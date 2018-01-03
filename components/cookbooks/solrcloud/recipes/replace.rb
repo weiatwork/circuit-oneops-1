@@ -34,7 +34,6 @@ else
 end
 
 include_recipe 'solrcloud::default'
-include_recipe 'solrcloud::validate_config'
 
 include_recipe 'solrcloud::solrcloud'
 include_recipe 'solrcloud::deploy'

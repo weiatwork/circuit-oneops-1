@@ -6,7 +6,6 @@
 #
 
 include_recipe 'solrcloud::default'
-include_recipe 'solrcloud::validate_config'
 extend SolrCloud::Util
 
 

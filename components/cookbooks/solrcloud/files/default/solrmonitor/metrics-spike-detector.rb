@@ -14,9 +14,6 @@ class SpikeDetector
   # fully qualified file name of the metrics log file in which metrics will be emitted
   @metrics_file
 
-  # The threshold value, if the metrics spike is above this percentage then it will be considered as a spike
-  @spike_threshold
-
   # The Spike reporter implementation which will emit the metrics which spiked together, currently it emits to a file
   # In future we can even send this to Solr/Elastic/Splunk server for searches
   @spike_reporter
@@ -24,12 +21,21 @@ class SpikeDetector
   # The fully qualified file name into which the spiked metrics data will be written
   @spiked_metrics_file
 
+  # The full qualified properties file for customizing the spike threshold values for individual metrics
+  # If the threshold value is not customized for a metric it will use the default threshold value
+  @spiked_metrics_property_file
 
-  def initialize(metrics_file, spiked_metrics_file, spike_threshold)
+  @spiked_metrics_threshold_props
+
+
+  def initialize(metrics_file, spiked_metrics_file)
     @metrics_file = metrics_file
-    @spike_threshold = spike_threshold
     @spiked_metrics_file = spiked_metrics_file
     @spike_reporter = FileMetricsSpikeReporter.new(@spiked_metrics_file)
+    @spiked_metrics_property_file = "spiked-metrics.properties"
+
+    @spiked_metrics_threshold_props = get_spike_threshold_config()
+
   end
 
   # Capture the current metrics to the a metrics log file
@@ -60,8 +66,6 @@ class SpikeDetector
         percent_spike = 0
         if (avg_metrics[metric] != nil)
 
-           puts "current value for metric #{metric}, currvalue=#{curr_value} and averageValue=#{avg_metrics[metric]}"
-
            # We are only interested in deviation so negative spikes are also considered
            spike = (curr_value - avg_metrics[metric]).abs()
 
@@ -69,14 +73,21 @@ class SpikeDetector
              percent_spike = (spike / avg_metrics[metric]) * 100
            end
 
-           if  (percent_spike.abs() > @spike_threshold)
-                puts "Spike detected in metric #{metric}"
-                puts "Percent Spike: #{percent_spike} for metric #{metric}"
+           if (@spiked_metrics_threshold_props[metric].nil?)
+             # If spike threshold is not overridden then we fall to the default threshold value
+             spike_threshold = @spiked_metrics_threshold_props["default"]
+           else
+             spike_threshold = @spiked_metrics_threshold_props[metric]
+           end
+
+           if  (percent_spike.abs() > spike_threshold)
+                # puts "Spike detected in metric #{metric}"
+                # puts "Percent Spike: #{percent_spike} for metric #{metric}"
                 metric_spike_obj = {
                     "metric" => metric,
                     "curr_value" => curr_value,
                     "avg_value" => avg_metrics[metric],
-                    "percent_spike" => percent_spike
+                    "percent_spike" => percent_spike.ceil()
                 }
              metrics_spiked.push(metric_spike_obj)
            end
@@ -152,11 +163,41 @@ class SpikeDetector
       return avg_metrics
   end
 
-  # This method rotates the log files.
-  # It rotates metrics.log file into metrics.log.10, which in turn gets rolled into metrics.log.9 and so on until metrics.log.1
-  # The metrics.log.1 file gets dropped
-  # Sample metric line
-  #
+  def get_spike_threshold_config()
+
+    props = Hash.new()
+
+    if (File.exists?(@spiked_metrics_property_file))
+
+      File.open(@spiked_metrics_property_file, "r").each_line() do |line|
+
+        if (line.start_with?("#"))
+          continue
+        end
+
+        tokens = line.split("=")
+        metric_name = tokens[0]
+        spike_threshold = tokens[1].chop!().to_i()
+
+        #strip the prefix "percent."
+        metric_name = metric_name["threshold.percent.".length()..metric_name.length()]
+
+        props[metric_name] = spike_threshold
+
+      end
+
+      if (props["default"].nil?)
+        props["default"] = 30
+      end
+
+    else
+      props["default"] = 30
+    end
+
+    return props
+
+  end
+
 
 end
 
@@ -289,7 +330,6 @@ class LogRotator
     for number in (log_num).downto(1) do
       src_file = metrics_file + "." + number.to_s
       target_log_num = (number.to_i + 1)
-      puts "Target log number #{target_log_num}"
       dest_file = metrics_file + "." + target_log_num.to_s
 
       if (File.exist?(src_file))
@@ -306,10 +346,12 @@ end
 
 metrics_file = "/opt/solr/solrmonitor/spiked-metrics/metrics.log"
 spiked_metrics_file = "/opt/solr/solrmonitor/spiked-metrics/spiked-metrics.json"
-spike_threshold = 20
 
-spike_detector = SpikeDetector.new(metrics_file, spiked_metrics_file, spike_threshold )
+spike_detector = SpikeDetector.new(metrics_file, spiked_metrics_file)
 spike_detector.detect_spikes()
+
+
+
 
 
 

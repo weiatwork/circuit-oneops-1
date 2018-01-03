@@ -620,15 +620,11 @@ module SolrCollection
             # we want node to be created as <updateRequestProcessorChain></updateRequestProcessorChain>
             parent_elem_name = parent_elem_name.split('[@')[0]
             parent_parent_elem = doc.elements[parent_parent_elem_path]
-            if parent_parent_elem != nil
-              Chef::Log.info("Creating the element #{parent_elem_name} in #{parent_parent_elem}")
-              parent_elem = parent_parent_elem.add_element(parent_elem_name)
-              #Add the attributes Also to the new created element
-              prop_metadata["parent_elem_attrs"].each do |attr_name, attr_value|
-                parent_elem.add_attribute(attr_name, attr_value)
-              end
-            else
-              Chef::Log.info("Will not create the element #{parent_elem_name} as parent_parent_elem=#{parent_parent_elem}")
+            Chef::Log.info("Creating the element #{parent_elem_name}")
+            parent_elem = parent_parent_elem.add_element(parent_elem_name)
+            #Add the attributes Also to the new created element
+            prop_metadata["parent_elem_attrs"].each do |attr_name, attr_value|
+              parent_elem.add_attribute(attr_name, attr_value)
             end
           else
             Chef.log.warn("Unable to create the missing element, Invalid XPATH #{parent_elem_path} provided")
@@ -640,9 +636,6 @@ module SolrCollection
         attr_name = prop_metadata["attr_name"]
         Chef::Log.info("elem_name:  #{prop_metadata["elem_name"]}, attr_name : #{attr_name}, attr_value:  #{prop_metadata["attr_value"]}, elem_value_select : #{prop_metadata["elem_value_select"]}, elem_value = #{prop_metadata["elem_value"]}")
         new_elem = get_elem_by_name_attr(parent_elem, prop_metadata["elem_name"], attr_name, prop_metadata["attr_value"], prop_metadata["elem_val_select"], prop_metadata["edit_attr_val"])
-        if parent_elem == nil
-          return nil
-        end
         if new_elem.nil?
           # Add the element if it does not exists
           # If there are any elements then element_name should not be ""
@@ -686,9 +679,7 @@ module SolrCollection
     #  This method returns the child XML element with the name elem_name and which has an attribute value equal to the attr_value
     #  If such an element is not found it will return nil
     def get_elem_by_name_attr(parent_elem, elem_name, attr_name, attr_value, elem_val_select, edit_attr_val)
-      if parent_elem == nil
-        return nil
-      end
+
       parent_elem.elements.to_a.each do |elem|
 
         # Element name is same as the tag which is already existing in solrconfig
@@ -848,12 +839,16 @@ module SolrCollection
 
       }
       if node["block_expensive_queries"] == "true"
+        block_expensive_queries_class = solr_custom_params['block_expensive_queries_class']
+        if block_expensive_queries_class == nil || block_expensive_queries_class.empty?
+          Chef::Log.error("Option enable block_expensive_queries is selected but block_expensive_queries_class is not provided. To enable block_expensive_queries make sure block_expensive_queries_class, custome artifact & url is provided to solr cloud service.")
+        else
           block_expensive_query_props = {
               "11_search_comp_block_expensive_queries" => {
                   "parent_elem_path" => "config/searchComponent[@name='block-expensive-queries']",
                   "parent_elem_attrs" => {
                       "name" => "block-expensive-queries",
-                      "class" => solr_custom_params['block_expensive_queries_class']
+                      "class" => block_expensive_queries_class
                   },
                   "elem_name"  => "lst",
                   "attr_name"  => "name",
@@ -887,10 +882,15 @@ module SolrCollection
                   "elem_val_select" => "block-expensive-queries"
               }
           }
+  
           props_map.merge!(block_expensive_query_props)
+        end
       end
       if node["enable_slow_query_logger"] == "true" 
         slow_query_logger_class = solr_custom_params['slow_query_logger_class']
+        if slow_query_logger_class == nil || slow_query_logger_class.empty?
+          Chef::Log.error("Option enable_slow_query_logger is selected but slow_query_logger_class is not provided. To enable enable_slow_query_logger make sure slow_query_logger_class, custome artifact & url is provided to solr cloud service.")
+        else
           slow_query_props = {
               "16_search_comp_slow_query_logger" => {
                   "parent_elem_path" => "config/searchComponent[@name='slow-query-logger']",
@@ -924,15 +924,20 @@ module SolrCollection
               }
           }
           props_map.merge!(slow_query_props)
+        end
       end
 
       if node["enable_query_source_tracker"] == "true"
-        query_source_tracker = {
+           query_source_tracker_class = solr_custom_params['query_source_tracker_class']
+           if query_source_tracker_class == nil || query_source_tracker_class.empty?
+             Chef::Log.error("Option enable_query_source_tracker is selected but query_source_tracker_class not provided. To enable enable_query_source_tracker make sure query_source_tracker_class, custome artifact & url is provided to solr cloud service.")
+           else
+              query_source_tracker = {
               "20_search_comp_query_source_tracker" => {
                   "parent_elem_path" => "config/searchComponent[@name='query-source-tracker']",
                   "parent_elem_attrs" => {
                       "name" => "query-source-tracker",
-                      "class" => solr_custom_params['query_source_tracker_class']
+                      "class" => query_source_tracker_class
                   },
                   "elem_name"  => "lst",
                   "attr_name"  => "name",
@@ -957,9 +962,10 @@ module SolrCollection
                   "elem_type"  => "multiple",
                   "elem_value" => "query-source-tracker"
               }
-        }
-
-        props_map.merge!(query_source_tracker)
+          }
+  
+          props_map.merge!(query_source_tracker)
+        end
 
         qis = JSON.parse(node['query_identifiers'])
         qis.each do |qi|

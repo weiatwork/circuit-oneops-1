@@ -12,16 +12,15 @@ Chef::Resource::RubyBlock.send(:include, SolrCloud::Util)
 cloud_name = node[:workorder][:cloud][:ciName]
 mirrors = JSON.parse(node[:workorder][:services][:mirror][cloud_name][:ciAttributes][:mirrors])
 services = node[:workorder][:services]
-node.default[:solr_custom_params] = {}
 # You must add solr-service at each cloud in order to access custom configurations
 if services.nil?  || !services.has_key?('solr-service')
-  Chef::Log.warn('solr-service has not been added to cloud hence no custom configurations will be applied on solrcloud.')
-else
-  cloud_services = services['solr-service'][cloud_name]
-  node.default[:solr_custom_params] = JSON.parse(cloud_services[:ciAttributes][:solr_custom_params])
+  Chef::Log.error('Please make sure your cloud has solr-service added.')
+  exit 1
 end
 
-Chef::Log.info("solr_custom_params = #{node['solr_custom_params'].to_json}")
+cloud_services = services['solr-service'][cloud_name]
+node.default[:solr_custom_params] = JSON.parse(cloud_services[:ciAttributes][:solr_custom_params])
+Chef::Log.info("solr_custom_params = #{node['solr_custom_params'].to_json}") 
 
 oneops_action = true
 if node.workorder.has_key?("rfcCi")
@@ -158,6 +157,46 @@ puts "***RESULT:nodeip="+nodeip
 puts "***RESULT:node_solr_version="+node_solr_version
 puts "***RESULT:node_solr_portnum="+node['port_no']
   
+# get the url_max_requests_per_sec_map where key is url pattern & value is maxRequestPerSec
+# Append map index to value so that in case of multiple filters, each filter can have different name
+# For ex. for each url patter the filter name will be as DoDFilter0, DoDFilter1..
+# Also validate url_max_requests_per_sec_map for any empty key or/and value and non mueric value
+solr_custom_params = node['solr_custom_params']
+jetty_filter_url = (solr_custom_params.has_key?'jetty_filter_url')?solr_custom_params['jetty_filter_url']:""
+jetty_filter_class = (solr_custom_params.has_key?'solr_dosfilter_class')?solr_custom_params['solr_dosfilter_class']:""
+node.set['url_max_requests_per_sec_map'] = Hash.new() 
+if ci.has_key?("url_max_requests_per_sec_map") 
+  url_max_requests_per_sec_map = JSON.parse(ci['url_max_requests_per_sec_map'])
+  url_max_requests_per_sec_map.each_with_index do |(key, value), index|
+    if key == nil || key.strip.empty?
+      puts "***FAULT:FATAL=Invalid url pattern for DoSFilter : #{key}"
+      e = Exception.new("no backtrace")
+      e.set_backtrace("")
+      raise e  
+    elsif value == nil || value.match(/\A[+-]?\d+?\Z/) == nil
+      puts "***FAULT:FATAL=Invalid maxRequestsPerSec #{value} for DoSFilter url pattern #{key}"
+      e = Exception.new("no backtrace")
+      e.set_backtrace("")
+      raise e  
+    end
+    url_max_requests_per_sec_map[key.strip] = "#{value.strip}:DoSFilter#{index}"
+  end
+  node.set['url_max_requests_per_sec_map'] = url_max_requests_per_sec_map
+end
+
+# if maxRequestsPerSec is provided, then DoS filter url must be provided
+if !node['url_max_requests_per_sec_map'].empty?
+  if jetty_filter_url.empty?
+    error = "URL for Jetty-QoS/DoS-custom-filter must be provided if you are providing URL-patterns with maxRequestsPerSec attributes"
+    puts "***FAULT:FATAL=#{error}"
+    raise e
+  elsif jetty_filter_class.empty?
+    error = "DoS filter class for Jetty-QoS/DoS-custom-filter must be provided if you are providing URL-patterns with maxRequestsPerSec attributes"
+    puts "***FAULT:FATAL=#{error}"
+    raise e
+  end
+end
+
 node.set['solr_user_name'] = ci['solr_user_name']
 node.set['solr_user_password'] = ci['solr_user_password']
 node.set['enable_authentication'] = ci['enable_authentication']
@@ -196,4 +235,5 @@ end
 #wait for prior nodes in the deployment to completes (must be live after deployment)
 if actionName == 'replace'
   verify_prior_nodes_live(node)
+
 end
