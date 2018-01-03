@@ -9,7 +9,7 @@ require 'fileutils'
 
 
 # This method return the map of leader ip & core_name
-# ex. {"10.227.144.149":"sams_list1_shard1_replica0","10.227.144.167":"sams_list1_shard2_replica0"}
+# ex. {"ip1":"collection1_shard1_replica0","ip2":"collection1_shard2_replica0"}
 def get_shard_leader_ip_to_name_map(host,port,collection_name,logger)
   uri = URI("http://#{host}:#{port}/solr/admin/collections?action=CLUSTERSTATUS&indexInfo=false&wt=json")
   res = Net::HTTP.get_response(uri)
