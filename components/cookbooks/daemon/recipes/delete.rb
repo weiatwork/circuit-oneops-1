@@ -23,12 +23,14 @@ pat = attrs[:pattern] || ''
 if pat.empty?
   # set basic service
   service "#{service_name}" do
+    provider Chef::Provider::Service::Init::Redhat if node[:platform_family].include?("rhel")
     action [:disable,:stop]
   end
 
 else
   # set pattern based service
   service "#{service_name}" do
+    provider Chef::Provider::Service::Init::Redhat if node[:platform_family].include?("rhel")
     pattern "#{pat}"
     action [:disable,:stop]
   end
