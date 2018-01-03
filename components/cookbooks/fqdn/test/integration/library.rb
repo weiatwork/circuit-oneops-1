@@ -3,9 +3,6 @@ class Library
     cloud_name = $node['workorder']['cloud']['ciName']
     service_attrs = $node['workorder']['services']['dns'][cloud_name]['ciAttributes']
 
-    puts "shantanu kande"
-    puts cloud_name
-
     zone_services = []
     $node['workorder']['services']['dns'].each do |s|
 
@@ -120,4 +117,41 @@ class Library
     end
     return values
   end
+
+  def gen_conn(cloud_service,host)
+    encoded = Base64.encode64("#{cloud_service['username']}:#{cloud_service['password']}").gsub("\n","")
+    conn = Excon.new(
+        'https://'+host,
+        :headers => {
+            'Authorization' => "Basic #{encoded}",
+            'Content-Type' => 'application/x-www-form-urlencoded'
+        },
+        :ssl_verify_peer => false)
+    return conn
+  end
+
+  def get_gslb_service_name
+    env_name = $node['workorder']['payLoad']['Environment'][0]['ciName']
+    platform_name = $node['workorder']['box']['ciName']
+    cloud_name = $node['workorder']['cloud']['ciName']
+    ci = $node['workorder']['payLoad']['DependsOn'][0]
+    asmb_name = $node['workorder']['payLoad']['Assembly'][0]['ciName']
+    gdns_cloud_service = $node['workorder']['services']["gdns"][cloud_name]
+    dc_name = gdns_cloud_service['ciAttributes']['gslb_site_dns_id']
+
+    return [env_name, platform_name, asmb_name, dc_name, ci["ciId"].to_s, "gslbsrvc"].join("-")
+  end
+
+  def get_gslb_service_name_by_platform
+    env_name = $node['workorder']['payLoad']['Environment'][0]['ciName']
+    platform_name = $node['workorder']['box']['ciName']
+    cloud_name = $node['workorder']['cloud']['ciName']
+    ci = $node['workorder']['box']
+    asmb_name = $node['workorder']['payLoad']['Assembly'][0]['ciName']
+    gdns_cloud_service = $node['workorder']['services']['gdns'][cloud_name]
+    dc_name = gdns_cloud_service['ciAttributes']['gslb_site_dns_id']
+
+    return [env_name, platform_name, asmb_name, dc_name, ci["ciId"].to_s, "gslbsrvc"].join("-")
+  end
+
 end
