@@ -17,7 +17,13 @@ end
 full_hostname = node[:full_hostname]
 _hosts[full_hostname] = node.workorder.payLoad.ManagedVia[0]["ciAttributes"]["private_ip"]
 
-execute('mkdir -p /etc/cloud/cloud.cfg.d')
+directory '/etc/cloud/cloud.cfg.d' do
+  owner 'root'
+  group 'root'
+  mode '0664'
+  recursive true
+  action :create
+end
 
 bash "set-hostname" do
   code <<-EOH
@@ -88,7 +94,12 @@ if customer_domain =~ /^\./
 end
 
 Chef::Log.info("adding /opt/oneops/domain... ")
-`echo #{customer_domain} > /opt/oneops/domain`
+file '/opt/oneops/domain' do
+  mode 0644
+  owner 'root'
+  group 'root'
+  content "#{customer_domain}\n"
+end
 
 ruby_block 'setup bind and dhclient' do
   block do
