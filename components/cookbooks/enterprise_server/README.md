@@ -16,7 +16,7 @@ Below are a list of attributes which effect different parts of the installation 
 #### Installation<br>
 
 |Key|Type|Description|Default|
-|---|---|
+|---|---|---|---|
 |['entsrv']['install_dir']|String|Absolute system path in which the binary will be installed.|/app|
 |['entsrv']['instal_repo']|String|- Release Repository<br>- SNAPSHOT Repository - Used for testing|Release Repository|
 |['entsrv']['instal_version']|String|version to install|LATEST|
