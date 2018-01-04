@@ -223,6 +223,7 @@ node.set['enterprise_server']['ssl_configured_ciphers'] = 'TLS_ECDHE_RSA_WITH_AE
 node.set['java']['java_home'] = '/usr'
 node.set['enterprise_server']['home'] = '/usr/share/enterprise-server'
 node.set['enterprise_server']['base'] = '/usr/share/enterprise-server'
-node.set['enterprise_server']['manager']['key'] = '60fe74406e7f353ed979f350f2fbb6a2e8690a5fa7d1b0c32983d1d8b3f95f67'
+node.set['enterprise_server']['manager']['key'] = SecureRandom.base64(21)
+node.set['enterprise_server']['manager']['tomee_key'] = SecureRandom.base64(21)
 
 node.set['enterprise_server']['global']['haveged_enabled'] = node.workorder.rfcCi.ciAttributes.haveged_enabled

@@ -358,6 +358,13 @@ template '/lib/systemd/system/enterprise-server.service' do
   only_if { node['platform_version'].to_f >= 7.0 }
 end
 
+template '/etc/init.d/enterprise-server' do
+  source 'initd_to_systemd.erb'
+  owner 'app'
+  group 'app'
+  mode '0755'
+end
+
 execute 'Load systemd unit file' do
   command 'systemctl daemon-reload'
   action :nothing

@@ -3,6 +3,6 @@
   <role rolename="manager-script"/>
   <role rolename="admin"/>
   <role rolename="tomee-admin" />
-  <user username="tomee" password="8f7a5fa0d985524dc2ecfa92f5cb32147378cfa527c1315f009cab07d69b217b" roles="tomee-admin" />
-  <user username="admin" password="60fe74406e7f353ed979f350f2fbb6a2e8690a5fa7d1b0c32983d1d8b3f95f67" roles="admin,manager-script"/>
+  <user username="tomee" password="<%= node['enterprise_server']['manager']['tomee_key'] %>" roles="tomee-admin" />
+  <user username="admin" password="<%= node['enterprise_server']['manager']['key'] %>" roles="admin,manager-script"/>
 </tomcat-users>
