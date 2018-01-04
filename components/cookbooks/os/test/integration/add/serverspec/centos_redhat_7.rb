@@ -83,8 +83,10 @@ end
 #--- kernel.rb
 if $node['workorder']['rfcCi']['ciAttributes'].has_key?('limits') && !$node['workorder']['rfcCi']['ciAttributes']['limits'].empty? && JSON.parse($node['workorder']['rfcCi']['ciAttributes']['limits']) != limits
   limits = JSON.parse($node['workorder']['rfcCi']['ciAttributes']['limits'])
-  describe file('/etc/security/limits.d/oneops.conf') do
-    its(:content) { should match /#{limits}/ }
+  limits.each do |lim|
+    describe file('/etc/security/limits.d/oneops.conf') do
+      its(:content) { should match /#{lim}/ }
+    end
   end
 else
   describe file('/etc/security/limits.d/oneops.conf') do
@@ -114,11 +116,7 @@ end
 # Proxys
 # TODO
 # Parse repo map and check against yum and gem
-root_gem_source = `gem source | grep -m 1 "http"`
 describe user("oneops") do
   it { should exist }
 end
 
-describe command('gem source | grep -m 1 "http"') do
-  its(:stdout) { should eq root_gem_source}
-end

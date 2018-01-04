@@ -25,6 +25,13 @@ directory '/etc/cloud/cloud.cfg.d' do
   action :create
 end
 
+file '/etc/cloud/cloud.cfg' do
+  mode 0664
+  owner 'root'
+  group 'root'
+  content ''
+end
+
 bash "set-hostname" do
   code <<-EOH
   hostnamectl set-hostname #{node.vmhostname}
