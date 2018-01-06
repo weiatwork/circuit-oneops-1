@@ -15,7 +15,7 @@ grouping 'bom',
 attribute 'solr_version',
   :description => 'Solr Version',
   :required => 'required',
-  :default => '6.0.0',
+  :default => '7.1.0',
   :format => {
     :help => 'Select the specific version to set up solrcloud. Be sure the artifact uploaded to mirror repository',
     :category => '1.SolrCloud',
@@ -23,7 +23,7 @@ attribute 'solr_version',
        ['4.10.3 (Deprecated)', '4.10.3'],['4.10.3.2 (Deprecated)', '4.10.3.2'],
        ['5.5.1 (Deprecated)', '5.5.1'],['5.5.3 (Deprecated)', '5.5.3'],['5.5.4', '5.5.4'],
        ['6.0.0 (Deprecated)', '6.0.0'],['6.2.1 (Deprecated)', '6.2.1'],['6.3.0', '6.3.0'],
-       ['6.5.1', '6.5.1'], ['6.6.0', '6.6.0']
+       ['6.5.1 (Deprecated)', '6.5.1'], ['6.6.0', '6.6.0'], ['7.1.0', '7.1.0']
     ]},
     :order => 4
   }
@@ -361,6 +361,7 @@ attribute 'solr_user_name',
 
 attribute 'solr_user_password',
           :description => 'Solr App user password',
+          :encrypted => true,
           :format => {
               :help => 'The Solr user password the application will use to connect to Solr server',
               :category => '7.Solr Authentication',

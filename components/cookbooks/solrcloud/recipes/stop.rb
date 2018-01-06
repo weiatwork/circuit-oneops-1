@@ -21,7 +21,7 @@ if "#{solr_version}".start_with? "4."
 	end
 end
 
-if ("#{solr_version}".start_with? "5.") || ("#{solr_version}".start_with? "6.")
+if ("#{solr_version}".start_with? "5.") || ("#{solr_version}".start_with? "6.") || ("#{solr_version}".start_with? "7.")
 	if node['zk_host_fqdns'].empty?
     	raise "Zookeeper FQDN is missing in the pack.Provide the zookeeper infomation for the selected option"
   	end

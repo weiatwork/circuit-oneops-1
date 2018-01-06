@@ -29,7 +29,7 @@ if node['solr_version'].start_with? "4."
 	end
 end
 
-if (node['solr_version'].start_with? "5.") || (node['solr_version'].start_with? "6.")
+if (node['solr_version'].start_with? "5.") || (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? "7.")
 	execute "solr#{node['solrmajorversion']} stop" do
 	  command "service solr#{node['solrmajorversion']} stop"
 	  user "root"
