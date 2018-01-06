@@ -92,7 +92,7 @@ node.set["graphite_prefix"] = ci['graphite_prefix']
 node.set["graphite_logfiles_path"] = ci['graphite_logfiles_path']
 
 node.set['solr_custom_component_version'] = ci['solr_custom_component_version']
-node.set['solr_base_url'] = mirrors['solr_base_url'] || "https://archive.apache.org/dist/lucene/"
+node.set['solr_base_url'] = mirrors['solr_base_url'] #Example: http://apache.mirrors.hoobly.com/lucene/solr/6.6.0
 # Environment should be picked up using the environment profile.
 node.set['oo_environment'] = node[:workorder][:payLoad][:Environment][0][:ciAttributes][:profile].downcase
 node.set['oo_cloud'] =node.workorder.cloud.ciName
@@ -107,14 +107,18 @@ node.set["default_data_driven_config"] = "default_data_driven_config"
 node.set["forklift_default_config"] = "forklift_default_config"
 
 node.set["port_no"] = "8080" if node['solr_version'].start_with? "4."
-node.set["port_no"] = ci['port_no'] if (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? "5.")
+node.set["port_no"] = ci['port_no'] if (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? "5.") || (node['solr_version'].start_with? "7.")
 
 if node['solr_version'].start_with? "5."
   node.set['config_url'] = node['solr_custom_params']['config_url_v5']
 end
 
-if node['solr_version'].start_with? "6."
+if node['solr_version'].start_with?("6.")
   node.set['config_url'] = node['solr_custom_params']['config_url_v6']
+end
+
+if node['solr_version'].start_with? "7."
+  node.set['config_url'] = node['solr_custom_params']['config_url_v7']
 end
 
 node.set["installation_dir_path"] = ci['installation_dir_path']

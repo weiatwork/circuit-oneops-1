@@ -29,15 +29,115 @@ class SolrMBeanSummaryStats
 
     # Collect jmx metrics.
     def collect_jmx_metrics
-        if solr_version_high()
-            # Get mbean map from solr-6.4 onwards
-            metric_type_to_solr_core_mbean_attr_map = get_mbeanmap_for_higherversion()
-        else
-            # Get mbean map for solr versions lower than 6.4
-            metric_type_to_solr_core_mbean_attr_map = get_mbeanmap_for_lowerversion()
-        end
+
+        metric_type_to_solr_core_mbean_attr_map = get_mbeanmap()
         collect_solr_core_jmx_metrics(metric_type_to_solr_core_mbean_attr_map)
     end
+
+
+    def get_mbeanmap()
+        if (is_solr7?())
+            return get_mbeanmap_for_solr7()
+        elsif (solr_version_high())
+            return get_mbeanmap_for_higherversion()
+        else
+            return get_mbeanmap_for_lowerversion()
+        end
+    end
+
+    def get_mbeanmap_for_solr7()
+
+        metric_type_to_solr_core_mbean_attr_map = {
+            "add_aggr_metrics" => {
+                # category, scope, name are the elements of the mbean object
+                "category=QUERY,scope=/get,name=requestTimes" =>
+                    ["Count,OneMinuteRate,FiveMinuteRate,FifteenMinuteRate"],
+                "category=QUERY,scope=/get,name=timeouts" =>
+                    ["Count,OneMinuteRate,FiveMinuteRate,FifteenMinuteRate"],
+                "category=QUERY,scope=/get,name=errors" =>
+                    ["Count, OneMinuteRate, FiveMinuteRate, FifteenMinuteRate"],
+                "category=QUERY,scope=/get,name=clientErrors" =>
+                    ["Count,OneMinuteRate,FiveMinuteRate,FifteenMinuteRate"],
+                "category=QUERY,scope=/get,name=serverErrors" =>
+                    ["Count,OneMinuteRate,FiveMinuteRate,FifteenMinuteRate"],
+                "category=QUERY,scope=/select,name=requestTimes" =>
+                    ["Count, OneMinuteRate,FiveMinuteRate,FifteenMinuteRate"],
+                "category=QUERY,scope=/select,name=timeouts" =>
+                    ["Count,OneMinuteRate,FiveMinuteRate,FifteenMinuteRate"],
+                "category=QUERY,scope=/select,name=errors" =>
+                    ["Count,OneMinuteRate,FiveMinuteRate,FifteenMinuteRate"],
+                "category=QUERY,scope=/select,name=clientErrors" =>
+                    ["Count,OneMinuteRate,FiveMinuteRate,FifteenMinuteRate"],
+                "category=QUERY,scope=/select,name=serverErrors" =>
+                    ["Count,OneMinuteRate,FiveMinuteRate,FifteenMinuteRate"],
+                "category=UPDATE,scope=/update,name=requestTimes" =>
+                    ["Count,OneMinuteRate,FiveMinuteRate,FifteenMinuteRate"],
+                "category=UPDATE,scope=/update/json,name=timeouts" =>
+                    ["Count,OneMinuteRate,FiveMinuteRate,FifteenMinuteRate"],
+                "category=UPDATE,scope=update,name=serverErrors" =>
+                    ["Count,OneMinuteRate,FiveMinuteRate,FifteenMinuteRate"],
+                "category=UPDATE,scope=update,name=clientErrors" =>
+                    ["Count,OneMinuteRate,FiveMinuteRate,FifteenMinuteRate"],
+                "category=CACHE,scope=searcher,name=fieldValueCache" =>
+                    ["hits,hitratio,evictions,size"],
+                "category=CACHE,scope=searcher,name=filterCache" =>
+                    ["hits,hitratio,evictions,size"],
+                "category=CACHE,scope=searcher,name=documentCache" =>
+                    ["hits,hitratio,evictions,size"],
+                "category=CACHE,scope=searcher,name=queryResultCache" =>
+                    ["hits,hitratio,evictions,size"],
+                "category=CACHE,scope=searcher,name=perSegFilter" =>
+                    ["hits,hitratio,evictions"],
+                "category=CACHE,scope=core,name=fieldCache" =>
+                    ["total_size,entries_count"],
+                "category=UPDATE,scope=updateHandler,name=softAutoCommits" =>
+                    ["Value"],
+                "category=UPDATE,scope=updateHandler,name=autoCommits" =>
+                    ["Value"],
+                "category=SEARCHER,scope=searcher,name=deletedDocs" =>
+                    ["Value"],
+                "category=SEARCHER,scope=searcher,name=numDocs" =>
+                    ["Value"],
+                "category=SEARCHER,scope=searcher,name=maxDoc" =>
+                    ["Value"],
+                "category=ADMIN,scope=/admin/segments,name=requests" =>
+                    ["Count"]
+                # "category=INDEX,name=major.deletedDocs,scope=merge" =>
+                #     ["Count,OneMinuteReate,FiveMinuteRate,FifteenMinuteRate"],
+                # "category=INDEX,name=major.running.segments,scope=merge" =>
+                #     ["Value"],
+                # "category=INDEX,name=major.docs,scope=merge" =>
+                #     ["Count,OneMinuteReate,FiveMinuteRate,FifteenMinuteRate"],
+                # "category=INDEX,name=major,scope=merge" =>
+                #     ["Count,OneMinuteReate,FiveMinuteRate,FifteenMinuteRate"],
+                # "category=INDEX,name=major.running.docs,scope=merge" =>
+                #     ["Value"],
+                # "category=INDEX,name=minor.running,scope=merge" =>
+                #     ["Value"],
+                # "category=INDEX,name=minor.running.segments,scope=merge" =>
+                #     ["Value"],
+                # "category=INDEX,name=minor,scope=merge" =>
+                #     ["Count, OneMinuteReate, FiveMinuteRate, FifteenMinuteRate"],
+                # "category=INDEX,name=minor.running.docs,scope=merge" =>
+                #     ["Value"],
+                # "category=INDEX,name=minor.running,scope=merge" =>
+                #     ["Value"],
+
+            },
+            "avg_aggr_metrics" => {
+                # category, scope, name are the elements of the mbean object
+                "category=QUERY,scope=/get,name=requestTimes" =>
+                    ["95thPercentile,99thPercentile"],
+                "category=QUERY,scope=/select,name=requestTimes" =>
+                    ["95thPercentile,99thPercentile"],
+                "category=UPDATE,scope=/update,name=requestTimes" =>
+                    ["95thPercentile,99thPercentile"]
+            }
+        }
+        return metric_type_to_solr_core_mbean_attr_map
+
+    end
+
 
     # Get mbean map object for solr higher versions from 6.4 onwards.
     def get_mbeanmap_for_higherversion
@@ -143,6 +243,11 @@ class SolrMBeanSummaryStats
     # This method will only construct the mbean type to solr mbean attr map for add aggregation type metrics.
     # This can be extended to have similar functionaly with avg aggregation metric types as well.
     def construct_jmx_metrics_with_core_name_as_id(metric_type_to_solr_core_mbean_attr_map, collection_name, collection_to_core_name_map)
+
+        if (is_solr7?())
+            return metric_type_to_solr_core_mbean_attr_map
+        end
+
         updated_map = metric_type_to_solr_core_mbean_attr_map.dup
         metric_type_to_solr_core_add_agg_map = metric_type_to_solr_core_mbean_attr_map["add_aggr_metrics"].dup
         cores = collection_to_core_name_map[collection_name]
@@ -160,9 +265,18 @@ class SolrMBeanSummaryStats
 
     end
 
+    def execute_solr_jmx_list_request()
+        if (is_solr7?())
+
+            return execute_solr_jmx_list_request_for_solr7()
+        else
+            return execute_solr_jmx_list_request_for_6x_lower()
+        end
+    end
+
     # This method returns the collection names of the cores on this node. 
     # Note: We can retrieve the cores and the whole mbeans list with its stat when it is required.
-    def execute_solr_jmx_list_request()
+    def execute_solr_jmx_list_request_for_6x_lower()
         mbean_category_to_mbean_attr_map = Hash.new()
         collection_to_core_name_map = Hash.new()
         jmx_list_req_payload = {
@@ -177,6 +291,7 @@ class SolrMBeanSummaryStats
         collections = Set.new()
         mbean_category_names.each do |mbean_category_name|
             mbean_category_length = mbean_category_name.length
+
             if mbean_category_name.start_with? "solr/"
                 core_name = mbean_category_name.slice(5, mbean_category_name.length-1)
                 collection_name = core_name.slice(0, core_name.index("_shard"))
@@ -186,6 +301,38 @@ class SolrMBeanSummaryStats
                 collections.add(collection_name)
             end
         end
+        return collections, collection_to_core_name_map
+    end
+
+    def execute_solr_jmx_list_request_for_solr7()
+        mbean_category_to_mbean_attr_map = Hash.new()
+        collection_to_core_name_map = Hash.new()
+        jmx_list_req_payload = {
+            "type" => "list",
+            "target" => {
+                "url" => "service:jmx:rmi:///jndi/rmi://127.0.0.1:#{@solr_jmx_port}/jmxrmi"
+            }
+        }
+        jmx_list_req_payload = jmx_list_req_payload.to_json
+        mbeanlist_json_response = post_no_auth("localhost", @jolokia_port, '/jolokia/', jmx_list_req_payload)
+        mbean_names = mbeanlist_json_response["value"]["solr"].keys
+        collections = Set.new()
+
+        mbean_names.each do |mbean_name, attrs_props_obj|
+            if (mbean_name.start_with?("category=QUERY"))
+                collection_name, core_name = get_collection_core_name(mbean_name)
+                if (!collection_name.nil? && !collections.include?(collection_name))
+                    collections.add(collection_name)
+                end
+                if (collection_to_core_name_map[collection_name].nil?)
+                    collection_to_core_name_map[collection_name] = Array.new
+                end
+                if (!collection_to_core_name_map[collection_name].include?(core_name))
+                    collection_to_core_name_map[collection_name].push(core_name)
+                end
+            end
+        end
+
         return collections, collection_to_core_name_map
     end
 
@@ -234,7 +381,23 @@ class SolrMBeanSummaryStats
     end
 
     # Get solr complete mbean name based on solr version.
-    def get_solr_core_mbean_name(mbean_name, collection_name)
+    def get_solr_core_mbean_name_for_solr7(mbean_name, collection_name)
+
+        if collection_name != nil && !collection_name.empty?
+            # Solr Mbean object name created by the  JMX reporter are hierarchical, dot-separated but also properly structured in JConsole.
+            # This hierarchy consists of following elements : (registry name, reporter name, category, scope, name)
+            # 1. registry name - It contains dot seperated registry names that the metrics will be shown under particular hierarchy.
+            # Each domain part will be assigned to the dom variables. ex: dom1, dom2, ... domN properties in registry element.
+            # 2. reporter - This element contains the reporter name i.e _jmx_
+            solr_mbean_name = "solr:dom1=core,dom2=#{collection_name},dom3=*,dom4=*,#{mbean_name}"
+        else
+            solr_mbean_name = "solr:dom1=core,dom2=*,reporter=*jmx*,#{mbean_name}"
+        end
+
+        return solr_mbean_name
+    end
+
+    def get_solr_core_mbean_name_for_6x_below(mbean_name, collection_name)
         if solr_version_high()
             if collection_name != nil && !collection_name.empty?
                 # Solr Mbean object name created by the  JMX reporter are hierarchical, dot-separated but also properly structured in JConsole.
@@ -256,12 +419,20 @@ class SolrMBeanSummaryStats
         return solr_mbean_name
     end
 
+    def get_solr_core_mbean_name(mbean_name, collection_name)
+       if is_solr7?()
+           return get_solr_core_mbean_name_for_solr7(mbean_name, collection_name)
+       else
+           return get_solr_core_mbean_name_for_6x_below(mbean_name, collection_name)
+       end
+    end
+
 
     # The mbean type is specified in 'scope' element from solr 6.4 version onwards and for lower versions in 'type' element.
     # This function returnn the solr mbean type for the given mbean name from that element based on the version.
     # ex1: solr 6.0 mbean : Value of mbean_name = type=/select,id=org.apache.solr.handler.component.SearchHandler (It returns the value of type element by removing the forward slash if it contains)
     # ex1: solr 6.4 mbean : Value of mbean_name = category=QUERY,scope=/select,name=org.apache.solr.handler.component.SearchHandler (It returns the value of scope element by removing the forward slash if it contains)
-    def get_solr_core_mbean_type(mbean_name)
+    def get_solr_core_mbean_type_for_solr6_lower(mbean_name)
         mbean_parts = mbean_name.split(",")
         mbean_type = nil
         if solr_version_high()
@@ -286,6 +457,47 @@ class SolrMBeanSummaryStats
         return mbean_type
     end
 
+    # The mbean names are of the format  category=QUERY,dom1=core,dom2=<collectionName>,dom3=<shardName>,dom4=<replicaName>,scope=/select,name=requestTimes
+    # In the above case the above mbean is exposing the request times of the /select request handler for the given collection, replica
+    # The mbean type is constructed using the scope and the name attributes, so in this case the mbean type will be select.requestTimes
+    #
+    def get_solr_core_mbean_type_for_solr7(mbean_name)
+
+        mbean_parts = mbean_name.split(",")
+        scope_value = nil
+        name_value = nil
+
+        mbean_parts.each do |mbean_part|
+            if mbean_part.start_with? "scope="
+                mbean_type = mbean_part.slice(mbean_part.index("scope=")+6, mbean_part.length-1)
+                if mbean_type.start_with? "/"
+                    scope_value = mbean_type.slice(1,mbean_type.length-1)
+                else
+                    scope_value = mbean_type
+                end
+            end
+
+            if mbean_part.start_with? "name="
+                mbean_type = mbean_part.slice(mbean_part.index("name=")+5, mbean_part.length-1)
+                if mbean_type.start_with? "/"
+                    name_value = mbean_type.slice(1,mbean_type.length-1)
+                else
+                    name_value = mbean_type
+                end
+            end
+        end
+
+        return scope_value + "." + name_value
+    end
+
+    def get_solr_core_mbean_type(mbean_name)
+        if (is_solr7?())
+            return get_solr_core_mbean_type_for_solr7(mbean_name)
+        else
+            return get_solr_core_mbean_type_for_solr6_lower(mbean_name)
+        end
+    end
+
     # Check if the given string is a float or not.
     def is_number? string
         true if Float(string) rescue false
@@ -300,6 +512,7 @@ class SolrMBeanSummaryStats
 
         mbean_aggr_metric_map_obj = Hash.new()
         mbeans.each do |mbean_name, mbean_metrics|
+
             mbean_metrics.each do |metric_key, metric_value|
                 metric_value_existed = mbean_aggr_metric_map_obj[metric_key]
                 # When the node has multiple cores either for same collection or for different collection the value for the variable 'metric_value_existed' would exist from second core onwards.
@@ -376,6 +589,37 @@ class SolrMBeanSummaryStats
         end
     end
 
+    def get_collection_core_name(mbean_name)
+
+        mbean_parts = mbean_name.split(",")
+        mbean_type = nil
+        collection_name = nil
+        shard_name = nil
+        replica_name = nil
+        core_name = nil
+
+        mbean_parts.each do |mbean_part|
+
+            if (mbean_part.start_with?("dom2="))
+                collection_name = mbean_part.slice(mbean_part.index("dom2=")+5, mbean_part.length-1)
+            end
+
+            if (mbean_part.start_with?("dom3="))
+                shard_name = mbean_part.slice(mbean_part.index("dom3=")+5, mbean_part.length-1)
+            end
+
+            if (mbean_part.start_with?("dom4="))
+                replica_name = mbean_part.slice(mbean_part.index("dom4=")+5, mbean_part.length-1)
+            end
+
+        end
+        if (!collection_name.nil? && !shard_name.nil? && !replica_name.nil?)
+            core_name = collection_name + "_" + shard_name + "_" + replica_name
+        end
+
+        return collection_name, core_name
+    end
+
     # 6.4.0+ is considered as higher versions of solr
     def solr_version_high()
         if (@solr_version =~ /^[6-9]\.[4-9]/) || (@solr_version =~ /^[7-9]\.[0-3]/)
@@ -384,5 +628,15 @@ class SolrMBeanSummaryStats
             return false
         end
     end
+
+    def is_solr7?()
+        if (@solr_version =~ /^[7-9]\.[0-3]/)
+            return true
+        else
+            return false
+        end
+    end
 end
+
+
 

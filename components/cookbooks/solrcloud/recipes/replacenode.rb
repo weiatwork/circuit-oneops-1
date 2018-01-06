@@ -88,7 +88,7 @@ if (join_replace_node == 'true')
         end
       end
 
-      if (node['solr_version'].start_with? "5.") || (node['solr_version'].start_with? "6.")
+      if (node['solr_version'].start_with? "5.") || (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? "7.")
 
         request_url = "http://#{node['ipaddress']}:#{node['port_no']}/"+"#{node['aliases_uri_v6']}"
         Chef::Log.info("#{request_url}")

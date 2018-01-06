@@ -19,9 +19,10 @@ solr_config = node['user']['dir']+"/solr-config";
 customdir = "forklift-default-dir"
 config_upload_or_download_path = "#{node['user']['dir']}/solr-config/"
 
-if (node['solr_version'].start_with? "5.") || (node['solr_version'].start_with? "6.")
+if (node['solr_version'].start_with? "5.") || (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? "7.")
     solr_config = node['user']['dir']+"/solr-config"+node['solr_version'][0,1];
 end
+
 if node['config_url'] != nil && !node['config_url'].empty?
     if node['config_url'].include? "jar"
         # splitting on '/' and retrieve the jar name from the last split
