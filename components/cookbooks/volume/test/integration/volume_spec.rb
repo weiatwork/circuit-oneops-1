@@ -25,6 +25,7 @@ describe file($mount_point) do
 end
 
 #assert each storage device from the map
+service_dir = '/opt/oneops/storage_devices/'
 $device_map.each do |dev|
   if dev.split(':').size > 2
     resource_group_name, storage_account_name, ciID, slice_size, dev_id = dev.split(':')
@@ -35,12 +36,12 @@ $device_map.each do |dev|
 
   reg = Regexp.new( "^#{Regexp.escape(dev_id)}:#{Regexp.escape(dev_id[0..dev_id.length-2])}\\w$" )
 
-  describe file("/opt/oneops/storage_devices/#{vol_id}") do
+  describe file(File.join(service_dir, vol_id)) do
     it { should be_file }
     its(:content) {should match reg}
   end
 
-end if $storage && !is_windows #TO-DO start using the service files for windows as well, then we can enable these tests
+end if $storage && !is_windows && Dir.exist?(service_dir) #TO-DO start using the service files for windows as well, then we can enable these tests
 
 #Assert volume size
 if fs_type != 'tmpfs'
