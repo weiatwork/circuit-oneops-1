@@ -69,7 +69,7 @@ module SolrCloud
     # Uploads the default config provided along with the solr package to zookeeper
     def uploadDefaultConfig(solrversion,zkHost,configname)
       dirname = "#{node['user']['dir']}/solr-config/default"
-      if ("#{solrversion}".start_with? "5.") || ("#{solrversion}".start_with? "6.")
+      if ("#{solrversion}".start_with? "5.") || ("#{solrversion}".start_with? "6.") || ("#{solrversion}".start_with? "7.")
         dirname = "#{node['installation_dir_path']}/solr#{solrmajorversion}/server/solr/configsets/data_driven_schema_configs/conf"
       end
       uploadCustomConfig(solrversion,zkHost,configname,dirname)
