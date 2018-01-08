@@ -2,15 +2,23 @@ require 'resolv'
 require 'ipaddr'
 require 'excon'
 
-CIRCUIT_PATH = '/opt/oneops/inductor/circuit-oneops-1'.freeze
-COOKBOOKS_PATH = "#{CIRCUIT_PATH}/components/cookbooks".freeze
+is_windows = ENV['OS'] == 'Windows_NT'
 
-require "#{CIRCUIT_PATH}/components/spec_helper.rb"
-require "#{COOKBOOKS_PATH}/fqdn/test/integration/library.rb"
+begin
+  CIRCUIT_PATH = '/opt/oneops/inductor/circuit-oneops-1'
+  COOKBOOKS_PATH = "#{CIRCUIT_PATH}/components/cookbooks".freeze
+  require "#{CIRCUIT_PATH}/components/spec_helper.rb"
+  require "#{COOKBOOKS_PATH}/fqdn/test/integration/library.rb"
+rescue Exception =>e
+  CIRCUIT_PATH = "#{is_windows ? 'C:/Cygwin64' : ''}/home/oneops"
+  require "#{CIRCUIT_PATH}/circuit-oneops-1/components/spec_helper.rb"
+  require "/home/oneops/circuit-oneops-1/components/cookbooks/fqdn/test/integration/library.rb"
+end
 
 lib = Library.new
 
 cloud_name = $node['workorder']['cloud']['ciName']
+
 service_attrs = lib.get_dns_service
 
 customer_domain = lib.get_customer_domain
@@ -406,3 +414,7 @@ if env.has_key?("global_dns") && env["global_dns"] == "true" && depends_on_lb &&
     end
   end
 end
+
+
+
+
