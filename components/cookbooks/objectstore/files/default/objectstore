@@ -156,7 +156,7 @@ def download_directory_or_file(conn, options, argv)
           start_time = Time.now
           # Download files in chunks
           directory.files.get(remote_file.key) do |chunk, remaining_bytes, total_bytes|
-            puts "\rDownloaded: #{total_bytes - remaining_bytes} of #{total_bytes}"
+            print( "\rDownloaded: #{total_bytes - remaining_bytes} of #{total_bytes}")
             local_file.write(chunk)
           end
           finish_time = Time.now
@@ -199,18 +199,17 @@ end.parse!
 
 action = ARGV[0]
 if action.nil?
-  usage
   puts 'usage: '
   puts 'objectstore list <container>'
-  puts 'objectstore upload <local upload dir|file> <container>'
-  puts 'objectstore download <container/blob> <local download path>'
-  puts 'objectstore delete <container>|<blob>'
+  puts 'objectstore upload <directory/file> <container>'
+  puts 'objectstore download <container/blob> <local-path>'
+  puts 'objectstore delete <container>/<blob>'
   exit 1
 end
 
 # Get creds from openrc s3, cloudfiles, etc will use
 creds = JSON.parse(File.read('/etc/objectstore_creds.json'))
-creds_sym = Hash[creds.map{|(k,v)| [k.to_sym,v]}]
+creds_sym = Hash[creds.map { |(k, v)| [k.to_sym, v] }]
 conn = nil
 
 case creds['provider']
@@ -233,21 +232,21 @@ when 'list'
 
 when 'delete'
   if ARGV.size < 2
-    puts 'Usage: objectstore delete <container>|<blob>'
+    puts 'Usage: objectstore delete <container>/<blob>'
     exit 1
   end
   delete_directory_or_file(conn, ARGV)
 
 when 'upload'
   if ARGV.size < 3
-    puts 'Usage: objectstore upload (local_dir|file) <container> [file_filter]'
+    puts 'Usage: upload <directory/file> <container>'
     exit 1
   end
   upload_directory_or_file(conn, ARGV)
 
 when 'download'
   if ARGV.size < 3
-    puts 'Usage: objectstore download <container> local_dir'
+    puts 'Usage: objectstore download <container/blob> <local-path>'
     exit 1
   end
   download_directory_or_file(conn, options, ARGV)

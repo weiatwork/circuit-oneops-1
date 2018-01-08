@@ -282,6 +282,7 @@ class SolrClusterSummaryStats
                                         "cache.perSegFilter.evictions" => {:metric => total_persegfilter_evictions}
       }
 
+      #Do we want to stop writing average metrics for future solr versions?, why are we checking for all the existing solr versions?
       if (@solr_version.start_with? "4.") || (@solr_version.start_with? "5.") || (@solr_version.start_with? "6.3")
         write_metrics_to_medusa_log(@select_avg_metrics, medusaLogWriter, @time, collection)
         write_metrics_to_medusa_log(@update_avg_metrics, medusaLogWriter, @time, collection)
