@@ -179,7 +179,10 @@ resource "client-certs-download",
              :path => '',
              :post_download_exec_cmd => ''
          }
-
+resource "volume",
+  :cookbook => "oneops.1.volume",
+  :requires => { "constraint" => "0..1", "services" => "compute" }
+  
 # depends_on
 [
  {:from => 'client-certs-download', :to => 'user-mirrormaker'},
