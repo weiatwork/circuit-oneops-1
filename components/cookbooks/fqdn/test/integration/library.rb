@@ -26,7 +26,7 @@ class Library
       arr = [$node['workorder']['payLoad']['Environment'][0]['ciName'], $node['workorder']['payLoad']['Assembly'][0]['ciName'], get_dns_service['cloud_dns_id'], get_windows_domain]
       customer_domain = '.' + arr.join('.').downcase
     else
-      customer_domain = $node[:customer_domain].downcase
+      customer_domain = $node['customer_domain'].downcase
     end
 
     if customer_domain !~ /^\./
@@ -43,7 +43,7 @@ class Library
   def get_ostype
 
     ostype = 'linux'
-    os = $node['workorder']['payLoad']['DependsOn'].select {|d| (d.ciClassName.split('.').last == 'Os')}
+    os = $node['workorder']['payLoad']['DependsOn'].select {|d| (d['ciClassName'].split('.').last == 'Os')}
     if $node['workorder']['payLoad'].has_key?('os_payload') && $node['workorder']['payLoad']['os_payload'].first['ciAttributes']['ostype'] =~ /windows/
       ostype = 'windows'
     elsif !os.empty? && os.first['ciAttributes']['ostype'] =~ /windows/

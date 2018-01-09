@@ -303,6 +303,7 @@ resource "java",
            :design => true,
            :requires => {
              :constraint => "1..1",
+             :services => "mirror",
              :help => "java programming language environment"
            },
            :attributes => {
