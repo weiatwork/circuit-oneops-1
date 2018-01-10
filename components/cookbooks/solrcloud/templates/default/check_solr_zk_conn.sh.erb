@@ -35,7 +35,7 @@ log_echo "Total number of available ZK nodes = ${#zk_list[@]}"
 
 ping_zk () {
   zk=$1
-  (nc -z $1 2181)
+  (nc $1 2181 </dev/null)
   ret=$?
   return $ret
 }
