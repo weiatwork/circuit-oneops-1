@@ -79,7 +79,7 @@ end
 
 # kafka-manager service
 service "kafka-manager" do
-  provider Chef::Provider::Service::Systemd
+  provider Chef::Provider::Service::Init
   action [:start, :enable]
   supports :status => true, :restart => true,:stop => true, :start => true, :reload => true
 end
