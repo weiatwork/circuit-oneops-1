@@ -398,6 +398,156 @@ attribute 'first_compute_after_sort',
 #               :order => 23
 #           }
 
+
+
+attribute 'estimate_two_year_doc_count',
+  :description => 'Number of documents in 2 years',
+  :default => "",
+  :format => {
+    :category => '9.Cluster Sizing Estimates',
+    :help => 'Do not provision the cluster thinking of current or next month needs only. It is hard to re-distribute shards later on',
+    :order => 41
+  }
+
+attribute 'estimate_avg_doc_size_kb',
+  :description => 'Average document size (kB)',
+  :default => "",
+  :format => {
+    :category => '9.Cluster Sizing Estimates',
+    :help => "Do not calculate document size from a single document's size on disk. Getting an average from several hundred docs representing a variety of your document types",
+    :order => 42
+  }
+
+attribute 'estimate_avg_nested_docs_per_doc',
+  :description => 'Average number of nested docs per doc',
+  :default => "",
+  :format => {
+    :category => '9.Cluster Sizing Estimates',
+    :help => "Average number of nested documents per root-level document",
+    :order => 43
+  }
+
+
+attribute 'estimate_indexed_fields_per_doc',
+  :description => 'Average indexed fields per doc',
+  :default => "",
+  :format => {
+    :category => '9.Cluster Sizing Estimates',
+    :help => "Minimizing indexed fields per document increases performance",
+    :order => 44
+  }
+
+
+attribute 'estimate_stored_fields_per_doc',
+  :description => 'Average stored fields per doc',
+  :default => "",
+  :format => {
+    :category => '9.Cluster Sizing Estimates',
+    :help => "Minimizing stored fields per document increases performance",
+    :order => 45
+  }
+
+
+attribute 'ttl_field',
+  :description => 'Date field used to expire documents',
+  :default => "",
+  :format => {
+    :category => '9.Cluster Sizing Estimates',
+    :help => "A date field is recommended to expire documents such that document count remains under control",
+    :order => 46
+  }
+
+
+attribute 'ttl_in_days',
+  :description => 'Document expiry (in days)',
+  :default => "",
+  :format => {
+    :category => '9.Cluster Sizing Estimates',
+    :help => "After how many days, the document should be expired based on the above date field",
+    :order => 47
+  }
+
+
+attribute 'estimate_peak_updates_per_sec',
+  :description => 'Approx peak updates per second',
+  :default => "",
+  :format => {
+    :category => '9.Cluster Sizing Estimates',
+    :help => "Peak rate of write queries per second",
+    :order => 48
+  }
+
+
+attribute 'estimate_peak_reads_per_sec',
+  :description => 'Approx peak reads per second',
+  :default => "",
+  :format => {
+    :category => '9.Cluster Sizing Estimates',
+    :help => "Peak rate of read queries per second",
+    :order => 49
+  }
+
+
+attribute 'estimate_peak_facets_per_sec',
+  :description => 'Approx peak facets per second',
+  :default => "",
+  :format => {
+    :category => '9.Cluster Sizing Estimates',
+    :help => "You MUST rethink your usage if you expect more than 50 facet queries per second",
+    :order => 50
+  }
+
+
+attribute 'estimate_peak_pivots_per_sec',
+  :description => 'Approx peak pivots per second',
+  :default => "",
+  :format => {
+    :category => '9.Cluster Sizing Estimates',
+    :help => "You MUST rethink your usage if you expect more than 10 pivot queries per second",
+    :order => 51
+  }
+
+
+attribute 'estimate_peak_paginations_per_sec',
+  :description => 'Approx peak pagination queries per second',
+  :default => "",
+  :format => {
+    :category => '9.Cluster Sizing Estimates',
+    :help => "You MUST rethink your usage if you expect more than 20 pagination queries per second",
+    :order => 52
+  }
+
+
+attribute 'estimate_peak_geospatials_per_sec',
+  :description => 'Approx peak geo-spatial queries per second',
+  :default => "",
+  :format => {
+    :category => '9.Cluster Sizing Estimates',
+    :help => "You MUST rethink your usage if you expect more than 20 geo-spatial queries per second",
+    :order => 53
+  }
+
+
+attribute 'estimate_peak_blockjoins_per_sec',
+  :description => 'Approx peak blockjoins per second',
+  :default => "",
+  :format => {
+    :category => '9.Cluster Sizing Estimates',
+    :help => "You MUST rethink your usage if you expect more than 50 blockjoin queries per second",
+    :order => 54
+  }
+
+
+attribute 'estimate_full_ingestion_minutes',
+  :description => 'Approx minutes for full re-ingestion',
+  :default => "",
+  :format => {
+    :category => '9.Cluster Sizing Estimates',
+    :help => "An approximate time that is required to re-index all the documents in Solr",
+    :order => 55
+  }
+
+
 ######################################
 ## Actions in the Operations Phase  ##
 ######################################
