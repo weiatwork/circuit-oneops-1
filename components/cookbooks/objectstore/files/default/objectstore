@@ -150,7 +150,6 @@ def download_directory_or_file(conn, options, argv)
     else
       puts "remote_file: #{remote_file.key}"
     end
-
     if remote_file.content_type == 'application/directory'
       new_dir = local_dir + remote_file.key
       puts "creating dir: #{new_dir}"
@@ -176,7 +175,6 @@ def download_directory_or_file(conn, options, argv)
           exit 1
         end
       end
-
       # if bucket is supplied file will be empty
       puts "match on file: #{file} #{remote_file.key}"
       if file.empty? || file == remote_file.key
