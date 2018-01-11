@@ -15,13 +15,15 @@ zk_platform_name=<%= node["platform_name"]%>
 log_echo "ZK platform name is $zk_platform_name"
 
 hostname=$(hostname -f)
+# hostname = solr.env.asmbly.org.cloud.x.y.z
 hostname_parts=(${hostname//./ })
 hostname_separator='.'
-# get hostname parts from position 5 till end
-hostname_suffix=$(printf "${hostname_separator}%s" "${hostname_parts[@]:5:${#hostname_parts[@]}}")
-# convert hostname_suffix array to '.' separated string
+# We want to construct zk_fqdn as zk_platform_name.env.asmbly.org.x.y.z
+hostname_parts_length=${#hostname_parts[@]}
+# get hostname parts from position 5 till end. => [x y z]
+hostname_suffix=$(printf "${hostname_separator}%s" "${hostname_parts[@]:5:$hostname_parts_length}")
+# convert hostname_suffix array to '.' separated string. i.e=>x.y.z
 hostname_suffix=${hostname_suffix:${#hostname_separator}}
-
 #fqdn is constructed from the <platform-name>.<environment-name>.<assembly-name>.<organization.name>.<generic FQDN domain string - prod.xxx.com>
 zk_fqdn=$zk_platform_name.${hostname_parts[1]}.${hostname_parts[2]}.${hostname_parts[3]}.$hostname_suffix
 log_echo "ZK FQDN constructed is $zk_fqdn"
