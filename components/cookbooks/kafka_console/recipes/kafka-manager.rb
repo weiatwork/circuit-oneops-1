@@ -80,8 +80,9 @@ end
 # kafka-manager service
 service "kafka-manager" do
   provider Chef::Provider::Service::Init
-  action [:start, :enable]
-  supports :status => true, :restart => true,:stop => true, :start => true, :reload => true
+  service_name 'kafka-manager'
+  supports  :restart => true, :status => true, :stop => true, :start => true
+  action :start
 end
 
 kafka_version = payLoad["ciAttributes"]["version"]
