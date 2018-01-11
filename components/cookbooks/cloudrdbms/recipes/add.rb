@@ -151,15 +151,18 @@ ruby_block 'validate_complete' do
       while (curlComplete == 0) && (curlAttempt < 360) do
           begin
             status=`export playbook="#{playbook}" concordaddress="#{concordaddress}" managedserviceuser="#{managedserviceuser}" managedservicepass="#{managedservicepass}" && /app/get_concord_status.sh`
-            if $?.exitstatus != 0
+            return_code_curl = $?.exitstatus
+            instanceId=`awk -F"\"" '{if($2=="instanceId")print $4}' /app/status`
+            if return_code_curl != 0
               puts "Exit status: $?.exitstatus"
               raise RuntimeError, "Some error happened while trying to get the status"
             elsif ( status == "RUNNING" ) || ( status == "ENQUEUED" )
               curlComplete = 0
               curlAttempt += 1
-              Chef::Log.info("CloudRDBMS attempt #{curlAttempt} of 360, current status is #{status}.")
+              Chef::Log.info("CloudRDBMS attempt #{curlAttempt} of 360 on instanceID(#{instanceId}), current status is #{status}.")
               sleep(10)
             elsif ( status == "FINISHED" )
+              Chef::Log.info("CloudRDBMS attempt #{curlAttempt} on instanceID(#{instanceId}) #{status}.")
               curlComplete = 1
             else
               raise RuntimeError, "[CloudRDBMS] Error: Concord shows '#{status}'!"
