@@ -16,9 +16,14 @@ log_echo "ZK platform name is $zk_platform_name"
 
 hostname=$(hostname -f)
 hostname_parts=(${hostname//./ })
+hostname_separator='.'
+# get hostname parts from position 5 till end
+hostname_suffix=$(printf "${hostname_separator}%s" "${hostname_parts[@]:5:${#hostname_parts[@]}}")
+# convert hostname_suffix array to '.' separated string
+hostname_suffix=${hostname_suffix:${#hostname_separator}}
 
 #fqdn is constructed from the <platform-name>.<environment-name>.<assembly-name>.<organization.name>.<generic FQDN domain string - prod.xxx.com>
-zk_fqdn=$zk_platform_name.${hostname_parts[1]}.${hostname_parts[2]}.${hostname_parts[3]}.${hostname_parts[5]}.${hostname_parts[6]}.${hostname_parts[7]}
+zk_fqdn=$zk_platform_name.${hostname_parts[1]}.${hostname_parts[2]}.${hostname_parts[3]}.$hostname_suffix
 log_echo "ZK FQDN constructed is $zk_fqdn"
 
 <% else %>
