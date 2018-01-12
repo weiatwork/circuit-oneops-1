@@ -146,7 +146,7 @@ end
 # zookeeper service
 # To-do: implement rolling-restart zookeeper
 service "zookeeper" do
-  provider Chef::Provider::Service::Systemd
+  provider Chef::Provider::Service::Init
   service_name 'zookeeper'
   supports  :restart => true, :status => true, :stop => true, :start => true
   action :start

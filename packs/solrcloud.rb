@@ -737,7 +737,7 @@ relation "solrcloud::depends_on::tomcat",
           :attributes => {"propagate_to" => "from", "flex" => false, "min" => 1, "max" => 1}
 
 # managed_via
-  [ 'solr-collection','telegraf','jolokia_proxy','hostname','tomcat','tomcat-daemon','solrcloud', 'file','user-app', 'java', 'volume-app', 'artifact-app', 'storage', 'volume-blockstorage'].each do |from|
+  [ 'solr-collection','telegraf','jolokia_proxy','tomcat','tomcat-daemon','solrcloud', 'file','user-app', 'java', 'volume-app', 'artifact-app', 'storage', 'volume-blockstorage'].each do |from|
   relation "#{from}::managed_via::compute",
     :except => [ '_default' ],
     :relation_name => 'ManagedVia',

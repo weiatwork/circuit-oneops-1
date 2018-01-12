@@ -102,7 +102,7 @@ ruby_block 'create-iscsi-volume-ruby-block' do
 
     storage_devices.each do |storage_device|
       storage_device.attach
-      dev_list += storage_device.assigned_device_id + " "
+      dev_list += storage_device.assigned_device_id + " " if storage_device.assigned_device_id
     end
 
     has_created_raid = false
@@ -397,15 +397,7 @@ ruby_block 'create-storage-non-ephemeral-volume' do
     #2. User can extend storage and can extend volume
     #3. Replace storage doesn't do anything, so it will not allow usre to change volume component too
 
-    check_persistent = false
-    node.workorder.payLoad[:DependsOn].each do |dep|
-      if dep["ciClassName"] =~ /Storage/
-        check_persistent = true
-        break
-      end
-    end
-
-    if ((check_persistent && rfc_action == "update" && token_class =~ /openstack/) || (rfc_action == "update" && storageUpdated))
+    if ((!storage.nil? && rfc_action == "update" && token_class =~ /openstack|azure/) || (rfc_action == "update" && storageUpdated))
       new_size = size
       old_size = rfcCi[:ciBaseAttributes][:size]
 

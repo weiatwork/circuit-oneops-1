@@ -192,8 +192,7 @@ resource "volume",
  {:from => 'keystore', :to => 'certificate'},
  {:from => 'mirrormaker', :to => 'user-mirrormaker'},
  {:from => 'user-mirrormaker', :to => 'volume-mirrormaker'},
- {:from => 'volume-mirrormaker', :to => 'volume'},
- {:from => 'volume', :to => 'os'},
+ {:from => 'volume-mirrormaker', :to => 'os'},
  {:from => 'java', :to => 'os'},
  {:from => 'os', :to => 'compute'}
 ].each do |link|
@@ -241,7 +240,7 @@ relation "ring::depends_on::mirrormaker",
 end
 
 # managed_via
-['user-mirrormaker', 'artifact', 'mirrormaker', 'java', 'library', 'volume', 'volume-mirrormaker', 'keystore', 'client-certs-download'].each do |from|
+['user-mirrormaker', 'artifact', 'mirrormaker', 'java', 'library','volume-mirrormaker', 'keystore', 'client-certs-download'].each do |from|
   relation "#{from}::managed_via::compute",
            :except => ['_default'],
            :relation_name => 'ManagedVia',
