@@ -48,6 +48,7 @@ end
 #Ensure commit log dir is empty if the data directory is empty.
 directory commit_log_dir do
   action :delete
+  recursive true
   only_if { empty_data_dir }
 end  
 
