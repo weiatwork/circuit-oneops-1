@@ -32,9 +32,11 @@ Chef::Log.info("Platform_name         : #{platform_name}")
 Chef::Log.info("Is platform windows?  : #{is_windows}")
 Chef::Log.info("Provider              : #{provider_class}")
 
-package 'lvm2'
-package 'mdadm' do
-  only_if{::File.exists?(raid_device) || compute_baremetal =~/true/}
+unless is_windows
+  package 'lvm2'
+  package 'mdadm' do
+    only_if{::File.exists?(raid_device) || compute_baremetal =~/true/}
+  end
 end
 
 if rfcAttrs.has_key?("mount_point") && !rfcAttrs["mount_point"].empty?

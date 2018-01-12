@@ -38,7 +38,7 @@ if ! (mysql_status_results =~ /SUCCESS/)
 end
 
 Chef::Log.info("CloudRDBMS backup starts to generate and upload a database snapshot to objectstore")
-%x( sudo /app/backup_n_restore.sh "#{backup_type}" -e "#{runonenv}" -c "#{clustername}" -i "#{backup_id}" -r "yes" >/tmp/backup.log 2>&1 )
+%x( sudo /app/backup_n_restore.sh "#{backup_type}" -i "#{backup_id}" -r "yes" >/tmp/backup.log 2>&1 )
 if $?.exitstatus != 0
   Chef::Log.info("#{`sudo cat /tmp/backup.log`}")
   raise RuntimeError, "CloudRDBMS node #{current_ip} failed to generate and then upload a snapshot of the database to objectstore"

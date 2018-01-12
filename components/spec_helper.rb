@@ -14,6 +14,9 @@ else
   $node_wo ||= ::JSON.parse(File.read('/tmp/serverspec/node.json'))
 end
 
+#Renaming ci attribute (AO) to rfcCi (WO), so when testing Action Orders we can re-use tests cases written for Work Orders
+$node_wo['workorder']['rfcCi'] = $node_wo['workorder'].delete('ci') if $node_wo['workorder'].has_key?('ci')
+
 set :path, '/sbin:/usr/local/sbin:/usr/sbin:$PATH' unless os[:family] == 'windows'
 
 require 'chef'

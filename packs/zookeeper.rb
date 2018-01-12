@@ -55,7 +55,7 @@ resource "zookeeper",
                                'up' => metric(:unit => '%', :description => 'Percent Up'),
                            },
                            :thresholds => {
-                               'ZookeeperProcessDown' => threshold('1m', 'avg', 'up', trigger('<=', 98, 1, 1), reset('>', 95, 1, 1))
+                               'ZookeeperProcessDown' => threshold('1m', 'avg', 'up', trigger('<=', 98, 1, 1), reset('>', 95, 1, 1),'unhealthy')
                            }
              },
             'cluster_health' =>  {'description' => 'Cluster Health',
@@ -225,8 +225,8 @@ resource "volume",
                   'metrics' => { 'space_used' => metric( :unit => '%', :description => 'Disk Space Percent Used'),
                                  'inode_used' => metric( :unit => '%', :description => 'Disk Inode Percent Used') },
                   :thresholds => {
-                    'LowDiskSpace' => threshold('5m','avg','space_used',trigger('>',90,5,1),reset('<',90,5,1)),
-                    'LowDiskInode' => threshold('5m','avg','inode_used',trigger('>',90,5,1),reset('<',90,5,1)),
+                    'LowDiskSpace' => threshold('5m','avg','space_used',trigger('>',80,5,1),reset('<',70,5,1)),
+                    'LowDiskInode' => threshold('5m','avg','inode_used',trigger('>',80,5,1),reset('<',70,5,1)),
                   },
                 }
     }

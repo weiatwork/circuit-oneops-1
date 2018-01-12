@@ -149,9 +149,9 @@ fi
 gem install json --version $gem_version --no-ri --no-rdoc
 if [ $? -ne 0 ]; then
     echo "gem install using local repo failed. reverting to rubygems proxy."
-    gem source --add $rubygems_proxy
     gem source --remove file://$local_gems
     gem source --remove 'http://rubygems.org/'
+    gem source --add $rubygems_proxy
     gem source
     gem install json --version $gem_version --no-ri --no-rdoc
     if [ $? -ne 0 ]; then
@@ -195,13 +195,12 @@ do
     $(set_env $@)
 done
 if [ -n "$rubygems_proxy" ]; then
-    gem source --add $rubygems_proxy
     gem source --remove 'http://rubygems.org/'
     gem source --remove 'https://rubygems.org/'
+    gem source --add $rubygems_proxy
     gem source
 fi
 set -e
-gem install bundler --no-ri --no-rdoc
 EOF
 set -e
 
@@ -250,3 +249,4 @@ mkdir -p /opt/oneops/workorder /etc/nagios/conf.d /var/log/nagios
 rsync -a $home_dir/circuit-oneops-1 /home/oneops/
 rsync -a $home_dir/shared /home/oneops/
 chown -R oneops:oneops /home/oneops /opt/oneops
+chown -R nagios:nagios /etc/nagios /var/log/nagios

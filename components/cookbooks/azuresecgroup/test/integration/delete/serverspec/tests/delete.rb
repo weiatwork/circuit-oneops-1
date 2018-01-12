@@ -18,8 +18,8 @@ describe "Azure Security Group" do
       rginfo = @spec_utils.get_resource_group_name
       nsgname = $node['name']
 
-      nsg = nsgclient.get(rginfo, nsgname)
-      expect(nsg).to be_nil
+      exists = nsgclient.check_network_security_group_exists(rginfo, nsgname)
+      expect(exists).to eq(false)
     end
   end
 end
