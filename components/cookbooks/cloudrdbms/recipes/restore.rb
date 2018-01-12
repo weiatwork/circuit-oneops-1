@@ -29,6 +29,13 @@ else
   end
 end
 
+# Added this section after finding oneops run 3 times on the restore node causing a delayed return to availability
+lockfile="/tmp/cloudrdbms-lock."+backup_id+"."+restoreTime+".complete"
+if File.file?(lockfile)
+  Chef::Log.info("CloudRDBMS exit restore because '#{lockfile}' exists, please either remove the file or understand this was a re-run")
+  return
+end
+
 #get the state uuid before restore
 txid = CloudrdbmsArtifact::getGrastateLocally()
 
@@ -101,3 +108,6 @@ else
   #  end
   #end
 end
+
+Chef::Log.info("CloudRDBMS touching #{lockfile} after a successful run")
+%x( touch #{lockfile} )
