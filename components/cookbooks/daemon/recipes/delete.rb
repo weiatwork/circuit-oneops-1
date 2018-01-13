@@ -20,17 +20,26 @@ attrs = node.workorder.rfcCi.ciAttributes
 service_name = attrs[:service_name]
 pat = attrs[:pattern] || ''
 
+service_type = nil
+initService = `ls /ect/init.d/#{service_name}`
+systemdService = `ls /usr/lib/systemd/system/#{service_name}.service`
+if systemdService.include?("/usr/lib/systemd/system/#{service_name}.service")
+  service_type = "systemd"
+elsif initService.include?("/etc/init.d/#{service_name}")
+  service_type = "init"
+end
+
 if pat.empty?
   # set basic service
   service "#{service_name}" do
-    provider Chef::Provider::Service::Init::Redhat if node[:platform_family].include?("rhel")
+    provider Chef::Provider::Service::Init if service_type == "init" && node[:platform_family].include?("rhel")
     action [:disable,:stop]
   end
 
 else
   # set pattern based service
   service "#{service_name}" do
-    provider Chef::Provider::Service::Init::Redhat if node[:platform_family].include?("rhel")
+    provider Chef::Provider::Service::Init if service_type == "init" && node[:platform_family].include?("rhel")
     pattern "#{pat}"
     action [:disable,:stop]
   end

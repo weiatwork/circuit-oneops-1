@@ -25,6 +25,15 @@ pat = attrs[:pattern] || ''
 control_script_location = attrs[:control_script_location] || ''
 control_script_content = attrs[:control_script_content] || ''
 
+service_type = nil
+initService = `ls /ect/init.d/#{service_name}`
+systemdService = `ls /usr/lib/systemd/system/#{service_name}.service`
+if systemdService.include?("/usr/lib/systemd/system/#{service_name}.service")
+  service_type = "systemd"
+elsif initService.include?("/etc/init.d/#{service_name}")
+  service_type = "init"
+end
+
 if !control_script_location.empty? && control_script_location != "/etc/init.d/#{service_name}"
   `ln -sf #{control_script_location} /etc/init.d/#{service_name}`
 end
@@ -40,7 +49,7 @@ end
 
 # enable daemon service
 service "#{service_name}" do
-  provider Chef::Provider::Service::Init::Redhat if node[:platform_family].include?("rhel")
+  provider Chef::Provider::Service::Init if service_type == "init"
   action :enable
 end
 
@@ -55,7 +64,7 @@ end
 
 # restart daemon service when pattern has been specified
 service "#{service_name}" do
-  provider Chef::Provider::Service::Init::Redhat if node[:platform_family].include?("rhel")
+  provider Chef::Provider::Service::Init if service_type == "init" && node[:platform_family].include?("rhel")
   pattern "#{pat}"
   action :restart
   only_if { !pat.empty? }
