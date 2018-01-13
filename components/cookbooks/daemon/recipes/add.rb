@@ -26,7 +26,7 @@ control_script_location = attrs[:control_script_location] || ''
 control_script_content = attrs[:control_script_content] || ''
 
 service_type = nil
-initService = `ls /ect/init.d/#{service_name}`
+initService = `ls /etc/init.d/#{service_name}`
 systemdService = `ls /usr/lib/systemd/system/#{service_name}.service`
 if systemdService.include?("/usr/lib/systemd/system/#{service_name}.service")
   service_type = "systemd"
