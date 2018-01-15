@@ -6,7 +6,7 @@ require "#{CIRCUIT_PATH}/circuit-oneops-1/components/spec_helper.rb"
 service_name = $node['workorder']['rfcCi']['ciAttributes']['service_name']
 
 initService = "/etc/init.d/#{service_name}"
-systemdService = "ls /usr/lib/systemd/system/#{service_name}.service"
+systemdService = "/usr/lib/systemd/system/#{service_name}.service"
 
 service_type = nil
 if File.exist?(systemdService)
