@@ -25,6 +25,10 @@ pat = attrs[:pattern] || ''
 control_script_location = attrs[:control_script_location] || ''
 control_script_content = attrs[:control_script_content] || ''
 
+if !control_script_location.empty? && control_script_location != "/etc/init.d/#{service_name}"
+  `ln -sf #{control_script_location} /etc/init.d/#{service_name}`
+end
+
 service_type = nil
 initService = "/etc/init.d/#{service_name}"
 systemdService = "/usr/lib/systemd/system/#{service_name}.service"
@@ -35,10 +39,6 @@ elsif File.exist?(initService)
   service_type = "init"
 end
 
-if !control_script_location.empty? && control_script_location != "/etc/init.d/#{service_name}"
-  `ln -sf #{control_script_location} /etc/init.d/#{service_name}`
-end
-
 file "#{control_script_location}" do
   only_if { !control_script_content.empty? }
   owner "root"
@@ -46,6 +46,10 @@ file "#{control_script_location}" do
   mode "0755"
   content "#{control_script_content}".gsub(/\r\n?/,"\n")
   action :create
+end
+
+service "#{service_name}" do
+  action :enable
 end
 
 # restart daemon service when pattern has not been specified
