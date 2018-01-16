@@ -40,7 +40,7 @@ resource "lb",
 
 ##########################################################################################
 #
-# 'ulimit' : The max number of open files allowed for processes runnning as this user. This has to be set as the 'nofile'
+# 'ulimit' : The max number of open files allowed for processes runnning as this user. This has to be set as the 'nofile' 
 # parameter configured at the compute component level does not increase the limit for the "app" user.
 #
 ############################################################################################
@@ -308,7 +308,7 @@ resource "solrcloud",
       }'
     }
   }
-
+       
 resource "secgroup",
   :cookbook => "oneops.1.secgroup",
   :design => true,
@@ -398,7 +398,7 @@ resource "tomcat",
       :thresholds => {
         'CriticalLogException' => threshold('15m', 'avg', 'logtomcat_criticals', trigger('>=', 1, 15, 1), reset('<', 1, 15, 1)),
       }
-    },
+    },    
     'JvmInfo' =>  {
       :description => 'JvmInfo',
       :source => '',
@@ -443,7 +443,7 @@ resource "tomcat",
         'requestCount'   => metric( :unit => 'reqs /sec', :description => 'Requests /sec', :dstype => 'DERIVE'),
         'errorCount'   => metric( :unit => 'errors /sec', :description => 'Errors /sec', :dstype => 'DERIVE'),
         'maxTime'   => metric( :unit => 'ms', :description => 'Max Time', :dstype => 'GAUGE'),
-        'processingTime'   => metric( :unit => 'ms', :description => 'Processing Time /sec', :dstype => 'DERIVE')
+        'processingTime'   => metric( :unit => 'ms', :description => 'Processing Time /sec', :dstype => 'DERIVE')                                                          
       },
       :thresholds => { }
     }
