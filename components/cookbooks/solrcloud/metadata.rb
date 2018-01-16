@@ -21,7 +21,7 @@ attribute 'solr_version',
     :category => '1.SolrCloud',
     :form => {'field' => 'select', 'options_for_select' => [
        ['6.6.0', '6.6.0'],
-       ['7.1.0', '7.1.0']
+       ['7.1.0', '7.1.0'],  ['7.2.1', '7.2.1']
     ]},
     :order => 4
   }
