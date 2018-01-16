@@ -40,7 +40,7 @@ resource "lb",
 
 ##########################################################################################
 #
-# 'ulimit' : The max number of open files allowed for processes runnning as this user. This has to be set as the 'nofile' 
+# 'ulimit' : The max number of open files allowed for processes runnning as this user. This has to be set as the 'nofile'
 # parameter configured at the compute component level does not increase the limit for the "app" user.
 #
 ############################################################################################
@@ -164,7 +164,7 @@ resource "solrcloud",
     'solr_opts_params' => '["solr.autoSoftCommit.maxTime=15000", "solr.autoCommit.maxTime=60000", "solr.directoryFactory=solr.MMapDirectoryFactory", "socketTimeout=30000", "connTimeout=30000", "maxConnectionsPerHost=100", "distribUpdateSoTimeout=60000", "distribUpdateConnTimeout=40000", "solr.jetty.threads.max=3000"]',
     'skip_solrcloud_comp_execution' => 'false',
     'enable_cinder' => 'true',
-    'solr_custom_component_version' => '0.0.1',
+    'solr_custom_component_version' => '0.0.2',
     'solr_api_timeout_sec' => '300'
   },
 
@@ -308,7 +308,7 @@ resource "solrcloud",
       }'
     }
   }
-       
+
 resource "secgroup",
   :cookbook => "oneops.1.secgroup",
   :design => true,
@@ -398,7 +398,7 @@ resource "tomcat",
       :thresholds => {
         'CriticalLogException' => threshold('15m', 'avg', 'logtomcat_criticals', trigger('>=', 1, 15, 1), reset('<', 1, 15, 1)),
       }
-    },    
+    },
     'JvmInfo' =>  {
       :description => 'JvmInfo',
       :source => '',
@@ -443,7 +443,7 @@ resource "tomcat",
         'requestCount'   => metric( :unit => 'reqs /sec', :description => 'Requests /sec', :dstype => 'DERIVE'),
         'errorCount'   => metric( :unit => 'errors /sec', :description => 'Errors /sec', :dstype => 'DERIVE'),
         'maxTime'   => metric( :unit => 'ms', :description => 'Max Time', :dstype => 'GAUGE'),
-        'processingTime'   => metric( :unit => 'ms', :description => 'Processing Time /sec', :dstype => 'DERIVE')                                                          
+        'processingTime'   => metric( :unit => 'ms', :description => 'Processing Time /sec', :dstype => 'DERIVE')
       },
       :thresholds => { }
     }
