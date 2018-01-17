@@ -43,12 +43,6 @@ gems:
   - fog-softlayer
   - chef
   - mime-types
-  - ms_rest
-  - ms_rest_azure
-  - azure_mgmt_compute
-  - azure_mgmt_network
-  - azure_mgmt_storage
-  - azure_mgmt_resources
   - rack
 files:
   - name: /home/oneops/shared
