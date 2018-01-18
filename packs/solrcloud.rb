@@ -158,9 +158,14 @@ resource "solrcloud",
     'gc_log_params' => '',
     'zk_client_timeout' => '60000',
     'enable_jmx_metrics' => 'true',
-    'solr_max_heap' => '-Xmx16g',
-    'solr_min_heap' => '-Xms16g',
-    'gc_tune_params' => '["+UseG1GC", "MaxGCPauseMillis=250", "ConcGCThreads=4", "ParallelGCThreads=8", "+UseLargePages", "+AggressiveOpts", "+PerfDisableSharedMem", "+ParallelRefProcEnabled", "InitiatingHeapOccupancyPercent=50", "PrintFLSStatistics=1", "+PrintPromotionFailure", "+HeapDumpOnOutOfMemoryError", "HeapDumpPath=/app/solrdata/logs/heapdump"]',
+    'solr_max_heap' => '-Xmx20g',
+    'solr_min_heap' => '-Xms20g',
+    # G1ReservePercent: Reserve memory to keep free so as to reduce the risk of to-space overflows.
+    #     The default is 10 percent and is recommended to increase if gc.log file shows too many "to-space exhausted" messages
+    # MaxNewSize: Capping this to a maximum of 4G instead of the "unlimited" default ensures that GC does not
+    #     have to work on a very large chunk of memory and take long pauses. Promotions from the young
+    #     generation happen more frequently, consume lesser time and do not burden the next generation
+    'gc_tune_params' => '["+UseG1GC", "MaxGCPauseMillis=250", "ConcGCThreads=4", "ParallelGCThreads=8", "+UseLargePages", "+AggressiveOpts", "+PerfDisableSharedMem", "+ParallelRefProcEnabled", "InitiatingHeapOccupancyPercent=50", "G1ReservePercent=18", "MaxNewSize=4G", "PrintFLSStatistics=1", "+PrintPromotionFailure", "+HeapDumpOnOutOfMemoryError", "HeapDumpPath=/app/solrdata/logs/heapdump"]',
     'solr_opts_params' => '["solr.autoSoftCommit.maxTime=15000", "solr.autoCommit.maxTime=60000", "solr.directoryFactory=solr.MMapDirectoryFactory", "socketTimeout=30000", "connTimeout=30000", "maxConnectionsPerHost=100", "distribUpdateSoTimeout=60000", "distribUpdateConnTimeout=40000", "solr.jetty.threads.max=3000"]',
     'skip_solrcloud_comp_execution' => 'false',
     'enable_cinder' => 'true',
