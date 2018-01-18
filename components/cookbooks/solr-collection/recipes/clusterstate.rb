@@ -20,7 +20,7 @@ collection_name = args["collection_name"]
 
 ci = node.workorder.ci.ciAttributes;
 component_collection_name = ci['collection_name']
-port_num = ci['port_num']
+port_num = node['port_num']
 
 if ( collection_name != nil && !collection_name.empty? && (component_collection_name == collection_name) )
     params = {
