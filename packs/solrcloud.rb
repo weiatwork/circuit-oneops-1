@@ -641,12 +641,11 @@ resource "solr-collection",
       :description => 'ShardStatus',
       :source => '',
       :chart => {'min'=>0, 'unit'=>''},
-      :cmd => 'check_shardstatus.rb!#{cmd_options[:monitor]}!:::node.workorder.rfcCi.ciAttributes.collection_name:::!#{cmd_options[:port_no]}!#{cmd_options[:minReplicas]}',
-      :cmd_line => '/opt/nagios/libexec/check_shardstatus.rb $ARG1$ $ARG2$ $ARG3$ $ARG4$',
+      :cmd => 'check_shardstatus.rb!#{cmd_options[:monitor]}!:::node.workorder.rfcCi.ciAttributes.collection_name:::!#{cmd_options[:minReplicas]}',
+      :cmd_line => '/opt/nagios/libexec/check_shardstatus.rb $ARG1$ $ARG2$ $ARG3$',
       :cmd_options => {
         'monitor' => 'ShardStatus',
-        'minReplicas' => 2,
-        'port_no' => '8983'
+        'minReplicas' => 2
       },
       :metrics =>  {
         'pctgShardsWithMinActiveReplicas' => metric( :unit => '%', :description => 'Percentage of shards with Min Active Replicas', :dstype => 'GAUGE'),
