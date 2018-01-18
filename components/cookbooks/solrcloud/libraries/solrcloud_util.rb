@@ -202,7 +202,7 @@ module SolrCloud
         shard_names = cluster_status_collections[collection]["shards"].keys
         shards = cluster_status_collections[collection]["shards"]
         
-        #Process each shard to delete and add replica if required
+        #Process each shard to delete and add replica if it was hosted on replaced(old_ip) then delete first and add it back again
         shard_names.each do |shard|
           Chef::Log.info( "*** Processing shard '#{shard}' for collection '#{collection}'")
           
@@ -216,7 +216,7 @@ module SolrCloud
           new_ip_exist = 0
           old_ip_exist = 0
     
-          #Process each replica to delete and add if required
+          #Process each replica to and if it was hosted on replaced(old_ip) then delete first and add it back again
           replica_names.each do |replica|
             Chef::Log.info( "*** Replica is : #{replica}")
             if (replicas.has_key?replica) && (replicas[replica]["base_url"].include? old_node_ip)
@@ -274,7 +274,7 @@ module SolrCloud
       return replicas
     end
     
-    #Returns true if replcas hosted on ip
+    #Returns true if any of the replica hosted on ip
     def replica_exists_on_ip?(replicas, ip)
       replicas.each do |replica_name, replica|
         if replica != nil && replica['base_url'].include?(ip)
