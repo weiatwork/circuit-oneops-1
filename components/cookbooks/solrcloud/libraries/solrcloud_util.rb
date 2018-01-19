@@ -166,123 +166,122 @@ module SolrCloud
       end
     end
 
-    # Recover a node upon replace compute
-    def replace_node_and_add_to_solrcloud(old_node_ip)
+    #In case of replace node, delete replicas on the same node with old_node_ip if any and add it back using the new_ip
+    def retain_replicas_on_node(old_node_ip)
+    
       Chef::Log.info( "***Old node IP  : #{old_node_ip}")
-      Chef::Log.info( "***New node IP : #{node['ipaddress']}")
-
+      new_ip = node['ipaddress']
+      Chef::Log.info( "***New node IP : #{new_ip}")
+    
+      #get host ip other than the replaced node as old(replaced) ip has already gone from cluster
       computes = node.workorder.payLoad.has_key?("RequiresComputes") ? node.workorder.payLoad.RequiresComputes : node.workorder.payLoad.computes
-
-      ipForUrl = ""
-
-      # Get the compute IP which is not the replaced node IP
-      computes.each do |compute|
-        unless compute[:ciName].nil?
-          if node["old_node_ip"] != compute[:ciAttributes][:private_ip]
-            Chef::Log.info("IP to be used in the URLs to get the collections API  #{compute[:ciAttributes][:private_ip]}")
-            ipForUrl = compute[:ciAttributes][:private_ip]
-            break
-          end
-        end
+      other_computes = computes.select { |compute| compute['ciAttributes']['private_ip'] != old_node_ip}
+      host = other_computes[0]["ciAttributes"]["private_ip"]
+      port = (node["solr_version"].start_with? "4.")?"8080":node['port_no']
+    
+      solrCollectionUrl = "http://#{host}:#{port}/solr/admin/collections?"
+      
+      #Get cluster state to fetch all collection & its details
+      params = {:action => "CLUSTERSTATUS"}
+      cluster_state_resp = solr_collection_api(host, port, params)
+      Chef::Log.info("cluster_state_resp = #{cluster_state_resp.to_json}")
+      cluster_status_collections = cluster_state_resp["cluster"]["collections"]
+        
+      #Get list of all existing collection names
+      collection_names = []
+      if !cluster_status_collections.nil?  && !cluster_status_collections.empty?
+        collection_names = cluster_status_collections.keys
       end
-
-      portForUrl = ""
-
-      if node["solr_version"].start_with? "4."
-        portForUrl = "8080"
-      else
-        portForUrl = node['port_no']
-      end
-
-      solrCollectionUrl = "http://#{ipForUrl}:#{portForUrl}/solr/admin/collections?"
-
-      # nodeip has new IP which has been set in default.rb. compare it with the node["old_node_ip"]
-      ip_changed = node["old_node_ip"] != node['ipaddress']
-      Chef::Log.info( " ip changed ? #{ip_changed} ")
-
-      # If a node gets replaced and once the new IP is added to the live nodes do the ADDREPLICA and DELETEREPLICA
-
-      # Get the cluster status
-      clusterstatus_url = "#{solrCollectionUrl}action=CLUSTERSTATUS&wt=json"
-      Chef::Log.info(" cluster status : #{clusterstatus_url}")
-      clusterstatus_resp_obj = run_solr_action_api(clusterstatus_url)
-
-      # Get the list of collections
-      collectionslist_url = "#{solrCollectionUrl}action=LIST&wt=json"
-      Chef::Log.info("collection : #{collectionslist_url}")
-      collectionslist_resp_obj = run_solr_action_api(collectionslist_url)
-
-      # Get the list of active IPs to make sure old ip doesn't exist there
-      live_nodes = clusterstatus_resp_obj["cluster"]["live_nodes"]
-
-      Chef::Log.info( "*** active_nodes : #{live_nodes}")
-
-      # Get the list of collections from the LIST API
-      collections = collectionslist_resp_obj['collections']
-      Chef::Log.info( "*** collections from LIST api : #{collections}")
-
-      # Get the json of collections from clusterstatus which includes shard and replica details
-      cluster_status_collections = clusterstatus_resp_obj["cluster"]["collections"]
-
-      # Find out the collections, shards and replicas that the old compute hold
-      run_add_replica_delete_replica_for_new_node(collections, cluster_status_collections, solrCollectionUrl, portForUrl)
-
-    end
-
-    def run_add_replica_delete_replica_for_new_node(collections, cluster_status_collections, solrCollectionUrl, portForUrl)
-      collections.each do |collection|
-        Chef::Log.info( "*** Collection is : #{collection}")
-        unless cluster_status_collections[collection]["shards"].nil?
-          shard_names = cluster_status_collections[collection]["shards"].keys
-          shards = cluster_status_collections[collection]["shards"]
-          Chef::Log.info( "*** shard_names : #{shard_names}")
-          shard_names.each do |shard|
-            Chef::Log.info( "*** Shard is : #{shard}")
-            unless shards[shard]["replicas"].nil?
-              replica_names = shards[shard]["replicas"].keys
-              replicas = shards[shard]["replicas"]
-              Chef::Log.info( "*** replicas : #{replicas}")
-              new_ip_exist = 0
-              old_ip_exist = 0
-              replica_names.each do |replica|
-                Chef::Log.info( "*** Replica is : #{replica}")
-                if replicas[replica]["base_url"].include? node["old_node_ip"]
-
-                  old_ip_exist += 1
-                  # Run ADDREPLICA and DELETEREPLICA for all the collections and shards associated with the old node
-                  delete_replica_url = "#{solrCollectionUrl}action=DELETEREPLICA&collection=#{collection}&shard=#{shard}&replica=#{replica}"
-
-                  Chef::Log.info("DELETEREPLICA : #{delete_replica_url}")
-                  delete_replica_resp_obj = run_solr_action_api(delete_replica_url)
-                  Chef::Log.info("Deleted old Replica : #{node['old_node_ip']}, for collection = #{collection} & shard = #{shard} & replica=#{replica}")
-                else
-                  Chef::Log.info("Skipping Delete Replica for the replica #{replica}")
-                end
-
-                # before adding the replica check if the new node ip is part of any collection in the cluster state, if so then don't do it
-                # new-IP exists and old-IP too exists - Deletes the replica and sets old_ip_exist = 1, sets new_ip_exist = 1 => No add replica
-                # new-IP exists and old-IP does not - doesn't delete replica, old_ip_exist = 0, sets new_ip_exist = 1 => No add replica
-                # new-IP does not exist and old IP does - Deletes the replica and sets old_ip_exist = 1, new_ip_exist = 0 => Satisfies the condition for add replica
-                if replicas[replica]["base_url"].include? node['ipaddress']
-                  Chef::Log.info("New IP #{node['ipaddress']} is found in the Replica for collection = #{collection} & shard = #{shard}")
-                  new_ip_exist += 1
-                else
-                  Chef::Log.info("New IP #{node['ipaddress']} is not found in replicas of collection = #{collection} & shard = #{shard}")
-                end
-              end
-              # if old IP existed and new IP is not shown fire addreplica
-              if (old_ip_exist > 0 && new_ip_exist == 0)
-                add_replica_url = "#{solrCollectionUrl}action=ADDREPLICA&collection=#{collection}&shard=#{shard}&node=#{node['ipaddress']}:#{portForUrl}_solr"
-                Chef::Log.info("ADDREPLICA: #{add_replica_url}")
-                add_replica_resp_obj = run_solr_action_api(add_replica_url)
-                Chef::Log.info("Added new Replica : #{node['ipaddress']}, for collection = #{collection} & shard = #{shard}")
-              else
-                Chef::Log.info("Skipping Add Replica for collection = #{collection} & shard = #{shard}, since value of old_ip_exist=#{old_ip_exist} and value of new_ip_exist=#{new_ip_exist}")
-              end
+      
+      #For each collection->shard->replica, delete replica and add it back if it was hosted on replaced node
+      collection_names.each do |collection_name|
+       
+        #Process next collection if no shards found
+        next if cluster_status_collections[collection_name]["shards"].nil? || cluster_status_collections[collection_name]["shards"].empty?
+        
+        shard_names = cluster_status_collections[collection_name]["shards"].keys
+        shards = cluster_status_collections[collection_name]["shards"]
+        
+        #Process each shard to delete and add replica if it was hosted on replaced(old_ip) then delete first and add it back again
+        shard_names.each do |shard_name|
+          Chef::Log.info( "*** Processing shard '#{shard_name}' for collection '#{collection_name}'")
+          
+          #Process next shard if no replica found
+          next if shards[shard_name]["replicas"].nil? || shards[shard_name]["replicas"].empty?
+            
+          replica_names = shards[shard_name]["replicas"].keys
+          replicas = shards[shard_name]["replicas"]
+          Chef::Log.info( "*** Replica names for shard #{shard_name} : #{replica_names}")
+          Chef::Log.info( "*** Replicas for for shard #{shard_name}  : #{replicas.to_json}")
+          new_ip_exist = 0
+          old_ip_exist = 0
+    
+          #Process each replica to and if it was hosted on replaced(old_ip) then delete first and add it back again
+          replica_names.each do |replica_name|
+            Chef::Log.info( "*** Replica is : #{replica_name}")
+            if (replicas.has_key?replica_name) && (replicas[replica_name]["base_url"].include? old_node_ip)
+              old_ip_exist += 1
+              Chef::Log.info("Deleting old Replica : #{old_node_ip}, for collection = #{collection_name} & shard = #{shard_name} & replica=#{replica_name}")
+              delete_replica_url = "#{solrCollectionUrl}action=DELETEREPLICA&collection=#{collection_name}&shard=#{shard_name}&replica=#{replica_name}"
+              Chef::Log.info("DELETEREPLICA : #{delete_replica_url}")
+              delete_replica_resp_obj = run_solr_action_api(delete_replica_url)
+              Chef::Log.info("Deleted old Replica : #{old_node_ip}, for collection = #{collection_name} & shard = #{shard_name} & replica=#{replica_name}")
+    
+              #Refresh the collection/shard state to reflect the DELETEREPLICA change
+              replicas = get_replicas_by_shard(host, port, collection_name, shard_name)
+              Chef::Log.info("replicas for collection #{collection_name} & shard #{shard_name} after deleted replica=#{replica_name}")
+    
+            else
+              Chef::Log.info("Skipping Delete Replica for the replica #{replica_name} as no replica found on node #{old_node_ip}")
             end
+    
+            # before adding the replica check if the new node ip is part of any collection in the cluster state, if so then don't do it
+            # new-IP exists and old-IP too exists - Deletes the replica and sets old_ip_exist = 1, sets new_ip_exist = 1 => No add replica
+            # new-IP exists and old-IP does not - doesn't delete replica, old_ip_exist = 0, sets new_ip_exist = 1 => No add replica
+            # new-IP does not exist and old IP does - Deletes the replica and sets old_ip_exist = 1, new_ip_exist = 0 => Satisfies the condition for add replica
+            Chef::Log.info("replicas before checking new_ip = #{replicas.to_json}")
+            Chef::Log.info("replicas[replica] before checking new_ip #{new_ip} = #{replicas[replica_name].to_json}")
+            #Check if for shard, any replica is using the new_ip
+            if replica_exists_on_ip?(replicas, new_ip)
+              Chef::Log.info("New IP #{new_ip} is found in the Replica for collection = #{collection_name} & shard = #{shard_name}")
+              new_ip_exist += 1
+            else
+              Chef::Log.info("New IP #{new_ip} is not found in replicas of collection = #{collection_name} & shard = #{shard_name}")
+            end
+          end # next replica
+    
+          #Add replica on new ip if it was deleted from old ip. i.e. if old IP existed and new IP is not shown
+          if (old_ip_exist > 0 && new_ip_exist == 0)
+            add_replica_url = "#{solrCollectionUrl}action=ADDREPLICA&collection=#{collection_name}&shard=#{shard_name}&node=#{new_ip}:#{port}_solr"
+            Chef::Log.info("ADDREPLICA: #{add_replica_url}")
+            add_replica_resp_obj = run_solr_action_api(add_replica_url)
+            Chef::Log.info("Added new Replica : #{new_ip}, for collection = #{collection_name} & shard = #{shard_name}")
+          else
+            Chef::Log.info("Skipping Add Replica for collection = #{collection_name} & shard = #{shard_name}, since value of old_ip_exist=#{old_ip_exist} and value of new_ip_exist=#{new_ip_exist}")
           end
+        end # next shard
+      end # next collection
+    end
+    
+    #Get the replicas for shard in collection
+    def get_replicas_by_shard(host, port, collection, shard)
+      params = {:action => "CLUSTERSTATUS"}
+      cluster_status_resp = solr_collection_api(host, port, params)
+      Chef::Log.info("cluster_status_resp in get_replicas_by_shard = #{cluster_status_resp.to_json}")
+      cluster_status_collections = cluster_status_resp["cluster"]["collections"]
+      shards = cluster_status_collections[collection]["shards"]
+      replicas = shards[shard]["replicas"]
+      return replicas
+    end
+    
+    #Returns true if any of the replica hosted on ip
+    def replica_exists_on_ip?(replicas, ip)
+      replicas.each do |replica_name, replica|
+        if replica != nil && replica['base_url'].include?(ip)
+          return true
         end
       end
+      return false
     end
 
     def run_solr_action_api(url)
