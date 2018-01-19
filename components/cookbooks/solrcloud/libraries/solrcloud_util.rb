@@ -181,19 +181,19 @@ module SolrCloud
     
       solrCollectionUrl = "http://#{host}:#{port}/solr/admin/collections?"
       
-      #Get list of all existing collection names
-      params = {:action => "LIST"}
-      collection_list_resp = solr_collection_api(host, port, params)
-      Chef::Log.info("collection_list_resp = #{collection_list_resp.to_json}")
-      collections = collection_list_resp["collections"]
-        
       #Get cluster state to fetch all collection & its details
       params = {:action => "CLUSTERSTATUS"}
       cluster_state_resp = solr_collection_api(host, port, params)
       Chef::Log.info("cluster_state_resp = #{cluster_state_resp.to_json}")
-      cluster_status_collections = cluster_state_resp["cluster"]["collections"]  
+      cluster_status_collections = cluster_state_resp["cluster"]["collections"]
         
-      #For each collection->shard->replica, delete replica and add it back if it is hosted on replaced node
+      #Get list of all existing collection names
+      collections = []
+      if !cluster_status_collections.nil?  && !cluster_status_collections.empty?
+        collections = cluster_status_collections.keys
+      end
+      
+      #For each collection->shard->replica, delete replica and add it back if it was hosted on replaced node
       collections.each do |collection|
        
         #Process next collection if no shards found
