@@ -51,6 +51,7 @@ node.set['collection_name'] = ci['collection_name']
 node.set['num_shards'] = ci['num_shards']
 node.set['replication_factor'] = ci['replication_factor']
 node.set['max_shards_per_node'] = ci['max_shards_per_node']
+# Getting port no from solrcloud component
 node.set['port_num'] = solrcloud_ci['port_no']
 node.set['config_name'] = ci['config_name']
 node.set['allow_auto_reload_collection'] = ci['allow_auto_reload_collection']
