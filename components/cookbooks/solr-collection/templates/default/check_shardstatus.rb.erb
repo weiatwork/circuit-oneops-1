@@ -15,8 +15,8 @@ require 'open-uri'
 
 monitor = ARGV[0]
 collection_name = ARGV[1]
-port_no = ARGV[2]
-minNoOfActiveReplicasRequired = ARGV[3]
+minNoOfActiveReplicasRequired = ARGV[2]
+port_no = '<%= @port_no %>'
 
 if monitor == "ShardStatus"
   ip = `hostname -I`
