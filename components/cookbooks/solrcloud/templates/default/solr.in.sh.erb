@@ -45,7 +45,11 @@ SOLR_JAVA_MEM="<%= node["solr_mem_max"] %> <%= node["solr_mem_min"] %>"
 
 
 <% if node["solrcloud"]["gc_log_params"] != nil && node["solrcloud"]["gc_log_params"] != '' %>
-<% GC_LOG_opts = JSON.parse(node["solrcloud"]["gc_log_params"]).map{ |v| " #{v}" } %>
+<% GC_LOG_opts = ""
+JSON.parse(node["solrcloud"]["gc_log_params"]).each do |v|
+  GC_LOG_opts = "#{GC_LOG_opts} #{v}"
+end
+%>
 GC_LOG_OPTS="${GC_LOG_OPTS} <%= GC_LOG_opts %>"
 <% end %>
 
@@ -54,7 +58,11 @@ GC_LOG_OPTS="${GC_LOG_OPTS} <%= GC_LOG_opts %>"
 
 
 <% if node["gc_tune_params"] != nil && node["gc_tune_params"] != '' %>
-<% GC_TUNE_opts = node["gc_tune_params"].map{ |v| " -XX:#{v}" } %>
+<% GC_TUNE_opts = ""
+node["gc_tune_params"].each do |v|
+  GC_TUNE_opts = "#{GC_TUNE_opts} -XX:#{v}"
+end
+%>
 GC_TUNE="${GC_TUNE} <%= GC_TUNE_opts %> "
 <% end %>
 
@@ -93,10 +101,13 @@ ENABLE_REMOTE_JMX_OPTS="false"
 #SOLR_OPTS="$SOLR_OPTS -Dsolr.clustering.enabled=true"
 
 <% if node["solrcloud"]["solr_opts_params"] != nil %>
-<% SOLR_opts = JSON.parse(node["solrcloud"]["solr_opts_params"]).map{ |v| " -D#{v}" } %>
-SOLR_OPTS="${SOLR_OPTS} <%= SOLR_opts %> "
+<% SOLR_opts = ""
+JSON.parse(node["solrcloud"]["solr_opts_params"]).each do |v|
+  SOLR_opts = "#{SOLR_opts} -D#{v}"
+end
+%>
+SOLR_OPTS="${SOLR_OPTS} <%= SOLR_opts %>"
 <% end %>
-
 
 <% if not node["solrcloud"]["jmx_port"].empty? %>
 SOLR_OPTS="${SOLR_OPTS} -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.local.only=false -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.port=<%= node["solrcloud"]["jmx_port"] %> -Dcom.sun.management.jmxremote.rmi.port=<%= node["solrcloud"]["jmx_port"] %>"

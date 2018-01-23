@@ -547,7 +547,7 @@ end
 end
 
 # managed_via
-[ 'cloudrdbms', 'user-app', 'java', 'volume-app', 'artifact-app', 'cloudCRON', 'storage', 'volume-cinder', 'objectstore'].each do |from|
+[ 'cloudrdbms', 'user-app', 'java', 'volume-app', 'artifact-app', 'cloudCRON', 'volume-cinder', 'objectstore'].each do |from|
     relation "#{from}::managed_via::compute",
     :except => [ '_default' ],
     :relation_name => 'ManagedVia',

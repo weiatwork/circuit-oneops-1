@@ -1,4 +1,7 @@
-require 'spec_helper'
+is_windows = ENV['OS'] == 'Windows_NT'
+
+CIRCUIT_PATH = "#{is_windows ? 'C:/Cygwin64' : ''}/home/oneops"
+require "#{CIRCUIT_PATH}/circuit-oneops-1/components/spec_helper.rb"
 
 describe file($node['workorder']['rfcCi']['ciAttributes']['path']) do
   it { should be_file }
