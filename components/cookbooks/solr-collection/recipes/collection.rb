@@ -217,10 +217,10 @@ end # override_collection_config
 
 
 
-ruby_block 'ignore_commit_optimize_requests_enabled' do
+ruby_block 'ignore_commit_optimize_and_log_delete_requests_enabled' do
   block do
-    if node['validation_enabled'] == 'true' && !ignore_commit_optimize_requests_enabled?
-      error = "IgnoreCommitOptimizeUpdateProcessorFactory is not found in one of the UpdateRequestProcessorChains.This processor is very highly recommended so that no one can issue commits or optimize calls very frequently and destabilize the cluster. If you still believe you do not need this validation-failure, please disable the validation flag from collection component."
+    if node['validation_enabled'] == 'true' && !ignore_commit_optimize_and_log_delete_requests_enabled?
+      error = "IgnoreCommitOptimizeUpdateProcessorFactory and LogDeleteUpdateProcessorFactory is not found in one of the UpdateRequestProcessorChains.This processor is very highly recommended so that no one can issue commits or optimize calls very frequently and destabilize the cluster. If you still believe you do not need this validation-failure, please disable the validation flag from collection component. The other processor logs all the delete queries."
       puts "***FAULT:FATAL=#{error}"
       raise error
     end
