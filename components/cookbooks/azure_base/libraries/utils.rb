@@ -1,4 +1,3 @@
-require 'azure_mgmt_resources'
 require File.expand_path('../../libraries/logger.rb', __FILE__)
 
 module Utils
