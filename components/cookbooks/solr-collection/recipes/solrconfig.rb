@@ -18,7 +18,7 @@ property_value = args['property_value']
 
 ci = node.workorder.ci.ciAttributes;
 collection_name = ci['collection_name']
-port_num = ci['port_num']
+port_num = node['port_num']
 
 if ( !"#{collection_name}".empty? ) && ( !"#{property_type}".empty? ) && ( !"#{property_name}".empty? ) && ( !"#{port_num}".empty? )
 	validate_property_type(property_type)

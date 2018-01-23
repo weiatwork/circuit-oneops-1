@@ -90,14 +90,6 @@ attribute 'allow_auto_reload_collection',
 #     :order => 6
 #   }
 
-attribute 'port_num',
-  :description => 'Solr PortNo',
-  :format => {
-    :help => 'Specify the solr process port no',
-    :category => '1.Collection Parameters',
-    :order => 9
-  }
-
 attribute 'skip_collection_comp_execution',
   :description => 'Skip collection component',
   :default => "false",
