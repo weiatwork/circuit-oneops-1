@@ -102,21 +102,6 @@ resource "enterprise_server",
          :cookbook => "oneops.1.enterprise_server",
          :design => true,
          :requires => {"constraint" => "1..1", :services => "mirror"},
-         :attributes => {
-             'install_root_dir' => '/opt',
-             'install_version_major' => '2',
-             'install_version_minor' => '6.0',
-             'server_user' => 'app',
-             'server_group' => 'app',
-             'java_jvm_args' => '-Xms64m -Xmx1024m',
-             'java_startup_params' => '[
-                    "+UseCompressedOops",
-                    "SurvivorRatio=10",
-                    "SoftRefLRUPolicyMSPerMB=125"
-                  ]',
-             'access_log_dir' =>'/log/enterprise-server',
-             'access_log_pattern'=>'%h %{NSC-Client-IP}i %l %u %t &quot;%r&quot; %s %b %D %F'
-         },
          :monitors => {
              'JvmInfo' => {:description => 'JvmInfo',
                            :source => '',
