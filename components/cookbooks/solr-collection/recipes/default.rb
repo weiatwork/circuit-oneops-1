@@ -8,6 +8,10 @@
 # This recipe is invoked both as part of the part of regular recipes as well as through OneOps Procedure/Actions
 # The payload structure is different in either cases.
 #
+
+# get solrcloud payload to determine the solrcloud attrs
+solrcloud_ci = node.workorder.payLoad.SolrCloudPayload[0].ciAttributes
+
 begin
 	# Check if we are invoked as part of the Procedure or Action
 	if node.workorder.ci != nil
@@ -47,7 +51,8 @@ node.set['collection_name'] = ci['collection_name']
 node.set['num_shards'] = ci['num_shards']
 node.set['replication_factor'] = ci['replication_factor']
 node.set['max_shards_per_node'] = ci['max_shards_per_node']
-node.set['port_num'] = ci['port_num']
+# Getting port no from solrcloud component
+node.set['port_num'] = solrcloud_ci['port_no']
 node.set['config_name'] = ci['config_name']
 node.set['allow_auto_reload_collection'] = ci['allow_auto_reload_collection']
 node.set['autocommit_maxtime'] = ci['autocommit_maxtime']
