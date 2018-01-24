@@ -1061,61 +1061,34 @@ module SolrCollection
   #     ]
   #   }
   # }
-  def ignore_commit_optimize_and_log_delete_requests_enabled?
+  def has_recommended_processors?
     resp = collection_api(node['ipaddress'],node['port_num'], {}, nil, "/solr/"+node['collection_name']+"/config/updateRequestProcessorChain")
     if resp['config']['updateRequestProcessorChain'].empty?
       Chef::Log.error("No UpdateRequestProcessorChain found")
       return false
     end
 
-    processor_chain_name_with_ignore_commit_and_log_delete_enabled = []
-    found_delete_logger_processor = false
-    found_ignore_commit_processor = false
-    default_processor_chain_name = String.new
-
     #"updateRequestProcessorChain": [{"class": "solr.DocBasedVersionConstraintsProcessorFactory"},......]
-    #collect name of all the UpdateRequestProcessorChains that has both IgnoreCommitOptimizeUpdateProcessor and LogDeleteQueryProcessor
     resp['config']['updateRequestProcessorChain'].each do |processor_chain|
       # "": [{"class": "solr.DocBasedVersionConstraintsProcessorFactory"},{"class": "solr.IgnoreCommitOptimizeUpdateProcessorFactory","statusCode":200},...]
+      found_ignore_commit_processor = false
+      found_delete_logger_processor = false
       processor_chain.each_value do |processor_chain_item|
         if processor_chain_item.kind_of?(Array)
-          processor_chain_item.each do |item|
-            if item['class'] == 'solr.IgnoreCommitOptimizeUpdateProcessorFactory'
+          processor_chain_item.each do |processor|
+            if processor['class'] == 'solr.IgnoreCommitOptimizeUpdateProcessorFactory'
               found_ignore_commit_processor = true
             end
-            if item['class'] == 'com.walmart.strati.search.solr.LogDeleteQueryProcessorFactory'
+            if processor['class'] == 'com.walmart.strati.search.solr.LogDeleteQueryProcessorFactory'
               found_delete_logger_processor = true
             end
           end
         end
       end
-      if found_ignore_commit_processor && found_delete_logger_processor
-        processor_chain_name_with_ignore_commit_and_log_delete_enabled.push(processor_chain['name'])
+      if !found_ignore_commit_processor || !found_delete_logger_processor
+        Chef::Log.error("IgnoreCommitOptimizeUpdateProcessorFactory or LogDeleteQueryProcessorFactory not defined for processor name #{processor_chain['name']}")
+        return false
       end
-      found_delete_logger_processor = false
-      found_ignore_commit_processor = false
-    end
-
-    if processor_chain_name_with_ignore_commit_and_log_delete_enabled == nil || processor_chain_name_with_ignore_commit_and_log_delete_enabled.empty?
-      Chef::Log.error("IgnoreCommitOptimizeUpdateProcessorFactory and LogDeleteQueryProcessorFactory not defined for UpdateRequestProcessorChains")
-      return false
-    end
-
-    #get the name of the default updateRequestProcessorChain
-    resp_init_params = collection_api(node['ipaddress'],node['port_num'], {}, nil, "/solr/"+node['collection_name']+"/config/initParams")
-    if resp['config']['initParams'].empty?
-      Chef::Log.error("No initParams found")
-      return false
-    end
-    resp_init_params['config']['initParams'].each do |param|
-      if param['path'] == "/update/**" && param['defaults'].key?("update.chain")
-        default_processor_chain_name = param['defaults']['update.chain']
-        break
-      end
-    end
-
-    if not processor_chain_name_with_ignore_commit_and_log_delete_enabled.include?(default_processor_chain_name)
-      return false
     end
 
     return true
