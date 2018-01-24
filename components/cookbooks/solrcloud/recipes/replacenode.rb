@@ -14,8 +14,8 @@ Chef::Resource::RubyBlock.send(:include, SolrCloud::Util)
 ruby_block "replace_node" do
   block do
     if node.has_key?("old_node_ip") && !node["old_node_ip"].empty?
-      Chef::Log.info("The compute IP address changed from Old IP #{node["old_node_ip"]} to #{node['ipaddress']}, will start with replace_node_and_add_to_solrcloud option.")
-      replace_node_and_add_to_solrcloud(node["old_node_ip"])
+      Chef::Log.info("The compute IP address changed from Old IP #{node["old_node_ip"]} to #{node['ipaddress']}, will start with retain_replicas_on_node option.")
+      retain_replicas_on_node(node["old_node_ip"])
     end
   end
 end

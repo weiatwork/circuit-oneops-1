@@ -4,6 +4,10 @@ require 'rubygems'
 require 'optparse'
 require 'json'
 
+# Segment limit and buffer size for Openstack file upload
+SEGMENT_LIMIT = 5 * 1024 * 1024 * 1024 - 1       # 5GB -1
+BUFFER_SIZE = 1024 * 1024                        # 1MB
+
 def list_directories_or_files(conn, options, argv)
   # check if need to list files or directories
   if argv.size > 1
@@ -39,12 +43,11 @@ def delete_directory_or_file(conn, argv)
     remote_parts = remote_object.split('/')
     remote_parts.shift
     remote_file = remote_parts.join('/')
-    file_to_delete = directory.files.get(remote_file)
-    if file_to_delete.nil?
-      puts "remote file does not exist: #{remote_file}"
-    else
-      puts "removing file: #{remote_file}"
-      file_to_delete.destroy
+    directory.files.each do |file|
+      if(file.key == remote_file)
+        puts "removing file: #{file.key} from #{remote_dir}"
+        file.destroy
+      end
     end
   else
     directory = conn.directories.get(remote_object)
@@ -57,7 +60,7 @@ def delete_directory_or_file(conn, argv)
   end
 end
 
-def upload_directory_or_file(conn, argv)
+def upload_directory_or_file(conn, argv, provider)
   file_name = argv[1]
   bucket_name = argv[2]
   file_filter = argv[3] || '*'
@@ -85,7 +88,32 @@ def upload_directory_or_file(conn, argv)
   size = 0
   files.each_with_index do |file, idx|
     puts "#{idx + 1}/#{files.size}) Upload: #{file} to bucket: #{bucket_name}"
-    directory.files.create(:key => file, :body => File.open(file))
+    case provider
+    when /OpenStack/
+      File.open(file_name) do |file_upload|
+        segment = 0
+        until file_upload.eof?
+          segment += 1
+          offset = 0
+
+          # upload segment to cloud files
+          segment_suffix = segment.to_s.rjust(10, '0')
+          conn.put_object(bucket_name, "#{file_name}/#{segment_suffix}", nil) do
+            if offset <= SEGMENT_LIMIT - BUFFER_SIZE
+              buf = file_upload.read(BUFFER_SIZE).to_s
+              offset += buf.size
+              buf
+            else
+              ''
+            end
+          end
+        end
+      end
+      # write manifest file
+      conn.put_object_manifest(bucket_name, file_name, 'X-Object-Manifest' => "#{bucket_name}/#{file_name}/")
+    when /Azure/
+      directory.files.create(:key => file, :body => File.open(file))
+    end
     size += File.size(file)
   end
   finish_time = Time.now
@@ -156,7 +184,7 @@ def download_directory_or_file(conn, options, argv)
           start_time = Time.now
           # Download files in chunks
           directory.files.get(remote_file.key) do |chunk, remaining_bytes, total_bytes|
-            print( "\rDownloaded: #{total_bytes - remaining_bytes} of #{total_bytes}")
+            print("\rDownloaded: #{total_bytes - remaining_bytes} of #{total_bytes}")
             local_file.write(chunk)
           end
           finish_time = Time.now
@@ -211,8 +239,9 @@ end
 creds = JSON.parse(File.read('/etc/objectstore_creds.json'))
 creds_sym = Hash[creds.map { |(k, v)| [k.to_sym, v] }]
 conn = nil
+provider = creds['provider']
 
-case creds['provider']
+case provider
 when /OpenStack/
   require 'fog'
   puts "Connecting to #{creds['openstack_auth_url']} as #{creds['openstack_username']}..."
@@ -222,7 +251,7 @@ when /Azure/
   puts "Connecting to #{creds['azure_storage_account_name']}..."
   conn = Fog::Storage::AzureRM.new(creds)
 else
-  puts "Provider #{creds['provider']} not supported!"
+  puts "Provider #{provider} not supported!"
   exit 1
 end
 
@@ -242,7 +271,7 @@ when 'upload'
     puts 'Usage: upload <directory/file> <container>'
     exit 1
   end
-  upload_directory_or_file(conn, ARGV)
+  upload_directory_or_file(conn, ARGV, provider)
 
 when 'download'
   if ARGV.size < 3

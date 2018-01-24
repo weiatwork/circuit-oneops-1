@@ -154,7 +154,7 @@ resource "solrcloud",
   :attributes => {
     'jmx_port' => '$OO_LOCAL{solr_jmx_port}',
     'jolokia_port' => '$OO_LOCAL{jolokia_port}',
-    'solr_version' => '6.6.0',
+    'solr_version' => '7.1.0',
     'gc_log_params' => '',
     'zk_client_timeout' => '60000',
     'enable_jmx_metrics' => 'true',
@@ -169,7 +169,7 @@ resource "solrcloud",
     'solr_opts_params' => '["solr.autoSoftCommit.maxTime=15000", "solr.autoCommit.maxTime=60000", "solr.directoryFactory=solr.MMapDirectoryFactory", "socketTimeout=30000", "connTimeout=30000", "maxConnectionsPerHost=100", "distribUpdateSoTimeout=60000", "distribUpdateConnTimeout=40000", "solr.jetty.threads.max=3000"]',
     'skip_solrcloud_comp_execution' => 'false',
     'enable_cinder' => 'true',
-    'solr_custom_component_version' => '0.0.1',
+    'solr_custom_component_version' => '0.0.2',
     'solr_api_timeout_sec' => '300'
   },
 
@@ -646,8 +646,8 @@ resource "solr-collection",
       :description => 'ShardStatus',
       :source => '',
       :chart => {'min'=>0, 'unit'=>''},
-      :cmd => 'check_shardstatus.rb!#{cmd_options[:monitor]}!:::node.workorder.rfcCi.ciAttributes.collection_name:::!:::node.workorder.rfcCi.ciAttributes.port_num:::!#{cmd_options[:minReplicas]}',
-      :cmd_line => '/opt/nagios/libexec/check_shardstatus.rb $ARG1$ $ARG2$ $ARG3$ $ARG4$',
+      :cmd => 'check_shardstatus.rb!#{cmd_options[:monitor]}!:::node.workorder.rfcCi.ciAttributes.collection_name:::!#{cmd_options[:minReplicas]}',
+      :cmd_line => '/opt/nagios/libexec/check_shardstatus.rb $ARG1$ $ARG2$ $ARG3$',
       :cmd_options => {
         'monitor' => 'ShardStatus',
         'minReplicas' => 2

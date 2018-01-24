@@ -58,7 +58,7 @@ template "memcached_service" do
     source "memcached.erb"
     owner "root"
     group "root"
-    mode "0755"
+    mode "0644"
     variables(
       :cli_opts => cli_opts,
       :memcached_user => ci['user']

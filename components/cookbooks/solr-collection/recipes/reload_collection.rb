@@ -23,7 +23,7 @@ collection_name = args["collection_name"]
 ci = node.workorder.ci.ciAttributes;
 # The collection name which is associated with this solr-collection instance
 component_collection_name = ci['collection_name']
-port_num = ci['port_num']
+port_num = node['port_num']
 
 Chef::Log.info("Component Collection name : #{component_collection_name}")
 

@@ -19,7 +19,7 @@ update_timeout_secs = args['update_timeout_secs']
 
 ci = node.workorder.ci.ciAttributes;
 collection_name = ci['collection_name']
-port_num = ci['port_num']
+port_num = node['port_num']
 
 if ( !"#{collection_name}".empty? ) && ( !"#{schema_action}".empty? ) && ( !"#{json_payload}".empty? ) && ( !"#{port_num}".empty? )
   validate_schema_action(schema_action)
