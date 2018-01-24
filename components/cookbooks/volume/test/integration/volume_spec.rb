@@ -3,9 +3,10 @@ $circuit_path = "#{is_windows ? 'C:/Cygwin64' : ''}/home/oneops"
 require "#{$circuit_path}/circuit-oneops-1/components/spec_helper.rb"
 require "#{$circuit_path}/circuit-oneops-1/components/cookbooks/volume/test/integration/volume_helper.rb"
 
-size = $ciAttr['size']
-fs_type = $ciAttr['fstype']
-options = $ciAttr['options']
+size         = $ciAttr['size']
+fs_type      = $ciAttr['fstype']
+options      = $ciAttr['options']
+logical_name = $node['workorder']['rfcCi']['ciName']
 if options.respond_to?('split')
   options_hash = Hash[options.split(',').select{|i| (i != 'defaults')}.map {|i| [i.split('=')[0].to_sym, i.split('=')[1] ? i.split('=')[1] : true]}]
 else
@@ -24,25 +25,6 @@ describe file($mount_point) do
   it { should be_mounted.with( mount_hash) } unless is_windows #TO-DO Check with Powershell directly, if the $mount_point is actually mounted and set online
 end
 
-#assert each storage device from the map
-service_dir = '/opt/oneops/storage_devices/'
-$device_map.each do |dev|
-  if dev.split(':').size > 2
-    resource_group_name, storage_account_name, ciID, slice_size, dev_id = dev.split(':')
-    vol_id = [ciID, 'datadisk',dev.split('/').last.to_s].join('-')
-  else
-    vol_id, dev_id = dev.split(":")
-  end
-
-  reg = Regexp.new( "^#{Regexp.escape(dev_id)}:#{Regexp.escape(dev_id[0..dev_id.length-2])}\\w$" )
-
-  describe file(File.join(service_dir, vol_id)) do
-    it { should be_file }
-    its(:content) {should match reg}
-  end
-
-end if $storage && !is_windows && Dir.exist?(service_dir) #TO-DO start using the service files for windows as well, then we can enable these tests
-
 #Assert volume size
 if fs_type != 'tmpfs'
   lvm_dev_id = `mount | grep #{$mount_point}| awk '{print $1}'`.chop
@@ -51,7 +33,7 @@ else
   size_vm = `df -BG | grep #{$mount_point}| awk '{print $2}'`.chop.to_f.round(0).to_i
 end
 if !is_windows
-  vg_name = execute_command("lvs | grep #{$node['workorder']['rfcCi']['ciName']}").stdout.split(' ')[1]
+  vg_name = execute_command("lvs | grep #{logical_name}").stdout.split(' ')[1]
   vg = `vgdisplay -c #{vg_name}`
   vg_size = ((vg.split(':')[11].to_f)/1024/1024).round(0).to_i
   vg_lvcount = vg.split(':')[5].to_i
@@ -75,3 +57,20 @@ describe "size of #{$mount_point}" do
     expect(size_wo_g).to eql(size_vm)
   end
 end unless size_wo_g.nil?
+
+#Assert raid level and status
+raid_level = $ciAttr['mode']
+raid_name = "/dev/md/#{logical_name}"
+
+describe "RAID array #{raid_name}" do
+  let (:raid_status) {execute_command("mdadm --detail #{get_raid_device(raid_name)} | grep 'Raid Level'")}
+  let (:out) {raid_status.stdout.split(':')[1]}
+  it "RAID status is healthy" do
+    expect(raid_status.exitstatus).to eql(0)
+  end
+
+  it "RAID level matches requested" do
+    expect(out).not_to be_nil
+    expect(out.chomp.strip).to eql(raid_level)
+  end
+end if raid_level != 'no-raid'
