@@ -15,13 +15,13 @@ grouping 'bom',
 attribute 'solr_version',
   :description => 'Solr Version',
   :required => 'required',
-  :default => '7.1.0',
+  :default => '7.2.1',
   :format => {
     :help => 'Select the specific version to set up solrcloud. Be sure the artifact uploaded to mirror repository',
     :category => '1.SolrCloud',
     :form => {'field' => 'select', 'options_for_select' => [
-       ['6.6.0', '6.6.0'],
-       ['7.1.0', '7.1.0'],  ['7.2.1', '7.2.1']
+       ['6.6.0 (Deprecated)', '6.6.0'],
+       ['7.1.0 (Deprecated)', '7.1.0'],  ['7.2.1', '7.2.1']
     ]},
     :order => 4
   }
