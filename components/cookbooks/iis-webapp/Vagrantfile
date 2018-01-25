@@ -20,6 +20,7 @@ Vagrant.configure("2") do |config|
     chef.log_level      = :info
     chef.cookbooks_path = [".."]
     chef.add_recipe("iis-website::add")
+    chef.add_recipe("iis-webapp::add")
     chef.cookbooks_path = ["..", "../../../../oneops/oneops-admin/lib/shared/cookbooks"]
     chef.json = {
       "iis-website": {
@@ -67,6 +68,14 @@ Vagrant.configure("2") do |config|
       "physical_path": "c:\\apps",
       "log_file_directory": "c:\\logs",
       "enable_static_compression": "true"
+      },
+      "iis-webapp": {
+        "physical_path": "c:\\apps",
+        "package_name": "jquery",
+        "repository_url": "https://api.nuget.org/v3/index.json",
+        "version": "1.9.0",
+        "new_app_pool_required": "true",
+        "application_path": "/saheb",
       },
       "workorder": {
         "services": {},
