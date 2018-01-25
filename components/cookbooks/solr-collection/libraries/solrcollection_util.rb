@@ -1263,16 +1263,14 @@ module SolrCollection
             update_processor_names = update_processor_obj != nil ? update_processor_obj.keys : []
             update_processor_names.each do |update_processor|
               if update_processors.include?(update_processor) && update_processor_obj[update_processor]["class"] == "solr.AddSchemaFieldsUpdateProcessorFactory"
-                found_add_schema_field_processor = true
-                return found_add_schema_field_processor
+                return true
               end
             end
           end
           if value.kind_of?(Array)
             value.each do |update_processor|
               if update_processor['class'] == 'solr.AddSchemaFieldsUpdateProcessorFactory'
-                found_add_schema_field_processor = true
-                return found_add_schema_field_processor
+                return true
               end
             end
           end
