@@ -1220,9 +1220,6 @@ module SolrCollection
       # <updateProcessor class="solr.processor.SignatureUpdateProcessorFactory" name="signature">
       #  <bool name="enabled">true</bool>
       #  <str name="signatureField">id</str>
-      #  <bool name="overwriteDupes">false</bool>
-      #  <str name="fields">name,features,cat</str>
-      #  <str name="signatureClass">solr.processor.Lookup3Signature</str>
       # </updateProcessor>
       # <updateProcessor class="solr.RemoveBlankFieldUpdateProcessorFactory" name="remove_blanks"/>
 
@@ -1236,15 +1233,6 @@ module SolrCollection
       #  <lst name="typeMapping">
       #    <str name="valueClass">java.util.Date</str>
       #    <str name="fieldType">tdates</str>
-      #  </lst>
-      #  <lst name="typeMapping">
-      #    <str name="valueClass">java.lang.Long</str>
-      #    <str name="valueClass">java.lang.Integer</str>
-      #    <str name="fieldType">tlongs</str>
-      #  </lst>
-      #  <lst name="typeMapping">
-      #    <str name="valueClass">java.lang.Number</str>
-      #    <str name="fieldType">tdoubles</str>
       #  </lst>
       # </processor>
       # <processor class="solr.LogUpdateProcessorFactory"/>
@@ -1276,7 +1264,7 @@ module SolrCollection
           end
         end
       end
-      return found_add_schema_field_processor
+      return false
     end
 
   end
