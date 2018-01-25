@@ -389,44 +389,18 @@ class ReplicaAssigner
 
 end
 
-
-# get cloud and computes information from the payload
-def get_cloud_to_compute_map()
-
-    cloud_id_to_name_map = Hash.new
-    clouds = node.workorder.payLoad.Clouds
-    clouds.each { |cloud|
-        cloud_id_to_name_map[cloud[:ciId].to_s] = cloud[:ciName]
-    }
-
-    map = Hash.new()
-    computes = node.workorder.payLoad.has_key?("RequiresComputes") ? node.workorder.payLoad.RequiresComputes : node.workorder.payLoad.computes
-    computes.each do |compute|
-        unless compute[:ciName].nil?
-            # Example compute[:ciName]:  compute-35709237-2
-            cloud_id = compute[:ciName].split('-').reverse[1].to_s
-            cloud_name = cloud_id_to_name_map[cloud_id]
-            if (map[cloud_name] == nil)
-                map[cloud_name] = Array.new
-            end
-            if compute[:ciAttributes][:private_ip] != nil
-                map[cloud_name].push(compute[:ciAttributes][:private_ip])
-            end
-        end
-    end
-    Chef::Log.info("cloud-to-computes-map: #{map.to_json}")
-    return map
-end
-
-
 Chef::Log.info("*** Placing replicas for #{node['collection_name']} ***")
 
 collections_for_node_sharing = JSON.parse(node['collections_for_node_sharing'])
 collections_for_node_sharing = collections_for_node_sharing.reject {|coll| coll == node['collection_name']}
 
+cloud_provider = CloudProvider.new(node)
+cloud_or_zone_to_ip_map = cloud_provider.get_zone_to_compute_ip_map()
+Chef::Log.info("cloud_or_zone_to_ip_map using cloud_provider= #{cloud_or_zone_to_ip_map.to_json}")
+  
 ra = ReplicaAssigner.new(node['collection_name'],
     node['num_shards'].to_i, node['replication_factor'].to_i, node['max_shards_per_node'].to_i,
-    node['port_num'].to_i, collections_for_node_sharing, get_cloud_to_compute_map())
+    node['port_num'].to_i, collections_for_node_sharing, cloud_or_zone_to_ip_map)
 
 
 ra.assign_replicas()
