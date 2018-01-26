@@ -15,8 +15,7 @@ class CloudProvider
     @cloud_name = node[:workorder][:cloud][:ciName]
     Chef::Log.info("@cloud_name : #{@cloud_name}")
       
-    #@cloud_provider = node[:workorder][:services][:compute][@cloud_name][:ciClassName].gsub("cloud.service.","").downcase.split(".").last
-    @cloud_provider = 'azure'
+    @cloud_provider = node[:workorder][:services][:compute][@cloud_name][:ciClassName].gsub("cloud.service.","").downcase.split(".").last
     Chef::Log.info("Cloud Provider: #{@cloud_provider}")
     
     if @cloud_provider == nil || @cloud_provider.empty?
@@ -24,32 +23,31 @@ class CloudProvider
     end
     #get the current node's compute
     managedVia_compute = node.workorder.payLoad.ManagedVia[0]
-    Chef::Log.info("managedVia_compute = #{managedVia_compute.to_json}")
-
-    # get zone info for 'azure' cloud provider
-    zone = (managedVia_compute[:ciAttributes].has_key?"zone")?JSON.parse(managedVia_compute[:ciAttributes][:zone]):{}
-    Chef::Log.info("zone = #{zone.to_json}")
-    if zone != nil
-      @fault_domain = zone['fault_domain']
-      @update_domain = zone['update_domain']
-      @zone_name = "#{@fault_domain}_#{@update_domain}"
-    end
-    Chef::Log.info("@zone_name : #{@zone_name}")
-
+   
     case @cloud_provider
       when /azure/
+      # get zone info for 'azure' cloud provider
+        zone = (managedVia_compute[:ciAttributes].has_key?"zone")?JSON.parse(managedVia_compute[:ciAttributes][:zone]):{}
+        Chef::Log.info("zone = #{zone.to_json}")
+        if zone != nil
+          @fault_domain = zone['fault_domain']
+          @update_domain = zone['update_domain']
+          @zone_name = "#{@fault_domain}_#{@update_domain}"
+        end
         @zone_to_compute_ip_map = get_domain_to_compute_ip_map(node)
       else #/vagrant/
         @zone_to_compute_ip_map = get_cloud_name_to_compute_ip_map(node)
     end
+    Chef::Log.info("@zone_name : #{@zone_name}")
   end
 
   # get cloud name and computes information from the payload
   # where key-> <cloud_name> & value-> list of ips
-  # For ex. {"cloud1":[ip1, ip2],"cloud2":[ip3, ip4]}
+  # For ex. {"prod-cdc5":[ip1, ip2],"prod-cdc6":[ip3, ip4]}
   def get_cloud_name_to_compute_ip_map(node)
-    clouds = node.workorder.payLoad.Clouds
-
+    clouds = get_clouds_payload(node)
+    Chef::Log.info("clouds = #{clouds.to_json}")
+   
     #cloud_id_to_name_map=> {'35709237':'cloud1','35709238':'cloud2'}
     cloud_id_to_name_map = Hash.new
     clouds.each { |cloud|
@@ -137,7 +135,11 @@ class CloudProvider
 
   # get compute payload from workorder
   def get_computes_payload(node)
-    return node[:workorder][:payLoad].has_key?("RequiresComputes") ? node[:workorder][:payLoad][:RequiresComputes] : node[:workorder][:payLoad][:RequiresComputes][:computes]
+    return node.workorder.payLoad.has_key?("RequiresComputes") ? node.workorder.payLoad.RequiresComputes : node.workorder.payLoad.computes
+  end
+  
+  def get_clouds_payload(node)
+    return node.workorder.payLoad.has_key?("Clouds") ? node.workorder.payLoad.Clouds : nil
   end
 end
 

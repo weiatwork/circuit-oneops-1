@@ -397,7 +397,6 @@ collections_for_node_sharing = collections_for_node_sharing.reject {|coll| coll 
 cloud_provider = CloudProvider.new(node)
 cloud_or_zone_to_ip_map = cloud_provider.get_zone_to_compute_ip_map()
 Chef::Log.info("cloud_or_zone_to_ip_map using cloud_provider= #{cloud_or_zone_to_ip_map.to_json}")
-  
 ra = ReplicaAssigner.new(node['collection_name'],
     node['num_shards'].to_i, node['replication_factor'].to_i, node['max_shards_per_node'].to_i,
     node['port_num'].to_i, collections_for_node_sharing, cloud_or_zone_to_ip_map)
