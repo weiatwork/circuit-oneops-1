@@ -34,8 +34,10 @@ class CloudProvider
           @update_domain = zone['update_domain']
           @zone_name = "#{@fault_domain}_#{@update_domain}"
         end
+        # in case of azure, key -> zone i.e. fault_domain_update_domain. ex 1_1
         @zone_to_compute_ip_map = get_domain_to_compute_ip_map(node)
       else #/vagrant/
+        # in case of other (openstack), key -> cloud_name ex. prod-cdc5
         @zone_to_compute_ip_map = get_cloud_name_to_compute_ip_map(node)
     end
     Chef::Log.info("@zone_name : #{@zone_name}")
