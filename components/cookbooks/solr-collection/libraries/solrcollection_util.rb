@@ -1030,6 +1030,34 @@ module SolrCollection
         props_map["8_slow_query_threshold_millis"]["elem_value"] = node["slow_query_threshold_millis"]
       end
 
+      if node['min_rf'] != nil && !node['min_rf'].empty?
+        if node['min_rf'] < node['replication_factor']
+          init_params_props_map = {
+            "25_init_params_update_handler" => {
+              "parent_elem_path" => "config/initParams[@path='\/update\/**']",
+              "parent_elem_attrs" => {
+                "path" => "/update/**"
+              },
+              "elem_name"  => "lst",
+              "attr_name"  => "name",
+              "attr_value" => "defaults"
+            },
+            "26_init_params_update_handler_min_rf" => {
+              "parent_elem_path" => "config/initParams[@path='/update/**']/lst[@name='defaults']",
+              "elem_name"  => "str",
+              "attr_name"  => "name",
+              "attr_value" => "min_rf",
+              "elem_value" => node['min_rf']
+            }
+          }
+        else
+          error = "If the update request was not successfully applied on at least n replicas where n >= min_rf then the client should retry the update instead." +
+                  "When the minimum replication factor (min_rf) is greater than or equal to replication factor then this is not useful and should be avoided."
+          raise error
+        end
+        props_map.merge!(init_params_props_map)
+      end
+
       return props_map.sort
     end
 
