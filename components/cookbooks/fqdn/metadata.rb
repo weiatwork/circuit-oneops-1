@@ -118,6 +118,27 @@ attribute 'gslb_vnames',
     :order => 9
   }
 
+attribute 'service_type',
+  :description => "GSLB Service Type",
+  :default => "netscaler",
+  :format => {
+    :important => true,
+    :help => 'Select the gslb service provider type. available types : netscaler/torbit',
+    :category => '1.Global',
+    :order => 10,
+    :form => { 'field' => 'select', 'options_for_select' => [['netscaler','netscaler'],['torbit','torbit']] }
+  }
+
+attribute 'gslb_map',
+  :description => "GSLB dynamic values map",
+  :grouping => 'bom',
+  :default => '{}',
+  :data_type => "hash",
+  :format => {
+    :help => 'GSLB dynamic values map',
+    :category => '1.Global',
+    :order => 11
+  }
   
 recipe "repair", "Repair"
 recipe "gslbstatus", "GSLB Status"
