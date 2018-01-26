@@ -1,6 +1,6 @@
 #
 # Cookbook Name :: solrcloud
-# Library :: solrcloud_util
+# Library :: CloudProvider
 #
 # A utility module to deal with helper methods.
 #
