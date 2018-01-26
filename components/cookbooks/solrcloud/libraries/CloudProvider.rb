@@ -1,9 +1,6 @@
 #
 # Cookbook Name :: solrcloud
 # Library :: CloudProvider
-#
-# A utility module to deal with helper methods.
-#
 
 require 'json'
 
