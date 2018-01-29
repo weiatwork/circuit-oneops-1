@@ -62,8 +62,8 @@ end
 # Get Install Information from defaults
 node.set['enterprise_server']['global']['install_root_dir'] = node.workorder.rfcCi.ciAttributes.install_root_dir
 if node['enterprise_server']['global']['install_root_dir'].empty?
-  Chef::Log.warn("install_root_dir was empty: setting to'/app'")
-  node.set['enterprise_server']['global']['install_root_dir'] = '/app'
+  Chef::Log.warn("install_root_dir was empty: setting to'/opt'")
+  node.set['enterprise_server']['global']['install_root_dir'] = '/opt'
 end
 install_root_dir = "#{node['enterprise_server']['install_root_dir']}"
 
