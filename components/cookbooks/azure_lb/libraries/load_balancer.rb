@@ -198,5 +198,27 @@ module AzureNetwork
       end
 
     end
+
+    def get_backend_ip_configurations(resource_group_name, lb_name, azure_creds, backend_address_pool_id = nil)
+
+      creds = azure_creds
+      token_provider                  = MsRestAzure::ApplicationTokenProvider.new(creds[:tenant_id], creds[:client_id], creds[:client_secret])
+      credentials                     = MsRest::TokenCredentials.new(token_provider)
+      network_client                  = Azure::ARM::Network::NetworkManagementClient.new(credentials)
+      network_client.subscription_id  = creds[:subscription_id]
+
+
+      lb = network_client.load_balancers.get(resource_group_name, lb_name, nil, nil)
+      backend_ip_configurations = nil
+
+      if backend_address_pool_id.nil?
+        backend_ip_configurations = lb.backend_address_pools[0].backend_ipconfigurations
+      else
+        backend_address_pool = lb.backend_address_pools.detect {|p| p.id == backend_address_pool_id}
+        backend_ip_configurations = backend_address_pool.backend_ipconfigurations unless backend_address_pool.nil?
+      end
+
+      return backend_ip_configurations
+    end
   end
 end
