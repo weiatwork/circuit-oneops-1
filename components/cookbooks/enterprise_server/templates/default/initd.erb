@@ -62,7 +62,7 @@ NUMBER_OF_TIMES_TO_CHECK_IF_APP_STARTED=10
 <% if node['enterprise_server'].key?('server_log_path') && !node['enterprise_server']['server_log_path'].empty? %>
 LOG_FILES_PATH="<%= node['enterprise_server']['server_log_path'] %>"
 <% else %>
-LOG_FILES_PATH="/app/enterprise-server/logs"
+LOG_FILES_PATH="/opt/enterprise-server/logs"
 <% end %>
 
 TOMCAT_SERVICE_NAME="enterprise-server"

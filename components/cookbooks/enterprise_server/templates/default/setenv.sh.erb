@@ -43,7 +43,7 @@ CATALINA_PID=<%= node['enterprise_server']['server_log_path'] %>/enterprise-serv
 ###############################################################################
 # java_options
 <% if !node['enterprise_server']['java']['java_options'].empty? %>
-CATALINA_OPTS="<%= node['enterprise_server']['java']['java_options'] %> -DclusterNodes=${CLUSTER_MEMBERS} -Djava.security.auth.login.config=/app/enterprise-server/conf/jaas.config "
+CATALINA_OPTS="<%= node['enterprise_server']['java']['java_options'] %> -DclusterNodes=${CLUSTER_MEMBERS} -Djava.security.auth.login.config=/opt/enterprise-server/conf/jaas.config "
 <% end %>
 # system_properties
 <% if JSON.parse(node['enterprise_server']['java']['system_properties']).keys.size > 0 %>
