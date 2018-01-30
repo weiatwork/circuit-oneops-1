@@ -13,7 +13,7 @@ grouping 'default',
 attribute 'install_root_dir',
   :description => "Installation Root Directory",
   :required => "required",
-  :default => "/app",
+  :default => "/opt",
   :format => {
       :category => '1.Global',
       :help => 'Installation root directory',
