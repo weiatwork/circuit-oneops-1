@@ -45,7 +45,7 @@ class AuthConfigurer
   @@secrete_file_name = "solr_secrete_file"
 
   # The solr_install_dir argument is expected to be "/app/solr7 or /app/solr6", the directory under which the solr is installed on the compute
-  # 
+  #
   def initialize(host, port, solr_admin_user, solr_admin_password, solr_app_user, solr_password, zk_classpath, zk_host, solr_install_dir)
     @host = host
     @port = port

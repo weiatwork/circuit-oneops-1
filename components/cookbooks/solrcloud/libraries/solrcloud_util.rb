@@ -524,9 +524,10 @@ module SolrCloud
 
       if node['config_sub_dir'] == "."
         uploadCustomConfig(node['solr_version'][0,1], node['zk_host_fqdns'], config_name, custom_dir_full_path)
-
       else
         uploadCustomConfig(node['solr_version'][0,1], node['zk_host_fqdns'],config_name,  "#{custom_dir_full_path}/#{node['config_sub_dir']}")
+      end
+
     end
 
     def collections_exists_on_cluster(ip_address, port_no)
