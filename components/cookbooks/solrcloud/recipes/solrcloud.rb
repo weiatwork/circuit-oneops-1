@@ -254,6 +254,16 @@ if (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? 
     notifies :run, "ruby_block[solr_restart_warning]", :delayed
   end
 
+  # Create or Update zkcli.sh file under the below path
+  template "#{node['installation_dir_path']}/solr#{node['solrmajorversion']}/server/scripts/cloud-scripts/zkcli.sh" do
+    source 'zkcli.sh.erb'
+    owner node['solr']['user']
+    group node['solr']['user']
+    mode '0755'
+  end
+
+
+
   # Create or Update /etc/init.d/solr#{node['solrmajorversion']} service
   template "/etc/init.d/solr#{node['solrmajorversion']}" do
     source 'solr.erb'
@@ -412,6 +422,14 @@ if (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? 
   end
   # Note: No restart on update. User should manually restart (rolling restart) from action on update
   if node['action_name'] =~ /add|replace/
+
+    #stop solr if already running. for ex. during add/replace, node started but failed after and retry
+    #will fail on start as the node is already running, hence we must stop the node before start again
+    execute "stop_solr" do
+      command "service solr#{node['solrmajorversion']} stop"
+      returns [0,1]
+    end
+
     service "solr#{node['solrmajorversion']}" do
       action :start
     end
