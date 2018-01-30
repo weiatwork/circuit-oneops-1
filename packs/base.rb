@@ -240,7 +240,7 @@ resource 'logstash',
 resource "fqdn",
   :cookbook => "oneops.1.fqdn",
   :design => true,
-  :requires => { "constraint" => "1..1", "services" => "compute,dns,*gdns" },
+  :requires => { "constraint" => "1..1", "services" => "compute,dns,*gdns,*torbit" },
   :attributes => { "aliases" => '[]' },
   :payloads => {
 'environment' => {
@@ -603,7 +603,7 @@ resource "fqdn",
            ]
       }'
     },
-    'clouds' => {
+    'fqdnclouds' => {
       'description' => 'all clouds',
       'definition' => '{
          "returnObject": false,

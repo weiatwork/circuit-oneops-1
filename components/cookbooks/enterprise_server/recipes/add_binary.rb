@@ -74,7 +74,7 @@ bash 'extract' do
   code <<-EOF
     tar -zxf ${tar_flags} ent-serv.tgz -C #{install_target_dir}
     rm ent-serv.tgz
-    chown -R #{server_user}:#{server_group} #{install_root_dir}
+    chown -R #{server_user}:#{server_group} #{install_target_dir}
   EOF
   returns 0
 end
