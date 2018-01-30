@@ -35,12 +35,13 @@ module SolrCloud
 
         result = `#{command}`
 
-        if $? != 0
-          puts "***FAULT:FATAL=#{result}"
-          e = Exception.new("no backtrace")
-          e.set_backtrace("")
-          raise e
-        end
+        # Commented out as in usual scenario the config will be not be there on zookeeper and it will fail
+        # if $? != 0
+        #   puts "***FAULT:FATAL=#{result}"
+        #   e = Exception.new("no backtrace")
+        #   e.set_backtrace("")
+        #   raise e
+        # end
 
         Chef::Log.info("Successfully downloaded config '#{configname}'")
       rescue Exception => msg
@@ -57,10 +58,9 @@ module SolrCloud
         command = "#{node['installation_dir_path']}/solr#{solrmajorversion}/server/scripts/cloud-scripts/zkcli.sh -zkhost #{zkHost} -cmd upconfig  -confdir #{dirname} -confname #{configname}"
 
         Chef::Log.info("uploadCustomConfig command : #{command}")
-        bash 'upload_custom_config' do
-          code <<-EOH
-            #{command}
-          EOH
+        result = `#{command}`
+        if $? != 0
+          raise "uploading custom config failed"
         end
         Chef::Log.info("Successfully uploaded custom config '#{configname}'")
       rescue Exception => msg
