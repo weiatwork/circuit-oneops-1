@@ -11,12 +11,16 @@ class CloudProvider
     #get the current node's cloud name
     @cloud_name = node[:workorder][:cloud][:ciName]
     Chef::Log.info("@cloud_name : #{@cloud_name}")
-      
+    
+    #extract cloud provider 'Openstack/Azure' from compute service string {"prod-cdc5":{"ciClassName":"cloud.service.Openstack"}}
+    Chef::Log.info("node[:workorder][:services][:compute] = #{node[:workorder][:services][:compute].to_json}")
     @cloud_provider = node[:workorder][:services][:compute][@cloud_name][:ciClassName].gsub("cloud.service.","").downcase.split(".").last
     Chef::Log.info("Cloud Provider: #{@cloud_provider}")
     
+    # Replica distribution varies based on cloud provider. For ex. with 'Openstack' cloud provider, we distribute replicas across clouds and witn 'Azure', 
+    # replicas are distributes across domains. If no cloud provider in payload, then error out. 
     if @cloud_provider == nil || @cloud_provider.empty?
-      raise "Could not find cloud provider"
+      raise "Replica distribution varies based on cloud provider and hence cloud provider must be present in compute service at cloud level."
     end
     #get the current node's compute
     managedVia_compute = node.workorder.payLoad.ManagedVia[0]
@@ -26,18 +30,25 @@ class CloudProvider
       # get zone info for 'azure' cloud provider
         zone = (managedVia_compute[:ciAttributes].has_key?"zone")?JSON.parse(managedVia_compute[:ciAttributes][:zone]):{}
         Chef::Log.info("zone = #{zone.to_json}")
-        if zone != nil
-          @fault_domain = zone['fault_domain']
-          @update_domain = zone['update_domain']
-          @zone_name = "#{@fault_domain}_#{@update_domain}"
+        if zone == nil
+          raise "Missing zone information for azure cloud at compute."
         end
+        @fault_domain = zone['fault_domain']
+        @update_domain = zone['update_domain']
+        if @fault_domain == nil || @fault_domain.empty?
+          raise "Missing fault_domain information for azure cloud at compute."
+        end
+        if @update_domain == nil || @update_domain.empty?
+          raise "Missing update_domain information for azure cloud at compute."
+        end
+        @zone_name = "#{@fault_domain}___#{@update_domain}"
+        Chef::Log.info("@zone_name : #{@zone_name}")
         # in case of azure, key -> zone i.e. fault_domain_update_domain. ex 1_1
-        @zone_to_compute_ip_map = get_domain_to_compute_ip_map(node)
+        @zone_to_compute_ip_map = get_compute_zone_to_compute_ip_map(node)
       else #/vagrant/
         # in case of other (openstack), key -> cloud_name ex. prod-cdc5
         @zone_to_compute_ip_map = get_cloud_name_to_compute_ip_map(node)
     end
-    Chef::Log.info("@zone_name : #{@zone_name}")
   end
 
   # get cloud name and computes information from the payload
@@ -57,6 +68,8 @@ class CloudProvider
     cloud_name_to_ip_map = Hash.new()
     computes = get_computes_payload(node)
     computes.each do |compute|
+      
+      # compute[:ciName] == nil meaning compute has not provisioned yet
       next if compute[:ciName].nil?
       # Example compute[:ciName]:  compute-35709237-2
 
@@ -82,7 +95,7 @@ class CloudProvider
   # get domain and computes map information from the payload
   # where key-> <fauld_domain>_<update_domain> & value-> list of ips
   # For ex. {"1_1":[ip1, ip2],"1_2":[ip3, ip4]}
-  def get_domain_to_compute_ip_map(node)
+  def get_compute_zone_to_compute_ip_map(node)
     #define map with key as <fault_domain>_<update_domain>. ex=>1_1, 1_2 and value=>[ip1,ip2]
     zone_to_ips_map = Hash.new
     computes = get_computes_payload(node)
@@ -91,7 +104,7 @@ class CloudProvider
 
       # each compute's ciAttribute must have zone info like "zone": "{\"fault_domain\":0,\"update_domain\":0}"
       if zone_info_missing?(compute)
-        raise "fault_domain/update_domain information is missing"
+        raise "Zone attrribute with fault_domain/update_domain information is required."
       end
 
       # get <fault_domain>_<update_domain> e. 0_1
@@ -105,6 +118,7 @@ class CloudProvider
       # add ip to zone_info
       zone_to_ips_map[zone_info].push ip
     end
+    Chef::Log.info("zone_to_ips_map = #{zone_to_ips_map.to_json}")
     return zone_to_ips_map
   end
 
