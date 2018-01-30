@@ -1204,6 +1204,69 @@ module SolrCollection
     end
     return backup_names
   end
+
+    # This method returns true if schemaless mode feature is enabled.
+    def schemaless_mode_enabled
+      # Get the solr config response object through the config API.
+      solr_config_response = collection_api(node['ipaddress'],node['port_num'], {}, nil, "/solr/"+node['collection_name']+"/config")
+
+      if solr_config_response['config']['updateRequestProcessorChain'].empty?
+        Chef::Log.error("No UpdateRequestProcessorChain found")
+        return false
+      end
+
+      # Verify if any updateRequestProcessorChains in solrconfig.xml has processor with class 'solr.AddSchemaFieldsUpdateProcessorFactory'
+      # Example:
+      # <updateProcessor class="solr.processor.SignatureUpdateProcessorFactory" name="signature">
+      #  <bool name="enabled">true</bool>
+      #  <str name="signatureField">id</str>
+      # </updateProcessor>
+      # <updateProcessor class="solr.RemoveBlankFieldUpdateProcessorFactory" name="remove_blanks"/>
+
+      # <updateProcessorChain name="add-unknown-fields-to-the-schema" processor="remove_blanks,signature">
+      # <processor class="solr.AddSchemaFieldsUpdateProcessorFactory">
+      #  <str name="defaultFieldType">strings</str>
+      #  <lst name="typeMapping">
+      #    <str name="valueClass">java.lang.Boolean</str>
+      #    <str name="fieldType">booleans</str>
+      #  </lst>
+      #  <lst name="typeMapping">
+      #    <str name="valueClass">java.util.Date</str>
+      #    <str name="fieldType">tdates</str>
+      #  </lst>
+      # </processor>
+      # <processor class="solr.LogUpdateProcessorFactory"/>
+      # <processor class="solr.DistributedUpdateProcessorFactory"/>
+      # <processor class="solr.RunUpdateProcessorFactory" />
+      # </updateProcessorChain>
+
+      # Get updateRequestProcessorChain object from config response object.
+      update_req_proc_chain_obj = solr_config_response['config']['updateRequestProcessorChain']
+      found_add_schema_field_processor = false
+      update_req_proc_chain_obj.each do |processor_chain|
+        processor_chain.each do |key, value|
+          if key == "processor"
+            update_processors = value.split(',')
+            update_processor_obj = solr_config_response['config']['updateProcessor']
+            update_processor_names = update_processor_obj != nil ? update_processor_obj.keys : []
+            update_processor_names.each do |update_processor|
+              if update_processors.include?(update_processor) && update_processor_obj[update_processor]["class"] == "solr.AddSchemaFieldsUpdateProcessorFactory"
+                return true
+              end
+            end
+          end
+          if value.kind_of?(Array)
+            value.each do |update_processor|
+              if update_processor['class'] == 'solr.AddSchemaFieldsUpdateProcessorFactory'
+                return true
+              end
+            end
+          end
+        end
+      end
+      return false
+    end
+
   end
 end
 
