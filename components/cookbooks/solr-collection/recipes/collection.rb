@@ -227,4 +227,17 @@ ruby_block 'ignore_commit_optimize_requests_enabled' do
   end
 end
 
+# Verify if schemaless mode is disabled in order to avoid users to rapidly construct effective schema without manually modifying the schema.
+ruby_block 'disallow_schemaless_mode' do
+  block do
+    if node['validation_enabled'] == 'true' && schemaless_mode_enabled
+        error = "Schemaless mode is found enabled in the config and it is not recommended for use.
+        In the schemaless mode, Solr will guess the field-type to the most basic type which may be very inefficient.
+        For example, it will not attempt tokenization on string fields and it will not set docValues=true for fields requiring sorting, faceting or pivoting etc.
+        Hence this mode is prohibited for production use. If you still want to use it, disable the validation checkbox in the collection component."
+        puts "***FAULT:FATAL=#{error}"
+        raise error
+    end
+  end
+end
 
