@@ -150,7 +150,7 @@ resource "compute",
 resource "solrcloud",
   :cookbook => "oneops.1.solrcloud",
   :design => true,
-  :requires => { "constraint" => "1..1","services" => "maven,mirror,solr-service"},
+  :requires => { "constraint" => "1..1","services" => "maven,mirror,solr-service,compute"},
   :attributes => {
     'jmx_port' => '$OO_LOCAL{solr_jmx_port}',
     'jolokia_port' => '$OO_LOCAL{jolokia_port}',
@@ -531,7 +531,7 @@ resource "solr-collection",
   :cookbook => "oneops.1.solr-collection",
   :design => true,
   :requires => { "constraint" => "0..*",
-                  "services" => "solr-service"
+                  "services" => "solr-service,compute"
                },
   :attributes => {
      'date_safety_check_for_config_update' => '1900-01-01',
