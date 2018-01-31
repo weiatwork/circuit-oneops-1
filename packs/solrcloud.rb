@@ -32,7 +32,6 @@ variable "solr_jmx_port",
 resource "lb",
   :except => [ 'single' ],
   :cookbook => "oneops.1.lb",
-  :design => true,
   :attributes => {
     "listeners" => "[\"tcp 8983 tcp 8983\"]"
   }
