@@ -36,6 +36,7 @@ module SolrCollection
     end
 
 
+    # wrapper over get requests that throws a more informative exception
     def http_request_get(host_name, port_no, path)
       begin
         Chef::Log.info("host_name = " + host_name + ", port_no = " + port_no + ", path = " + path)
@@ -52,6 +53,7 @@ module SolrCollection
     end
 
 
+    # wrapper over post requests that throws a more informative exception
     def http_request_post(host_name, port_no, path, req_body)
       begin
         Chef::Log.info("host_name = " + host_name + ", port_no = " + port_no + ", path = " + path)
@@ -1241,7 +1243,6 @@ module SolrCollection
 
       # Get updateRequestProcessorChain object from config response object.
       update_req_proc_chain_obj = solr_config_response['config']['updateRequestProcessorChain']
-      found_add_schema_field_processor = false
       update_req_proc_chain_obj.each do |processor_chain|
         processor_chain.each do |key, value|
           if key == "processor"
