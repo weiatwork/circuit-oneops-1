@@ -41,14 +41,14 @@ end
 
 node.set['enterprise_server']['global']['server_user'] = node.workorder.rfcCi.ciAttributes.server_user
 if node['enterprise_server']['global']['server_user'].empty?
-  Chef::Log.warn('server_user was empty: setting to app')
-  node.set['enterprise_server']['global']['server_user'] = 'app'
+  Chef::Log.warn('server_user was empty: setting to tomee')
+  node.set['enterprise_server']['global']['server_user'] = 'tomee'
 end
 
 node.set['enterprise_server']['global']['server_group'] = node.workorder.rfcCi.ciAttributes.server_group
 if node['enterprise_server']['global']['server_group'].empty?
-  Chef::Log.warn('server_group was empty: setting to app')
-  node.set['enterprise_server']['global']['server_group'] = 'app'
+  Chef::Log.warn('server_group was empty: setting to tomee')
+  node.set['enterprise_server']['global']['server_group'] = 'tomee'
 end
 
 node.set['enterprise_server']['global']['environment_settings'] = node.workorder.rfcCi.ciAttributes.environment_settings
