@@ -188,7 +188,7 @@ attribute 'min_rf',
           :description  => "minimum replication factor",
           :default => '',
           :format => {
-              :help => 'The minimum replication factor parameter tells Solr that the client application wishes to know what the achieved replication factor was for the update request.',
+              :help => 'The minimum replication factor(min_rf) parameter on update request cause the server to return the achieved replication factor in the response. This does not mean Solr will enforce a minimum replication factor as Solr does not support rolling back updates that succeed on a subset of replicas.',
               :category => '2.UpdateHandler',
               :order => 20
           }

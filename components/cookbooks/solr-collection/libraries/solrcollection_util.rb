@@ -1051,8 +1051,9 @@ module SolrCollection
             }
           }
         else
-          error = "If the update request was not successfully applied on at least n replicas where n >= min_rf then the client should retry the update instead." +
-                  "When the minimum replication factor (min_rf) is greater than or equal to replication factor then this is not useful and should be avoided."
+          error = "The minimum replication factor(min_rf = #{node['min_rf']}) parameter is greater than the replication factor(replication_factor = #{node['replication_factor']})." +
+          "This is not very logical because anything minimum cannot be more than regular."
+          puts "***FAULT:FATAL=#{error}"
           raise error
         end
         props_map.merge!(init_params_props_map)
