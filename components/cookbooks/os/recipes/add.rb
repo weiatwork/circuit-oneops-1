@@ -25,6 +25,14 @@ node.set['cloud_provider'] = provider
 ostype = node[:workorder][:rfcCi][:ciAttributes][:ostype]
 Chef::Log.info("OS type: #{ostype} ...")
 
+image_name = node['workorder']['payLoad']['ManagedVia'][0]['ciAttributes']['server_image_name']
+if image_name =~ /FAST/
+  node.set['fast_image'] = true
+  Chef::Log.info("Fast image detected for image: #{image_name} ...")
+else
+  node.set['fast_image'] = false
+end
+
 #remove two out of three json gem so that it will not create conflit for azure gems
 if (ostype =~ /ubuntu-16.04/)
   Chef::Log.info("Resolving json conflict")
@@ -105,16 +113,20 @@ if ostype =~ /windows/
 end
 
 #Perform non-windows recipes
-# common plugins dir that components put their check scripts
-directory '/opt/nagios/libexec' do
-  owner 'root'
-  group 'root'
-  mode '0755'
-  recursive true
-  action :create
+
+if !node['fast_image']
+  # common plugins dir that components put their check scripts
+  directory '/opt/nagios/libexec' do
+    owner 'root'
+    group 'root'
+    mode '0755'
+    recursive true
+    action :create
+  end
+
+  include_recipe "os::packages"
 end
 
-include_recipe "os::packages"
 include_recipe "os::network"
 include_recipe "os::proxy"
 include_recipe "os::kernel" unless provider == "docker"
@@ -196,18 +208,19 @@ ruby_block 'ssh config' do
   end
 end
 
-Chef::Log.info("Updating security and bash.")
 
-package "bash" do
-  action :upgrade
-end
+if !node['fast_image']
+  Chef::Log.info("Updating security and bash.")
+  package "bash" do
+    action :upgrade
+  end
 
-case node.platform
-when "redhat","centos","fedora"
-  if node.platform_version.to_i < 7
-    package "yum-security"
-    execute "yum -y update --security"
+  case node.platform
+  when "redhat","centos","fedora"
+    if node.platform_version.to_i < 7
+      package "yum-security"
+      execute "yum -y update --security"
+    end
   end
 end
-
 include_recipe "os::postfix" unless provider == "docker"

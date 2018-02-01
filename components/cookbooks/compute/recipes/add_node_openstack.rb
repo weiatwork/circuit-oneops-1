@@ -543,6 +543,7 @@ ruby_block 'set node network params' do
       if ! server_image.nil?
         puts "***RESULT:server_image_id=" + server_image_id
         puts "***RESULT:server_image_name=" + server_image.name
+        node.set[:image_name] = server_image.name
       end
     end
   end

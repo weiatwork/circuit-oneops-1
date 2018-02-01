@@ -1,14 +1,14 @@
 cloud_name = node[:workorder][:cloud][:ciName]
-provider = node[:workorder][:services][:compute][cloud_name][:ciClassName].gsub("cloud.service.","").downcase
+provider = node[:workorder][:services][:compute][cloud_name][:ciClassName].gsub('cloud.service.', '').downcase
 
-_hosts = node.workorder.rfcCi.ciAttributes.has_key?('hosts') ? JSON.parse(node.workorder.rfcCi.ciAttributes.hosts) : {}
+_hosts = node['workorder']['rfcCi']['ciAttributes'].has_key?('hosts') ? JSON.parse(node['workorder']['rfcCi']['ciAttributes']['hosts']) : {}
 _hosts.values.each do |ip|
   if ip !~ /(\d+)\.(\d+)\.(\d+)\.(\d+)/
     Chef::Log.error("host value of: \"#{ip}\" is not an ip.  fix hosts map to have hostname then ip in the 2 fields.")
 
     puts "***FAULT:FATAL=invalid host ip #{ip} - check hosts attribute"
-    e = Exception.new("no backtrace")
-    e.set_backtrace("")
+    e = Exception.new('no backtrace')
+    e.set_backtrace('')
     raise e
 
   end
@@ -17,6 +17,7 @@ end
 full_hostname = node[:full_hostname]
 _hosts[full_hostname] = node.workorder.payLoad.ManagedVia[0]["ciAttributes"]["private_ip"]
 compute_baremetal = node.workorder.payLoad.ManagedVia[0]["ciAttributes"]["is_baremetal"]
+
 
 directory '/etc/cloud/cloud.cfg.d' do
   owner 'root'
@@ -33,7 +34,7 @@ file '/etc/cloud/cloud.cfg' do
   content ''
 end
 
-bash "set-hostname" do
+bash 'set-hostname' do
   code <<-EOH
   hostnamectl set-hostname #{node.vmhostname}
   printf "hostname: #{node.vmhostname}\nfqdn: #{full_hostname}\n" > /etc/cloud/cloud.cfg.d/99_hostname.cfg
@@ -44,21 +45,23 @@ bash "set-hostname" do
     printf "preserve_hostname: true\n" >> /etc/cloud/cloud.cfg
   fi
 EOH
-  not_if { provider.include? "docker" }
+  not_if { provider.include? 'docker' }
 end
 
 # update /etc/hosts
-gem_package "ghost"
+if !node['fast_image']
+  gem_package 'ghost'
+end
 
-file "/tmp/hosts" do
+file '/tmp/hosts' do
   owner 'root'
   group 'root'
   mode 0755
-  content _hosts.map {|e| e.join(" ") }.join("\n")
+  content _hosts.map {|e| e.join(' ') }.join("\n")
   action :create
 end
 
-bash "update_hosts" do
+bash 'update_hosts' do
   code <<-EOH
     ghost empty
     ghost import /tmp/hosts
@@ -69,14 +72,14 @@ end
 # add short hostname at the end of the FQDN entry line in /etc/hosts
 ruby_block 'update /etc/hosts' do
   block do
-    tmp_host = File.read("/etc/hosts")
-    mod_host = tmp_host.gsub(full_hostname,full_hostname+" "+node.vmhostname)
-    File.open("/tmp/etc_hosts", "w") do |file|
+    tmp_host = File.read('/etc/hosts')
+    mod_host = tmp_host.gsub(full_hostname,full_hostname+' '+node.vmhostname)
+    File.open('/tmp/etc_hosts', 'w') do |file|
         file.puts mod_host
     end
 
     Chef::Log.info('setting /etc/hosts')
-    change_host = Mixlib::ShellOut.new("cat /tmp/etc_hosts > /etc/hosts")
+    change_host = Mixlib::ShellOut.new('cat /tmp/etc_hosts > /etc/hosts')
     change_host.run_command
     Chef::Log.debug("Mod /etc/hosts stdout: #{change_host.stdout}")
     if !change_host.stderr.empty?
@@ -87,24 +90,26 @@ ruby_block 'update /etc/hosts' do
 end
 
 # bind install
-package 'Install bind' do
-  case node['platform']
-    when 'redhat', 'centos', 'fedora', 'suse'
-      package_name 'bind'
-    when 'ubuntu', 'debian'
-      package_name 'bind9'
-    else
-      package_name 'named'
+if !node['fast_image']
+  package 'Install bind' do
+    case node['platform']
+      when 'redhat', 'centos', 'fedora', 'suse'
+        package_name 'bind'
+      when 'ubuntu', 'debian'
+        package_name 'bind9'
+      else
+        package_name 'named'
+    end
+    action :install
   end
-  action :install
 end
 
-customer_domain = node["customer_domain"]
+customer_domain = node['customer_domain']
 if customer_domain =~ /^\./
   customer_domain.slice!(0)
 end
 
-Chef::Log.info("adding /opt/oneops/domain... ")
+Chef::Log.info('adding /opt/oneops/domain... ')
 file '/opt/oneops/domain' do
   mode 0644
   owner 'root'
@@ -114,9 +119,9 @@ end
 
 ruby_block 'setup bind and dhclient' do
   block do
-    Chef::Log.info("*** SETUP BIND ***")
+    Chef::Log.info('*** SETUP BIND ***')
 
-    given_nameserver =(`cat /etc/resolv.conf |grep -v 127  | grep -v '^#' | grep nameserver | awk '{print $2}'`.split("\n")).join(";")
+    given_nameserver =(`cat /etc/resolv.conf |grep -v 127  | grep -v '^#' | grep nameserver | awk '{print $2}'`.split("\n")).join(';')
     if given_nameserver.empty?
       given_nameserver = '8.8.4.4'
       `echo "nameserver #{given_nameserver}" > /etc/resolv.conf`
@@ -126,33 +131,34 @@ ruby_block 'setup bind and dhclient' do
     node.customer_domain
     zone_domain = node.customer_domain.downcase
     dns_zone_found = false
-    while !dns_zone_found && zone_domain.split(".").size > 2
+    while !dns_zone_found && zone_domain.split('.').size > 2
       result = `dig +short NS #{zone_domain}`.to_s
-      valid_result = result.split("\n") - [""]
+      valid_result = result.split("\n") - ['']
       if valid_result.size > 0
         puts "found: #{zone_domain}"
         dns_zone_found = true
       else
-        parts = zone_domain.split(".")
+        parts = zone_domain.split('.')
         trash = parts.shift
-        zone_domain = parts.join(".")
+        zone_domain = parts.join('.')
       end
 
     end
-    Chef::Log.info("dns zone domain: "+zone_domain)
+    Chef::Log.info('dns zone domain: '+zone_domain)
 
-    zone_config = ""
+    zone_config = ''
 
     case node.platform
-    when "redhat","centos"
+    when 'redhat', 'centos'
       named_conf = 'include "/etc/bind/named.conf.options";'+"\n"
       # commented out to prevent adding authoritative servers for the zone
       # named_conf += 'include "/etc/bind/named.conf.local";'+"\n"
-      ::File.open("/etc/named.conf", 'w') {|f| f.write(named_conf) }
+      ::File.open('/etc/named.conf', 'w') {|f| f.write(named_conf) }
 
       Chef::Log.info('creating directory /etc/bind/')
-      make_bind = Mixlib::ShellOut.new("mkdir -p -m 755 /etc/bind/")
+      make_bind = Mixlib::ShellOut.new('mkdir -p -m 755 /etc/bind/')
       make_bind.run_command
+      Chef::Log.debug("#{make_bind.stdout}")
       if !make_bind.stderr.empty?
         Chef::Log.error("Error creating /var/cache/bind #{make_bind.stderr}")
         make_bind.error!
@@ -160,8 +166,9 @@ ruby_block 'setup bind and dhclient' do
 
 
       Chef::Log.info('creating directory /var/cache/bind')
-      make_bind_cache = Mixlib::ShellOut.new("mkdir -p -m 755 /var/cache/bind")
+      make_bind_cache = Mixlib::ShellOut.new('mkdir -p -m 755 /var/cache/bind')
       make_bind_cache.run_command
+      Chef::Log.debug("#{make_bind_cache.stdout}")
       if !make_bind_cache.stderr.empty?
         Chef::Log.error("Error creating /var/cache/bind #{make_bind_cache.stderr}")
         make_bind_cache.error!
@@ -174,37 +181,37 @@ ruby_block 'setup bind and dhclient' do
     options_config += "  auth-nxdomain no;    # conform to RFC1035\n";
     options_config += "  listen-on-v6 { any; };\n";
     options_config += "  forward only;\n"
-    options_config += "  forwarders { "+given_nameserver+"; };\n"
+    options_config += '  forwarders { '+given_nameserver+"; };\n"
     options_config += "};\n"
 
-    named_options_file = "/etc/bind/named.conf.options"
-    named_options_file = "/etc/named.d/named.conf.options" if node.platform == "suse"
+    named_options_file = '/etc/bind/named.conf.options'
+    named_options_file = '/etc/named.d/named.conf.options' if node.platform == 'suse'
     ::File.open(named_options_file, 'w') {|f| f.write(options_config) }
 
-    if node.platform != "ubuntu"
+    if node.platform != 'ubuntu'
       bind_option = "OPTIONS=\"-4\""
-        ::File.open("/etc/sysconfig/named", 'w') {|f| f.write(bind_option) }
+        ::File.open('/etc/sysconfig/named', 'w') {|f| f.write(bind_option) }
     end
 
     authoritative_dns_servers = (`dig +short NS #{zone_domain}`).split("\n")
-    puts "authoritative_dns_servers: "+authoritative_dns_servers.join(" ")
-    dig_out = `dig +short #{authoritative_dns_servers.join(" ")}`
+    puts 'authoritative_dns_servers: '+authoritative_dns_servers.join(' ')
+    dig_out = `dig +short #{authoritative_dns_servers.join(' ')}`
     nameservers = dig_out.split("\n")
 
     zone_config += "zone \"#{zone_domain+'.'}\" IN {\n"
     zone_config += "    type forward;\n"
-    zone_config += "    forwarders {"+nameservers.join(";")+";};\n"
+    zone_config += '    forwarders {'+nameservers.join(';')+";};\n"
     zone_config += "};\n"
 
-    named_conf_local_file = "/etc/bind/named.conf.local"
-    named_conf_local_file = "/etc/named.d/named.conf.local" if node.platform == "suse"
+    named_conf_local_file = '/etc/bind/named.conf.local'
+    named_conf_local_file = '/etc/named.d/named.conf.local' if node.platform == 'suse'
     ::File.open(named_conf_local_file, 'w') {|f| f.write(zone_config) }
 
 
     # allow additional search domains to take priority over customer-env-cloud domain
-    customer_domains = ""
-    customer_domains_dot_terminated = ""
-    if node.workorder.rfcCi[:ciAttributes].has_key?("additional_search_domains") &&
+    customer_domains = ''
+    customer_domains_dot_terminated = ''
+    if node.workorder.rfcCi[:ciAttributes].has_key?('additional_search_domains') &&
       !node.workorder.rfcCi.ciAttributes.additional_search_domains.empty?
 
       additional_search_domains = JSON.parse(node.workorder.rfcCi.ciAttributes.additional_search_domains)
@@ -221,17 +228,17 @@ ruby_block 'setup bind and dhclient' do
     Chef::Log.info("supersede domain-search #{customer_domains}")
     dhcp_config_content = "supersede domain-search #{customer_domains};\n"
     dhcp_config_content += "prepend domain-name-servers 127.0.0.1;\n"
-    dhcp_config_content += "supersede domain-name-servers #{given_nameserver.gsub(";",",")};\n"
+    dhcp_config_content += "supersede domain-name-servers #{given_nameserver.gsub(';', ',')};\n"
     dhcp_config_content += "send host-name \"#{full_hostname}\";\n"
 
-    dhcp_config_file = "/etc/dhcp/dhclient.conf"
+    dhcp_config_file = '/etc/dhcp/dhclient.conf'
     Chef::Log.info("writing dhcp config: #{dhcp_config_file}")
     ::File.open(dhcp_config_file, 'w') {|f| f.write(dhcp_config_content) }
 
 
     # handle other config files such as /etc/dhcp/dhclient-eth0.conf
     # these shall be linked to dhclient.conf
-    Chef::Log.info("symlink any dhclient-* files to dhclient.conf...")
+    Chef::Log.info('symlink any dhclient-* files to dhclient.conf...')
     other_dhclient_files = `ls -1 /etc/dhcp/*conf|grep -v dhclient.conf`.split("\n")
     other_dhclient_files.each do |file|
        Chef::Log.info("linking #{file}")
@@ -239,14 +246,14 @@ ruby_block 'setup bind and dhclient' do
       `ln -sf /etc/dhcp/dhclient.conf #{file}`
     end
 
-    dhclient_kill_service="killdhclient"
+    dhclient_kill_service='killdhclient'
     dhclient_kill_script = "/etc/init.d/#{dhclient_kill_service}"
 
     # attribute dhclient will be false if the compute is to use the more static approach to ip address. we are to eliminate dhclient process
     attrs = node[:workorder][:rfcCi][:ciAttributes]
-    if attrs[:dhclient] == 'false' && node.platform != "ubuntu"
+    if attrs[:dhclient] == 'false' && node.platform != 'ubuntu'
         # prepend to the /etc/resolv.conf file as well
-        Chef::Log.info("adjusting resolv.conf because dhclient not desired")
+        Chef::Log.info('adjusting resolv.conf because dhclient not desired')
         Chef::Log.info("resolv search #{customer_domains_dot_terminated}")
         `cp -f /etc/resolv.conf /etc/resolv.conf.orig ; true`
         ## note- further nameserver entries will already be in the file at this point
@@ -299,18 +306,18 @@ ruby_block 'setup bind and dhclient' do
            `chmod +x #{dhclient_kill_script}`
         end
         `chkconfig --add #{dhclient_kill_service}`
-    elsif node.platform != "ubuntu"
+    elsif node.platform != 'ubuntu'
         # remove the script that stops dhclient. it might not be there - it is ok
         `chkconfig --list #{dhclient_kill_service}`
         if $?.to_i == 0
             Chef::Log.info("removing script that kills dhclient - #{dhclient_kill_script} - dhclient is desired if we boot")
             `chkconfig --del #{dhclient_kill_service}`
         else
-            Chef::Log.info("no need to remove script that kills dhclient - it was not here")
+            Chef::Log.info('no need to remove script that kills dhclient - it was not here')
         end
     end
 
-    dhclient_cmdline = "/sbin/dhclient"
+    dhclient_cmdline = '/sbin/dhclient'
   
     # try to use options that its running with
     dhclient_ps = `ps auxwww|grep -v grep|grep dhclient`
@@ -322,7 +329,7 @@ ruby_block 'setup bind and dhclient' do
    `pkill -f dhclient`
 
     # prevent dhcp from overwriting /etc/resolv.conf
-    if node.platform == "ubuntu"
+    if node.platform == 'ubuntu'
       `resolvconf --disable-updates`
     end
 
@@ -333,7 +340,7 @@ ruby_block 'setup bind and dhclient' do
       Chef::Log.info("returned: #{output} exitstatus: #{$?.exitstatus}")
 
     else
-       Chef::Log.info("will not start dhclient because dhclient not desired")
+       Chef::Log.info('will not start dhclient because dhclient not desired')
     end
 
   end
@@ -360,34 +367,34 @@ end
 
 case node.platform
 
-  when "fedora","redhat","centos"
+  when 'fedora', 'redhat', 'centos'
     if !compute_baremetal.nil? && compute_baremetal =~/true/
-      Chef::Log.info("This is a baremetal compute. Interface will be detected dynamically.")
+      Chef::Log.info('This is a baremetal compute. Interface will be detected dynamically.')
       active_interface = `ip route list|grep default |awk '{print $5}'`
       Chef::Log.info("Active interface is #{active_interface}")
       file = "/etc/sysconfig/network-scripts/ifcfg-#{active_interface}"
       `grep PERSISTENT_DHCLIENT #{file}`
       if $?.to_i != 0
-        Chef::Log.info("PERSISTENT DHCLIENT setting - network restart")
+        Chef::Log.info('PERSISTENT DHCLIENT setting - network restart')
         `echo -e "\nPERSISTENT_DHCLIENT=1" >> #{file} ; /sbin/service network restart`
       else
-        Chef::Log.info("DHCLIENT already configured")
+        Chef::Log.info('DHCLIENT already configured')
       end
     else
-      Chef::Log.info("This is a regular compute. Interface will be eth0")
-      file = "/etc/sysconfig/network-scripts/ifcfg-eth0"
+      Chef::Log.info('This is a regular compute. Interface will be eth0')
+      file = '/etc/sysconfig/network-scripts/ifcfg-eth0'
       `grep PERSISTENT_DHCLIENT #{file}`
       if $?.to_i != 0
-        Chef::Log.info("DHCLIENT setting ifcfg-eth0 - network restart")
+        Chef::Log.info('DHCLIENT setting ifcfg-eth0 - network restart')
         `echo "PERSISTENT_DHCLIENT=1" >> #{file} ; /sbin/service network restart`
       else
-        Chef::Log.info("DHCLIENT already configured")
+        Chef::Log.info('DHCLIENT already configured')
       end
     end
 end
 
 
-ruby_block "printing hostname fqdn" do
+ruby_block 'printing hostname fqdn' do
   block do
     fqdn = `hostname -f`
     Chef::Log.info("Executing 'hostname -f' : #{fqdn}")
