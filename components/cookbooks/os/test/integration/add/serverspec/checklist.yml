@@ -29,6 +29,7 @@ packages:
   - automake
   - libtool
   - bison
+  - nmap-ncat
 gems:
   - fog
   - fog-core
