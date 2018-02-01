@@ -35,10 +35,10 @@ class CloudProvider
         end
         @fault_domain = zone['fault_domain']
         @update_domain = zone['update_domain']
-        if @fault_domain == nil || @fault_domain.empty?
+        if @fault_domain == nil || @fault_domain.to_s.empty?
           raise "Missing fault_domain information for azure cloud at compute."
         end
-        if @update_domain == nil || @update_domain.empty?
+        if @update_domain == nil || @update_domain.to_s.empty?
           raise "Missing update_domain information for azure cloud at compute."
         end
         @zone_name = "#{@fault_domain}___#{@update_domain}"
