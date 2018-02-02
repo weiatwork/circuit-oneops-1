@@ -32,7 +32,6 @@ variable "solr_jmx_port",
 resource "lb",
   :except => [ 'single' ],
   :cookbook => "oneops.1.lb",
-  :design => false,
   :attributes => {
     "listeners" => "[\"tcp 8983 tcp 8983\"]"
   }
@@ -117,8 +116,8 @@ resource 'volume-app',
 # 'vm.max_map_count' : The maximum number of mmap files that a process can perform
 ##############################################################################################
 
-resource "compute",
-   :cookbook => "oneops.1.compute",
+resource "os",
+   :cookbook => "oneops.1.os",
    :attributes => {
       'limits' => '{ "nofile" : "200000", "nproc"  : "32768", "memlock" : "unlimited", "as" : "unlimited" }',
       'sysctl' => '{"vm.max_map_count":"131072", "net.ipv4.tcp_mem":"1529280 2039040 3058560", "net.ipv4.udp_mem":"1529280 2039040 3058560", "fs.file-max":"1611021"}'

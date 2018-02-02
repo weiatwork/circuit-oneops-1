@@ -351,8 +351,8 @@ end
 template '/lib/systemd/system/enterprise-server.service' do
   source 'init_systemd.erb'
   cookbook 'enterprise_server'
-  owner 'app'
-  group 'app'
+  owner "#{node['enterprise_server']['global']['server_user']}"
+  group "#{node['enterprise_server']['global']['server_group']}"
   mode '0644'
   notifies :run, 'execute[Load systemd unit file]', :immediately
   only_if { node['platform_version'].to_f >= 7.0 }
@@ -360,8 +360,8 @@ end
 
 template '/etc/init.d/enterprise-server' do
   source 'initd_to_systemd.erb'
-  owner 'app'
-  group 'app'
+  owner "#{node['enterprise_server']['global']['server_user']}"
+  group "#{node['enterprise_server']['global']['server_group']}"
   mode '0755'
 end
 
