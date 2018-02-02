@@ -73,27 +73,40 @@ ruby_block 'update /etc/hosts' do
     File.open("/tmp/etc_hosts", "w") do |file|
         file.puts mod_host
     end
-    `cat /tmp/etc_hosts > /etc/hosts`
- end
+
+    Chef::Log.info('setting /etc/hosts')
+    change_host = Mixlib::ShellOut.new("cat /tmp/etc_hosts > /etc/hosts")
+    change_host.run_command
+    Chef::Log.debug("Mod /etc/hosts stdout: #{change_host.stdout}")
+    if !change_host.stderr.empty?
+      Chef::Log.error("Mod /etc/hosts stderr: #{change_host.stderr}")
+      change_host.error!
+    end
+
+    # For some computes network service needs to be restarted after changing hosts
+    Chef::Log.info('Restarting network')
+    restart_host = Mixlib::ShellOut.new("service network restart")
+    restart_host.run_command
+    Chef::Log.debug("Network service restart stdout: #{restart_host.stdout}")
+    if !restart_host.stderr.empty?
+      Chef::Log.error("Network service restart stderr: #{restart_host.stderr}")
+      restart_host.error!
+    end
+  end
 end
 
 # bind install
-bind_package_name = value_for_platform(
-  [ "debian","ubuntu" ] => {"default" => "bind9"},
-  ["fedora","redhat","centos","suse"] => {"default" => "bind" },
-  "default" => "named"
-)
-
-package bind_package_name do
-    action :install
+package 'Install bind' do
+  case node['platform']
+    when 'redhat', 'centos', 'fedora', 'suse'
+      package_name 'bind'
+    when 'ubuntu', 'debian'
+      package_name 'bind9'
+    else
+      package_name 'named'
+  end
+  action :install
 end
-
-# redhad package is bind but the service resource next uses named
-bind_package_name = value_for_platform(
-  [ "debian","ubuntu" ] => {"default" => "bind9"},
-  "default" => "named"
-)
-
 
 customer_domain = node["customer_domain"]
 if customer_domain =~ /^\./
@@ -110,7 +123,6 @@ end
 
 ruby_block 'setup bind and dhclient' do
   block do
-
     Chef::Log.info("*** SETUP BIND ***")
 
     given_nameserver =(`cat /etc/resolv.conf |grep -v 127  | grep -v '^#' | grep nameserver | awk '{print $2}'`.split("\n")).join(";")
@@ -146,8 +158,24 @@ ruby_block 'setup bind and dhclient' do
       # commented out to prevent adding authoritative servers for the zone
       # named_conf += 'include "/etc/bind/named.conf.local";'+"\n"
       ::File.open("/etc/named.conf", 'w') {|f| f.write(named_conf) }
-      `mkdir -p /etc/bind/`
-      `mkdir -p /var/cache/bind`
+
+      Chef::Log.info('creating directory /etc/bind/')
+      make_bind = Mixlib::ShellOut.new("mkdir -p -m 755 /etc/bind/")
+      make_bind.run_command
+      if !make_bind.stderr.empty?
+        Chef::Log.error("Error creating /var/cache/bind #{make_bind.stderr}")
+        make_bind.error!
+      end
+
+
+      Chef::Log.info('creating directory /var/cache/bind')
+      make_bind_cache = Mixlib::ShellOut.new("mkdir -p -m 755 /var/cache/bind")
+      make_bind_cache.run_command
+      if !make_bind_cache.stderr.empty?
+        Chef::Log.error("Error creating /var/cache/bind #{make_bind_cache.stderr}")
+        make_bind_cache.error!
+      end
+
     end
 
     options_config =  "options {\n"
@@ -321,7 +349,15 @@ ruby_block 'setup bind and dhclient' do
 end
 
 
-service bind_package_name do
+service 'Starting bind service' do
+  case node['platform']
+    when 'redhat', 'centos', 'fedora', 'suse'
+      service_name 'named'
+    when 'ubuntu', 'debian'
+      service_name 'bind9'
+    else
+      service_name 'named'
+  end
   supports :restart => true
   action [:enable, :restart]
 end
