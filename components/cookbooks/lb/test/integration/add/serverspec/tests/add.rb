@@ -16,16 +16,17 @@ if !$node['workorder']['services'][lb_service_type].nil? &&
 
 end
 
-
-metadata = $node['workorder']['payLoad']['RequiresComputes'][0]['ciBaseAttributes']['metadata'].nil? ?  $node['workorder']['payLoad']['RequiresComputes'][0]['ciAttributes']['metadata'] :  $node['workorder']['payLoad']['RequiresComputes'][0]['ciBaseAttributes']['metadata']
-metadata_obj = JSON.parse(metadata)
-org = metadata_obj['organization']
-assembly = metadata_obj['assembly']
-platform = metadata_obj['platform']
-env = metadata_obj['environment']
-
-
 dns_zone = dns_service['ciAttributes']['zone']
+
+if !$node['workorder'].has_key?("actionName")
+  metadata = $node['workorder']['payLoad']['RequiresComputes'][0]['ciBaseAttributes']['metadata'].nil? ?  $node['workorder']['payLoad']['RequiresComputes'][0]['ciAttributes']['metadata'] :  $node['workorder']['payLoad']['RequiresComputes'][0]['ciBaseAttributes']['metadata']
+  metadata_obj = JSON.parse(metadata)
+  org = metadata_obj['organization']
+  assembly = metadata_obj['assembly']
+  platform = metadata_obj['platform']
+  env = metadata_obj['environment']
+end
+
 vsvc_vport = nil
 servicetype = nil
 
@@ -42,7 +43,19 @@ if $node['workorder']['rfcCi'].has_key?('ciAttributes') &&
 
 end
 
-lb_name = [platform, env, assembly, org, gslb_site_dns_id, dns_zone].join(".") + '-'+vsvc_vport+"tcp" +'-' + ciId.to_s + "-lb"
+lb_name = nil
+if !$node['workorder'].has_key?("actionName")
+  lb_name = [platform, env, assembly, org, gslb_site_dns_id, dns_zone].join(".") + '-'+vsvc_vport+"tcp" +'-' + ciId.to_s + "-lb"
+else
+  if $node['workorder']['rfcCi']['ciAttributes'].has_key?("vnames")
+    vnames_map = JSON.parse($node['workorder']['rfcCi']['ciAttributes']['vnames'])
+  end
+  vnames_map.keys.each do |key|
+    if key =~ /#{gslb_site_dns_id}/
+      lb_name = key
+    end
+  end
+end
 
 host = cloud_service['ciAttributes']['host']
 

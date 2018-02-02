@@ -131,10 +131,13 @@ module Utils
   end
 
   def get_resource_tags(node)
+
     tags = {}
 
-    org_tags = JSON.parse(node['workorder']['payLoad']['Organization'][0]['ciAttributes']['tags'])
-    assembly_tags = JSON.parse(node['workorder']['payLoad']['Assembly'][0]['ciAttributes']['tags'])
+    azuretagkeys = ["applicationname", "notificationdistlist", "costcenter", "platform", "deploymenttype", "environmentinfo", "sponsorinfo", "ownerinfo"]
+
+    org_tags = JSON.parse(node['workorder']['payLoad']['Organization'][0]['ciAttributes']['tags']).select{ |k, v| azuretagkeys.include?(k) }
+    assembly_tags = JSON.parse(node['workorder']['payLoad']['Assembly'][0]['ciAttributes']['tags']).select{ |k, v| azuretagkeys.include?(k) }
     assembly_owner_tag = node['workorder']['payLoad']['Assembly'][0]['ciAttributes']["owner"] || "Unknown"
 
     tags.merge!(org_tags)

@@ -240,7 +240,7 @@ resource 'logstash',
 resource "fqdn",
   :cookbook => "oneops.1.fqdn",
   :design => true,
-  :requires => { "constraint" => "1..1", "services" => "compute,dns,*gdns" },
+  :requires => { "constraint" => "1..1", "services" => "compute,dns,*gdns,*torbit" },
   :attributes => { "aliases" => '[]' },
   :payloads => {
 'environment' => {
@@ -601,6 +601,33 @@ resource "fqdn",
                ]
              }
            ]
+      }'
+    },
+    'fqdnclouds' => {
+      'description' => 'all clouds',
+      'definition' => '{
+         "returnObject": false,
+         "returnRelation": false,
+         "relationName": "base.RealizedAs",
+         "direction": "to",
+         "targetClassName": "manifest.oneops.1.Fqdn",
+         "relations": [
+           { "returnObject": false,
+             "returnRelation": false,
+             "relationName": "manifest.Requires",
+             "direction": "to",
+             "targetClassName": "manifest.Platform",
+             "relations": [
+               { "returnObject": true,
+                 "returnRelation": false,
+                 "returnRelationAttributes": true,
+                 "relationName": "base.Consumes",
+                 "direction": "from",
+                 "targetClassName": "account.Cloud"
+               }
+             ]
+           }
+         ]
       }'
     }
   }

@@ -1030,6 +1030,35 @@ module SolrCollection
         props_map["8_slow_query_threshold_millis"]["elem_value"] = node["slow_query_threshold_millis"]
       end
 
+      if node['min_rf'] != nil && !node['min_rf'].empty?
+        if node['min_rf'] < node['replication_factor']
+          init_params_props_map = {
+            "25_init_params_update_handler" => {
+              "parent_elem_path" => "config/initParams[@path='\/update\/**']",
+              "parent_elem_attrs" => {
+                "path" => "/update/**"
+              },
+              "elem_name"  => "lst",
+              "attr_name"  => "name",
+              "attr_value" => "defaults"
+            },
+            "26_init_params_update_handler_min_rf" => {
+              "parent_elem_path" => "config/initParams[@path='/update/**']/lst[@name='defaults']",
+              "elem_name"  => "str",
+              "attr_name"  => "name",
+              "attr_value" => "min_rf",
+              "elem_value" => node['min_rf']
+            }
+          }
+        else
+          error = "The minimum replication factor(min_rf = #{node['min_rf']}) parameter is greater than the replication factor(replication_factor = #{node['replication_factor']})." +
+          "This is not very logical because anything minimum cannot be more than regular."
+          puts "***FAULT:FATAL=#{error}"
+          raise error
+        end
+        props_map.merge!(init_params_props_map)
+      end
+
       return props_map.sort
     end
 
@@ -1204,6 +1233,69 @@ module SolrCollection
     end
     return backup_names
   end
+
+    # This method returns true if schemaless mode feature is enabled.
+    def schemaless_mode_enabled
+      # Get the solr config response object through the config API.
+      solr_config_response = collection_api(node['ipaddress'],node['port_num'], {}, nil, "/solr/"+node['collection_name']+"/config")
+
+      if solr_config_response['config']['updateRequestProcessorChain'].empty?
+        Chef::Log.error("No UpdateRequestProcessorChain found")
+        return false
+      end
+
+      # Verify if any updateRequestProcessorChains in solrconfig.xml has processor with class 'solr.AddSchemaFieldsUpdateProcessorFactory'
+      # Example:
+      # <updateProcessor class="solr.processor.SignatureUpdateProcessorFactory" name="signature">
+      #  <bool name="enabled">true</bool>
+      #  <str name="signatureField">id</str>
+      # </updateProcessor>
+      # <updateProcessor class="solr.RemoveBlankFieldUpdateProcessorFactory" name="remove_blanks"/>
+
+      # <updateProcessorChain name="add-unknown-fields-to-the-schema" processor="remove_blanks,signature">
+      # <processor class="solr.AddSchemaFieldsUpdateProcessorFactory">
+      #  <str name="defaultFieldType">strings</str>
+      #  <lst name="typeMapping">
+      #    <str name="valueClass">java.lang.Boolean</str>
+      #    <str name="fieldType">booleans</str>
+      #  </lst>
+      #  <lst name="typeMapping">
+      #    <str name="valueClass">java.util.Date</str>
+      #    <str name="fieldType">tdates</str>
+      #  </lst>
+      # </processor>
+      # <processor class="solr.LogUpdateProcessorFactory"/>
+      # <processor class="solr.DistributedUpdateProcessorFactory"/>
+      # <processor class="solr.RunUpdateProcessorFactory" />
+      # </updateProcessorChain>
+
+      # Get updateRequestProcessorChain object from config response object.
+      update_req_proc_chain_obj = solr_config_response['config']['updateRequestProcessorChain']
+      found_add_schema_field_processor = false
+      update_req_proc_chain_obj.each do |processor_chain|
+        processor_chain.each do |key, value|
+          if key == "processor"
+            update_processors = value.split(',')
+            update_processor_obj = solr_config_response['config']['updateProcessor']
+            update_processor_names = update_processor_obj != nil ? update_processor_obj.keys : []
+            update_processor_names.each do |update_processor|
+              if update_processors.include?(update_processor) && update_processor_obj[update_processor]["class"] == "solr.AddSchemaFieldsUpdateProcessorFactory"
+                return true
+              end
+            end
+          end
+          if value.kind_of?(Array)
+            value.each do |update_processor|
+              if update_processor['class'] == 'solr.AddSchemaFieldsUpdateProcessorFactory'
+                return true
+              end
+            end
+          end
+        end
+      end
+      return false
+    end
+
   end
 end
 

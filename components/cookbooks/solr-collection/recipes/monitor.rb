@@ -12,6 +12,9 @@ template "/opt/nagios/libexec/check_shardstatus.rb" do
   owner "app"
   group "app"
   mode "0755"
+  variables({
+    :port_no => node['port_num']
+  })
   action :create
 end
 

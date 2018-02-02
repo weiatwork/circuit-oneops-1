@@ -90,14 +90,6 @@ attribute 'allow_auto_reload_collection',
 #     :order => 6
 #   }
 
-attribute 'port_num',
-  :description => 'Solr PortNo',
-  :format => {
-    :help => 'Specify the solr process port no',
-    :category => '1.Collection Parameters',
-    :order => 9
-  }
-
 attribute 'skip_collection_comp_execution',
   :description => 'Skip collection component',
   :default => "false",
@@ -192,6 +184,15 @@ attribute 'maxbuffereddocs',
               :order => 19
           }
 
+attribute 'min_rf',
+          :description  => "minimum replication factor",
+          :default => '',
+          :format => {
+              :help => 'The minimum replication factor(min_rf) parameter on update request cause the server to return the achieved replication factor in the response. This does not mean Solr will enforce a minimum replication factor as Solr does not support rolling back updates that succeed on a subset of replicas.',
+              :category => '2.UpdateHandler',
+              :order => 20
+          }
+
 attribute 'filtercache_size',
           :description  => "filtercache size",
           :required => false,
@@ -199,7 +200,7 @@ attribute 'filtercache_size',
           :format => {
               :help => 'The maximum size of Cache used for caching filter queries',
               :category => '3.Query',
-              :order => 20
+              :order => 21
           }
 
 attribute 'queryresultcache_size',
@@ -209,7 +210,7 @@ attribute 'queryresultcache_size',
           :format => {
               :help => 'The maximum size of cache for storing QueryResults',
               :category => '3.Query',
-              :order => 21
+              :order => 22
           }
 
 attribute 'request_select_defaults_timeallowed',
@@ -217,7 +218,7 @@ attribute 'request_select_defaults_timeallowed',
           :format => {
               :help => 'The amount of time after which the select queries will be timed out by Solr. So queries which take longer than this value will fail and Solr will cancel these queries.',
               :category => '3.Query',
-              :order => 22
+              :order => 23
           }
 
 attribute 'validation_enabled',
@@ -226,7 +227,7 @@ attribute 'validation_enabled',
               :help => 'If selected, this will enable validation. ex. mandatory check for ignore-commit-from-client in UpdateRequestProcessorChain',
               :form => { 'field' => 'checkbox' },
               :category => '3.Query',
-              :order => 23
+              :order => 24
           }
 
 attribute 'block_expensive_queries',
@@ -236,7 +237,7 @@ attribute 'block_expensive_queries',
               :help => 'If selected, this will Block Expensive Queries. eg: q=*:*&start=0&rows=101 is expensive if max documents fetch allowed is 100',
               :form => { 'field' => 'checkbox' },
               :category => '4.Block Expensive Queries',
-              :order => 24
+              :order => 25
           }
 
 attribute 'max_start_offset',
@@ -246,7 +247,7 @@ attribute 'max_start_offset',
               :help => 'The maximum value allowed for the "start" param in a Solr query. The queries with a value for start param larger than this value will be failed',
               :category => '4.Block Expensive Queries',
               :filter => {'all' => {'visible' => 'block_expensive_queries:eq:true'}},
-              :order => 25
+              :order => 26
           }
 
 attribute 'max_rows_fetch',
@@ -256,7 +257,7 @@ attribute 'max_rows_fetch',
               :help => 'The maximum number of documents that are allowed to fetch in a single Solr query. The queries with a value for "rows" param larger than this value will be failed',
               :category => '4.Block Expensive Queries',
               :filter => {'all' => {'visible' => 'block_expensive_queries:eq:true'}},
-              :order => 26
+              :order => 27
           }
 
 attribute 'enable_slow_query_logger',
@@ -266,7 +267,7 @@ attribute 'enable_slow_query_logger',
               :help => 'If selected, this will enable slow Query logger. eg: ',
               :form => { 'field' => 'checkbox' },
               :category => '5.Slow Query Logger',
-              :order => 27
+              :order => 28
           }
 
 attribute 'slow_query_threshold_millis',
@@ -275,7 +276,7 @@ attribute 'slow_query_threshold_millis',
           :format => {
               :category => '5.Slow Query Logger',
               :help => 'Provide the slow query threshold in milli seconds to log the slow queries to solr.log',
-              :order => 28
+              :order => 29
           }
 
 attribute 'enable_query_source_tracker',
@@ -285,7 +286,7 @@ attribute 'enable_query_source_tracker',
               :help => 'If selected, the customers are expected to pass in a new Solr query param called as "qi" when querying from their application or directly using curl.',
               :form => { 'field' => 'checkbox' },
               :category => '6.Query Source Tracker',
-              :order => 29
+              :order => 30
           }
 
 attribute 'query_identifiers',
@@ -296,7 +297,7 @@ attribute 'query_identifiers',
               :help => "The customers are expected to come up with valid values for qi param for each of their Application use cases.",
               :category => '6.Query Source Tracker',
               :filter => {'all' => {'visible' => 'enable_query_source_tracker:eq:true'}},
-              :order => 30
+              :order => 31
           }
 
 attribute 'enable_fail_queries',
@@ -307,8 +308,9 @@ attribute 'enable_fail_queries',
               :form => { 'field' => 'checkbox' },
               :category => '6.Query Source Tracker',
               :filter => {'all' => {'visible' => 'enable_query_source_tracker:eq:true'}},
-              :order => 31
+              :order => 32
           }
+
 attribute 'backup_enabled',
           :description => 'Enable backup',
           :required => 'required',

@@ -73,18 +73,15 @@ if !storage.nil?
 end
 include_recipe "shared::set_provider_new"
 
-dev_list = ""
-logical_name = rfcCi[:ciName]
-raid_device = "/dev/md/#{logical_name}"
-rfc_action = rfcCi[:rfcAction]
-no_raid_device = " "
-node.set["raid_device"] = raid_device
+dev_list      = ""
+logical_name  = rfcCi[:ciName]
+raid_name     = "/dev/md/#{logical_name}"
+rfc_action    = rfcCi[:rfcAction]
 platform_name = node[:workorder][:box][:ciName]
-token_class = node[:provider_class]
+token_class   = node[:provider_class]
 
 Chef::Log.info("-------------------------------------------------------------")
 Chef::Log.info("Volume Size      : #{size}")
-Chef::Log.info("Raid Device      : #{raid_device}")
 Chef::Log.info("RFC Action       : #{rfc_action}")
 Chef::Log.info("Storage Provider : #{node[:storage_provider_class]}")
 Chef::Log.info("Storage          : #{storage.inspect.gsub("\n",' ')}")
@@ -98,51 +95,41 @@ ruby_block 'create-iscsi-volume-ruby-block' do
     objStorage = VolumeComponent::Storage.new(node,storage,device_maps)
     objStorage.set_provider_data_all
     storage_devices = objStorage.storage_devices
-    compute = objStorage.compute
 
     storage_devices.each do |storage_device|
       storage_device.attach
       dev_list += storage_device.assigned_device_id + " " if storage_device.assigned_device_id
     end
+  end
+end
 
-    has_created_raid = false
+ruby_block 'create-raid-ruby-block' do
+  not_if {storage.nil? || mode == 'no-raid'}
+  block do
+
     exec_count = 0
     max_retry = 10
 
-    if storage_devices.size > 1 && mode != 'no-raid'
+    cmd = "yes |mdadm --create -l#{level} -n#{device_maps.size.to_s} --assume-clean --chunk=256 #{raid_name} #{dev_list} 2>&1"
+    until raid_exist?(raid_name) || exec_count > max_retry do
+      Chef::Log.info(raid_name+" being created with: "+cmd)
 
-      cmd = "yes |mdadm --create -l#{level} -n#{storage_devices.size.to_s} --assume-clean --chunk=256 #{raid_device} #{dev_list} 2>&1"
-      until ::File.exists?(raid_device) || has_created_raid || exec_count > max_retry do
-        Chef::Log.info(raid_device+" being created with: "+cmd)
+      out = `#{cmd}`
+      exit_code = $?.to_i
+      Chef::Log.info("exit_code: "+exit_code.to_s+" out: "+out)
+      if exit_code != 0
+        exec_count += 1
+        sleep 10
 
-        out = `#{cmd}`
-        exit_code = $?.to_i
-        Chef::Log.info("exit_code: "+exit_code.to_s+" out: "+out)
-        if exit_code == 0
-          has_created_raid = true
-          # really always need to readahead 64k?
-          # TODO: analyze impact of 64k read-ahead - extra cost to perf
-          #`blockdev --setra 65536 /dev/md/#{node.workorder.rfcCi.ciName}`
-        else
-          exec_count += 1
-          sleep 10
+        ccmd = "for f in /dev/md*; do mdadm --stop $f; done"
+        Chef::Log.info("cleanup bad arrays: "+ccmd)
+        Chef::Log.info(`#{ccmd}`)
 
-          ccmd = "for f in /dev/md*; do mdadm --stop $f; done"
-          Chef::Log.info("cleanup bad arrays: "+ccmd)
-          Chef::Log.info(`#{ccmd}`)
-
-          ccmd = "mdadm --zero-superblock #{dev_list}"
-          Chef::Log.info("cleanup incase re-using: "+ccmd)
-          Chef::Log.info(`#{ccmd}`)
-        end
+        ccmd = "mdadm --zero-superblock #{dev_list}"
+        Chef::Log.info("cleanup incase re-using: "+ccmd)
+        Chef::Log.info(`#{ccmd}`)
       end
-      node.set["raid_device"] = raid_device
-    else
-      Chef::Log.info("No Raid Device ID :" +no_raid_device)
-      raid_device = no_raid_device
-      node.set["raid_device"] = no_raid_device
-    end #if storage_devices.size > 1 && mode != 'no-raid'
-
+    end
   end
 end
 
@@ -328,7 +315,7 @@ ruby_block 'create-storage-non-ephemeral-volume' do
   only_if { storage != nil && token_class !~ /virtualbox|vagrant/ }
   block do
     if mode != "no-raid"
-      raid_devices = node.raid_device
+      raid_devices = get_raid_device(raid_name)
     else
       raid_devices = dev_list
     end
@@ -360,6 +347,7 @@ ruby_block 'create-storage-non-ephemeral-volume' do
     existing_dev = `pvdisplay -s`
     devices.each do |device|
       dev_short = device.split("/").last
+
       if existing_dev !~ /#{dev_short}/
         Chef::Log.info("pvcreate #{device} ..."+`pvcreate #{device}`)
         device_list += device+" "
