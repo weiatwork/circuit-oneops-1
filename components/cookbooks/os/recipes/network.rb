@@ -16,6 +16,7 @@ end
 
 full_hostname = node[:full_hostname]
 _hosts[full_hostname] = node.workorder.payLoad.ManagedVia[0]["ciAttributes"]["private_ip"]
+compute_baremetal = node.workorder.payLoad.ManagedVia[0]["ciAttributes"]["is_baremetal"]
 
 directory '/etc/cloud/cloud.cfg.d' do
   owner 'root'
@@ -81,16 +82,6 @@ ruby_block 'update /etc/hosts' do
     if !change_host.stderr.empty?
       Chef::Log.error("Mod /etc/hosts stderr: #{change_host.stderr}")
       change_host.error!
-    end
-
-    # For some computes network service needs to be restarted after changing hosts
-    Chef::Log.info('Restarting network')
-    restart_host = Mixlib::ShellOut.new("service network restart")
-    restart_host.run_command
-    Chef::Log.debug("Network service restart stdout: #{restart_host.stdout}")
-    if !restart_host.stderr.empty?
-      Chef::Log.error("Network service restart stderr: #{restart_host.stderr}")
-      restart_host.error!
     end
   end
 end
@@ -366,7 +357,6 @@ end
 # DHCLIENT
 
 # Baremetal compute should have the interface name detected dynamically.
-compute_baremetal = node.workorder.payLoad.ManagedVia[0]["ciAttributes"]["is_baremetal"]
 
 case node.platform
 
