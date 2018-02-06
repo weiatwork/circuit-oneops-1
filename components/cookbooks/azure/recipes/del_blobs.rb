@@ -1,4 +1,4 @@
-os_disk_blobname = (node['vhd_uri'].split("/").last)
+os_disk_blobname = (node['vhd_uri'].split('/').last).chomp('.vhd')
 OOLog.info("Deleting os_disk : #{os_disk_blobname}")
 
 rg_manager = AzureBase::ResourceGroupManager.new(node)
