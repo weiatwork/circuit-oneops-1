@@ -83,6 +83,6 @@ template check_cluster_health do
   mode "0755"
   #  action :create_if_missing
   variables({
-                :string_of_ips => node[:string_of_hostname]                
+                :string_of_hostname => node[:string_of_hostname]                
             })
 end
