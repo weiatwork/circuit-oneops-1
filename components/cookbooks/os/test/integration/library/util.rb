@@ -124,3 +124,15 @@ def compare_forwarders(namedservers=[])
     return namedservers
   end
 end
+
+def get_cloud_environment_vars(node)
+
+  cloud_name = node['workorder']['cloud']['ciName']
+  compute_cloud_service = node['workorder']['services']['compute'][cloud_name]['ciAttributes']
+  env_vars = {}
+
+  if compute_cloud_service.has_key?("env_vars")
+    env_vars = JSON.parse(compute_cloud_service['env_vars'])
+  end
+  return env_vars
+end
