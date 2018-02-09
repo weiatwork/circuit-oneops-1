@@ -41,6 +41,8 @@ zone = {
 puts "***RESULT:zone=" + JSON.dump(zone)
 puts "***RESULT:instance_id=" + vm.id
 
+node.set['image_name'] = vm.id
+
 # set the ip type
 node.set['ip_type'] = vm_manager.ip_type
 
