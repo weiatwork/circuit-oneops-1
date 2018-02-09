@@ -1,8 +1,11 @@
 require '/opt/oneops/inductor/circuit-oneops-1/components/cookbooks/azure_base/test/integration/spec_utils'
+require '/opt/oneops/inductor/circuit-oneops-1/components/cookbooks/azure_base/utils'
 
 class AzureSpecUtils < SpecUtils
   def initialize(node)
     @node = node
+    #set the proxy if it exists as a cloud var
+    Utils.set_proxy(node['workorder']['payLoad']['OO_CLOUD_VARS'])
   end
 
   def get_azure_creds
