@@ -1,5 +1,5 @@
 require '/opt/oneops/inductor/circuit-oneops-1/components/cookbooks/azure_base/test/integration/spec_utils'
-require '/opt/oneops/inductor/circuit-oneops-1/components/cookbooks/azure_base/utils'
+require '/opt/oneops/inductor/circuit-oneops-1/components/cookbooks/azure_base/libraries/utils'
 
 class AzureSpecUtils < SpecUtils
   def initialize(node)
