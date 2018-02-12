@@ -16,8 +16,8 @@ class MedusaLogWriter
     @time = time
     fields_array = []
     @fields.each { |k, v| fields_array << "#{k}=#{v.nil? ? MISSING_FIELD_VALUE : v}" }
-    # time is represented in Nano seconds based on the output example given by telegraf influxdb plugin README.md page.
-    msg = "#{@name} #{fields_array.join(',')} #{@time.to_i}#{@time.usec}000"
+    # Removing the time in nanoseconds as the timestamp which is put in log file was conflicting with telegraf timestamp and was giving missing data points as date consolidated by telegraf was becoming invalid.
+    msg = "#{@name} #{fields_array.join(',')}"
     @logger.info(msg)
     msg
   end
