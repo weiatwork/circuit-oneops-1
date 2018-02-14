@@ -1,27 +1,23 @@
 # SELINUX
-if !node['fast_image']
-  case node.platform
-  when "fedora","redhat","centos"
-    selinux_file = "/etc/selinux/config"
-    `grep =disabled #{selinux_file}`
-    if $?.to_i != 0
-      selinux_conf = "SELINUX=disabled\n"
-      selinux_conf += "SELINUXTYPE=targeted\n"
-      ::File.open(selinux_file, 'w') {|f| f.write(selinux_conf) }
-      `setenforce Permissive`
-    else
-      Chef::Log.info("SELINUX already disabled")
-    end
+case node.platform
+when "fedora","redhat","centos"
+  selinux_file = "/etc/selinux/config"
+  `grep =disabled #{selinux_file}`
+  if $?.to_i != 0
+    selinux_conf = "SELINUX=disabled\n"
+    selinux_conf += "SELINUXTYPE=targeted\n"
+    ::File.open(selinux_file, 'w') {|f| f.write(selinux_conf) }
+    `setenforce Permissive`
+  else
+    Chef::Log.info("SELINUX already disabled")
   end
 end
-# firewall
 
+# firewall
 if node.platform_family == "rhel" && node.platform_version.to_i >= 7
   
   execute "systemctl mask firewalld ; systemctl stop firewalld"
-  if !node['fast_image']
-    package "iptables-services"
-  end
+  package "iptables-services" unless node['fast_image']
 end
 
 attrs = node[:workorder][:rfcCi][:ciAttributes]
