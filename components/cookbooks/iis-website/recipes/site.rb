@@ -89,6 +89,7 @@ end
 
 include_recipe 'iis::disable_ssl'
 include_recipe 'iis::enable_tls'
+include_recipe 'iis::disable_weak_ciphers'
 
 iis_log_location 'setting log location' do
   central_w3c_log_file_directory log_directory_path
