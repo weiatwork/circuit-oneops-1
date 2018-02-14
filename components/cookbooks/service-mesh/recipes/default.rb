@@ -16,7 +16,6 @@ else
   exit 1
 end
 
-
 ### Create service mesh root directory ###
 serviceMeshRootDir = "#{node['service-mesh']['service-mesh-root']}"
 Chef::Log::info("Creating the root directory for service mesh #{serviceMeshRootDir} if not present...")
@@ -53,11 +52,13 @@ aTenant = []
     aTenant.push(larr)
   end
 
+stratiAppName = ""
 tenantConfigs = ""
 aTenant.each do |a_tenant|
     tenantConfigs = tenantConfigs + "  - appKey: #{a_tenant[0]}" + "\n    "
     tenantConfigs = tenantConfigs + "envName: #{a_tenant[1]}\n    "
     tenantConfigs = tenantConfigs + "ingressAddr: #{a_tenant[2]}\n"
+    stratiAppName = "#{a_tenant[0]}-Mesh"
 end
 
 template linkerdConfigPath do
@@ -67,6 +68,19 @@ template linkerdConfigPath do
             :sr_nonprod_url => "#{srUrlNonprod}",
             :is_prod_env => "#{isProdEnv}")
 end
+
+overriddenConfigYaml = node['service-mesh']['config-yaml']
+Chef::Log::info("overriddenConfigYaml config-yaml: #{overriddenConfigYaml}")
+
+overriddenConfigPath = "#{serviceMeshRootDir}/overridden-config.yaml"
+Chef::Log::info("Going to create overridden config yaml at #{overriddenConfigPath}")
+file overriddenConfigPath do
+  content overriddenConfigYaml
+  mode '0777'
+  owner 'root'
+  group 'root'
+end
+Chef::Log::info("Overridden config yaml created at #{overriddenConfigPath}")
 
 ### Download mesh jar file ###
 meshRepoUrl = mesh_cloud_service[:mesh_artifact_url]
@@ -86,14 +100,21 @@ end
 jobLogPath = serviceMeshRootDir + "/service-mesh.log"
 meshLocalPath = "#{serviceMeshRootDir}/soa-linkerd-#{node['service-mesh']['service-mesh-version']}.jar"
 
+Chef::Log::info("Use overridden config yaml? " + node['service-mesh']['use-overridden-yaml'])
+if(node['service-mesh']['use-overridden-yaml'] == "true")
+  linkerdConfigPath = overriddenConfigPath
+end
+Chef::Log::info("Final linkerd yaml path: #{linkerdConfigPath}")
+
+Chef::Log::info("Got addtional config as override: #{node['service-mesh']['conf-override']}")
 Chef::Log::info("Adding service-mesh initd script")
 template '/etc/init.d/servicemesh' do
   source 'servicemesh-init.erb'
   owner 'root'
   group 'root'
   mode 00755
-  variables(:start_mesh_command => "java -Dcom.twitter.util.events.sinkEnabled=false -jar #{meshLocalPath} #{linkerdConfigPath} > #{jobLogPath} 2>&1 &",
-            :grep_string_mesh_process => "/home/app/service-mesh/soa-linkerd-#{node['service-mesh']['service-mesh-version']}.jar ")
+  variables(:start_mesh_command => "java -Dcom.twitter.util.events.sinkEnabled=false -Druntime.context.system.property.override.enabled=true -Druntime.context.appName=#{stratiAppName} #{node['service-mesh']['conf-override']} -jar #{meshLocalPath} #{linkerdConfigPath} > #{jobLogPath} 2>&1 &",
+            :grep_string_mesh_process => "#{node['service-mesh']['service-mesh-root']}/soa-linkerd-#{node['service-mesh']['service-mesh-version']}.jar ")
 end
 
 execute 'enableMeshDaemon' do

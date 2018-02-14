@@ -14,27 +14,34 @@ namers:
 <%= @tenant_configs %>
   requestTimeout: 10000
   pollInterval: 5000
-#- kind: io.l5d.fs
-#  rootDir: src/test/resources/disco
 
 routers:
 - protocol: http
   identifier:
     kind: com.w5t.stratiHeaders
   dtab: |
-    /svc => /wm;
-    /wm => /#/com.w5t.sr;
+    /svc => /#/com.w5t.sr/out;
   httpAccessLog: logs/access.log
-  label: int
+  label: out
   loggers:
   - kind: com.w5t.policy
-    consumerIds:
-    - 4711
-    - e091b4f7-9a2c-4895-9a1e-dc7e6e2f9537
-    - 441bc1df-1612-4570-a84f-aca3700891c3
-    maxResponseSize: 65535
+    policyEnd: Consumer
   servers:
   - port: 4140
+    ip: 0.0.0.0
+
+- protocol: http
+  identifier:
+    kind: com.w5t.stratiHeaders
+  dtab: |
+    /svc => /#/com.w5t.sr/in;
+  httpAccessLog: logs/access.log
+  label: in
+  loggers:
+  - kind: com.w5t.policy
+    policyEnd: Producer
+  servers:
+  - port: 4141
     ip: 0.0.0.0
 
 telemetry:

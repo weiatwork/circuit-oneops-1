@@ -1,5 +1,5 @@
 Chef::Log.info("Stopping service mesh...")
-execute 'startServiceMesh' do
+execute 'stopServiceMesh' do
 	command "#{node['service-mesh']['init-name']} stop"
 	user	'root'
 	returns [0,1]
