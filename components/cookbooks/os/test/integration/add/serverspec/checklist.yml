@@ -63,11 +63,11 @@ files:
     owner: oneops
     group: oneops
 # ---------------------------------------
-  - name: /opt/oneops/workorder
-    type: d
-    mode: 755
-    owner: oneops
-    group: oneops
+#  - name: /opt/oneops/workorder
+#    type: d
+#    mode: 755
+#    owner: oneops
+#    group: oneops
 # ---------------------------------------
   - name: /etc/logrotate.d/oneops
     type: f
