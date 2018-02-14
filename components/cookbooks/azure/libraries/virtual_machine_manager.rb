@@ -96,8 +96,9 @@ module AzureCompute
       vm_hash[:storage_account_name] = @storage_profile.get_storage_account_name if @availability_set_response.sku_name.eql? 'Classic'
 
       if @image_id[0].eql? 'Custom'
-
-        image_ref = "/subscriptions/#{@compute_service['subscription']}/resourceGroups/#{@compute_service['resource_group']}/providers/Microsoft.Compute/images/#{@image_id[2]}"
+        customimage_resource_group = @compute_service['resource_group'].sub("mrg","img")
+        image_ref = "/subscriptions/#{@compute_service['subscription']}/resourceGroups/#{customimage_resource_group}/providers/Microsoft.Compute/images/#{@image_id[2]}"
+        OOLog.info('image ref: ' + image_ref )
         vm_hash[:image_ref] = image_ref
 
       else
