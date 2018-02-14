@@ -68,7 +68,6 @@ bash 'update_hosts' do
   EOH
 end
 
-
 # add short hostname at the end of the FQDN entry line in /etc/hosts
 ruby_block 'update /etc/hosts' do
   block do
@@ -362,7 +361,6 @@ end
 # DHCLIENT
 
 # Baremetal compute should have the interface name detected dynamically.
-
 case node.platform
 
   when 'fedora', 'redhat', 'centos'
@@ -384,13 +382,13 @@ case node.platform
       `grep PERSISTENT_DHCLIENT #{file}`
       if $?.to_i != 0
         Chef::Log.info('DHCLIENT setting ifcfg-eth0 - network restart')
-        `echo "PERSISTENT_DHCLIENT=1" >> #{file} ; /sbin/service network restart`
+        `echo "PERSISTENT_DHCLIENT=1" >> #{file}; hostnamectl set-hostname #{node.vmhostname}; /sbin/service network restart`
       else
         Chef::Log.info('DHCLIENT already configured')
       end
     end
-end
 
+end
 
 ruby_block 'printing hostname fqdn' do
   block do

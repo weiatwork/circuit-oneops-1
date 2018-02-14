@@ -18,20 +18,13 @@
 
 cloud_name = node[:workorder][:cloud][:ciName]
 compute_service = node[:workorder][:services][:compute][cloud_name]
+cloud = node[:workorder][:services][:compute][cloud_name][:ciAttributes]
 provider = compute_service[:ciClassName].gsub("cloud.service.","").downcase
 Chef::Log.info("provider: #{provider} ..")
 node.set['cloud_provider'] = provider
 
 ostype = node[:workorder][:rfcCi][:ciAttributes][:ostype]
 Chef::Log.info("OS type: #{ostype} ...")
-
-image_name = node['workorder']['payLoad']['ManagedVia'][0]['ciAttributes']['server_image_name']
-if image_name =~ /FAST/
-  node.set['fast_image'] = true
-  Chef::Log.info("Fast image detected for image: #{image_name} ...")
-else
-  node.set['fast_image'] = false
-end
 
 #remove two out of three json gem so that it will not create conflit for azure gems
 if (ostype =~ /ubuntu-16.04/)
@@ -40,6 +33,19 @@ if (ostype =~ /ubuntu-16.04/)
   `sudo gem uninstall json -v 1.8.6`
 end
 
+# detect fast image
+imagemap = JSON.parse( cloud[:imagemap] )
+server_image_name = ""
+if node['workorder']['payLoad']['ManagedVia'][0]['ciAttributes'].has_key?('server_image_name')
+  server_image_name = node['workorder']['payLoad']['ManagedVia'][0]['ciAttributes']['server_image_name']
+end
+if (node['os']['image_id'].to_s.empty? && (imagemap[ostype].split(':')).size > 2 && (imagemap[ostype].split(':'))[2].to_s =~ /FAST/) || server_image_name =~ /FAST/
+  Chef::Log.info('Fast image detected')
+  node.set['fast_image'] = true
+else
+  Chef::Log.debug('No fast image detected')
+  node.set['fast_image'] = false
+end
 
 #Symlinks for windows
 if ostype =~ /windows/

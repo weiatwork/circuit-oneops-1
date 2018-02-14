@@ -22,48 +22,48 @@ include_recipe "shared::set_provider_new"
 include_recipe "compute::ssh_port_wait"
 include_recipe "compute::ssh_cmd_for_remote"
 
-ruby_block 'wait for ssh in windows' do
+ruby_block 'wait for ssh' do
   block do
+    node[:ostype] =~ /windows/ ? (wait_time = 20) : (wait_time = 4)
 
-    #wait until we can get a response from Windows VM
-	start_time = Time.now.to_i
-	i = 1
-    win_ssh_failed = true
+    # Wait until we can get a response from VM
+	  start_time = Time.now.to_i
+    i = 1
+    ssh_failed = true
     ssh_cmd = node[:ssh_interactive_cmd].gsub("IP",node[:ip]) + "hostname > /dev/null"
-    ssh_cmd = ssh_cmd.gsub("StrictHostKeyChecking=no","StrictHostKeyChecking=no -o ConnectTimeout=5") 
-	Chef::Log.info("Started waiting for ssh response from #{node[:ip]}")
+    ssh_cmd = ssh_cmd.gsub("StrictHostKeyChecking=no","StrictHostKeyChecking=no -o ConnectTimeout=5")
+    Chef::Log.info("Started waiting for ssh response from #{node[:ip]}")
     Chef::Log.info("SSH command is: #{ssh_cmd}")
 
-    #try connecting for 300 seconds
+    # Try connecting for 300 seconds
     while Time.now.to_i - start_time < 300 do
       Chef::Log.info( "Attempt:#{i} to get a valid ssh response from #{node[:ip]} ...")
       result = system(ssh_cmd)
 
       if result
-        win_ssh_failed = false
+        ssh_failed = false
         Chef::Log.info( "Received a valid response from #{node[:ip]}! Moving on to a next step...")
         break
       end
 
       Chef::Log.info( "Did not receive a valid response from #{node[:ip]}. Retrying...")
-      sleep 20
+      sleep wait_time
       i += 1
     end #while
 
-    if win_ssh_failed
+    if ssh_failed
       puts "***FATAL: SSH - we did not receive a valid response in 300 seconds"
       raise("SSH - we did not receive a valid response in 300 seconds")
     end
-
   end
-end if node[:ostype] =~ /windows/ &&  node[:workorder][:rfcCi][:rfcAction] !~ /update/
+end if node[:workorder][:rfcCi][:rfcAction] !~ /update/
 
 ruby_block 'install base' do
   block do
 
-    if node['image_name'] =~ /FAST/
-      fast_image = true
-      Chef::Log.info("Detected Fast image: #{node['image_name']}");
+    fast_image = (node['image_name'] =~ /FAST/)
+    if fast_image
+      Chef::Log.info("Detected fast image for: #{node['image_name']}");
     else
       Chef::Log.info("No fast image detected for: #{node['image_name']}");
     end
@@ -155,11 +155,15 @@ ruby_block 'install base' do
     result.error!
 
 
+    sudo = ""
+    if !node[:ssh_cmd].include?("root@")
+      sudo = "sudo "
+    end
 
     if fast_image
 
       install_fastimage_base = "components/cookbooks/compute/files/default/install_fastimage_base.sh"
-      cmd = node[:ssh_interactive_cmd].gsub("IP",node[:ip]) + "\"#{sub_circuit_dir}/#{install_fastimage_base}\""
+      cmd = node[:ssh_interactive_cmd].gsub("IP",node[:ip]) + "\"#{sudo}#{sub_circuit_dir}/#{install_fastimage_base}\""
       Chef::Log.info("Executing Command: #{cmd}")
       result = shell_out(cmd, :timeout => shell_timeout)
 
@@ -181,11 +185,6 @@ ruby_block 'install base' do
         elsif k =~ /rubygems/
           args_win[:gemrepo] = v
         end
-      end
-
-      sudo = ""
-      if !node[:ssh_cmd].include?("root@")
-        sudo = "sudo "
       end
 
       Chef::Log.info("Installing base sw for oneops ...")
@@ -264,6 +263,7 @@ ruby_block 'install base' do
 
       end
     end
+
     cmd = node[:ssh_cmd].gsub("IP",node[:ip]) + "\"grep processor /proc/cpuinfo | wc -l\""
     result = shell_out(cmd, :timeout => shell_timeout)
     cores = result.stdout.gsub("\n","")
@@ -274,7 +274,7 @@ ruby_block 'install base' do
     result = shell_out(cmd, :timeout => shell_timeout)
     ram = result.stdout.gsub("\n","")
     puts "***RESULT:ram=#{ram}"
-
+    
   end
 
 end
