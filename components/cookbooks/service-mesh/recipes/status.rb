@@ -1,4 +1,4 @@
-processExpr = "/home/app/service-mesh/soa-linkerd-#{node['service-mesh']['service-mesh-version']}.jar "
+processExpr = "#{node['service-mesh']['service-mesh-root']}/soa-linkerd-#{node['service-mesh']['service-mesh-version']}.jar "
 ruby_block 'SERVICE_MESH_PROCESS_STATUS' do
   block do
     pid = %x(pgrep -f "#{processExpr}")

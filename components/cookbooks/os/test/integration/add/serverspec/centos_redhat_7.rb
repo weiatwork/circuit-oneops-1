@@ -156,3 +156,20 @@ describe user("oneops") do
   it { should exist }
 end
 
+context "Environment variable" do
+  it "should exist" do
+    result = `env`
+    variables = result.split("\n")
+    env_var = Hash.new
+    variables.each do |var|
+      env_key = var.split("=").first
+      env_value = var.split("=").last
+      env_var[env_key] = env_value
+    end
+
+    env_variable = get_cloud_environment_vars($node)
+    env_variable.each do |key,value|
+      expect(env_var[key]).to eq(value) if !value.empty?
+    end
+  end
+end
