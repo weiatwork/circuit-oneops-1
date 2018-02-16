@@ -344,12 +344,13 @@ class SolrMBeanSummaryStats
             metric_type_to_mbean_type_obj[metric_aggr_type] = Array.new()
             mbean_attr_map.each do |mbean_name, mbean_attributes|
                 solr_mbean_name = get_solr_core_mbean_name(mbean_name, collection_name)
+                mbean_attributes_string = get_solr_core_mbean_attributes(mbean_attributes)
                 mbean_type = get_solr_core_mbean_type(mbean_name)
                 metric_type_to_mbean_type_obj[metric_aggr_type].push(mbean_type)
                 solr_core_mbean_request = {
                     "type" => "read",
                     "mbean" => "#{solr_mbean_name}",
-                    "attribute" => "#{mbean_attributes}",
+                    "attribute" => "#{mbean_attributes_string}",
                     "target" => {
                         "url" => "service:jmx:rmi:///jndi/rmi://127.0.0.1:#{@solr_jmx_port}/jmxrmi"
                     }
@@ -359,6 +360,19 @@ class SolrMBeanSummaryStats
         end
         solr_core_mbean_bulk_request = "[" + solr_core_mbean_bulk_request.slice(1, solr_core_mbean_bulk_request.length) + "]"
         return solr_core_mbean_bulk_request, metric_type_to_mbean_type_obj
+    end
+
+    # Constructing the mbean_attributes as a comma separated string of attributes as different versions of Ruby treats the array of strings differently.
+    # Ruby 1.8 was considering the array of strings as comma separated attributes which is what the request expects
+    # eg: Count,OneMinuteRate,FiveMinuteRate,FifteenMinuteRate.
+    # Ruby 2.0 was giving it as an array of attributes from the map - metric_type_to_solr_core_mbean_attr_map and
+    # that results in constructing a bad json structure in the request.
+    # eg: ["Count,OneMinuteRate,FiveMinuteRate,FifteenMinuteRate"]
+    def get_solr_core_mbean_attributes(mbean_attributes)
+        attributes = ''
+        mbean_attributes.each { |attribute| attributes = attributes + "," + attribute}
+
+        return attributes
     end
 
     # Execute solr jmx read request for reading certain attributes.
@@ -382,7 +396,6 @@ class SolrMBeanSummaryStats
     # Get the solr_mbean_obj specific to mbean_name
     # Hash map doesn't keep the order while iterating in ruby.
     def get_solr_mbean_resp_for_mbean_type(metric_aggr_type, mbean_type, solr_mbean_json_resp_obj)
-
         # Iterate through the giant solr_mbean_json_resp_obj. Fetch the correct response object based on the mbean_name provided in scope.
         # Again for scope=/update or /select or /get, you have attributes listed both under ADD_METRICS and AVG_METRICS (eg: latency comes under avg and 15minuteRate under add_aggr)
         # Fetch the corresponding mbean repsonse based on the above conditions and return it back to write it to the log file in influxdb format.
@@ -390,13 +403,21 @@ class SolrMBeanSummaryStats
             mbean_name = solr_mbean_resp["request"]["mbean"]
             attributes = solr_mbean_resp["request"]["attribute"]
 
-            if mbean_name.include? "scope=#{mbean_type}"
+            if is_solr7?()
+                mbean_type_splits = mbean_type.split(".")
+                mbean_scope_part = mbean_type_splits.first
+                mbean_name_part = mbean_type_splits.last
+            end
+
+            if (mbean_name.include? "scope=#{mbean_type}") || ((is_solr7?()) && (mbean_name.include? "scope=#{mbean_scope_part}") && (mbean_name.include? "name=#{mbean_name_part}"))
+
                 if metric_aggr_type == "ADD_METRICS"
-                    if !attributes.include?"95thPcRequestTime"
+                    if (!attributes.include?"95thPcRequestTime") || (!attributes.include? "95thPercentile")
                         return solr_mbean_resp
                     end
                 else
-                    if attributes.include? "95thPcRequestTime"
+
+                    if (attributes.include?"95thPcRequestTime") || (attributes.include? "95thPercentile")
                         return solr_mbean_resp
                     end
                 end
@@ -495,11 +516,12 @@ class SolrMBeanSummaryStats
         mbean_parts.each do |mbean_part|
             if mbean_part.start_with? "scope="
                 mbean_type = mbean_part.slice(mbean_part.index("scope=")+6, mbean_part.length-1)
-                if mbean_type.start_with? "/"
-                    scope_value = mbean_type.slice(1,mbean_type.length-1)
-                else
-                    scope_value = mbean_type
-                end
+                # Removing the code to trim the beginning slash in scope and removing it right before writing to the log file.
+                # if mbean_type.start_with? "/"
+                #     scope_value = mbean_type.slice(1,mbean_type.length-1)
+                # else
+                scope_value = mbean_type
+                # end
             end
 
             if mbean_part.start_with? "name="
