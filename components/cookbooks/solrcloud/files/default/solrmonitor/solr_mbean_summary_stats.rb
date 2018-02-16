@@ -520,7 +520,7 @@ class SolrMBeanSummaryStats
         mbean_parts.each do |mbean_part|
             if mbean_part.start_with? "scope="
                 mbean_type = mbean_part.slice(mbean_part.index("scope=")+6, mbean_part.length-1)
-                # Removing the code to trim the beginning slash in scope and instead removing it right before writing to the log file.
+                # Removing the code to trim the beginning slash in scope and instead we remove it right before writing to the log file.
                 # if mbean_type.start_with? "/"
                 #     scope_value = mbean_type.slice(1,mbean_type.length-1)
                 # else
