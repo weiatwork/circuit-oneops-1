@@ -344,7 +344,7 @@ class SolrMBeanSummaryStats
             metric_type_to_mbean_type_obj[metric_aggr_type] = Array.new()
             mbean_attr_map.each do |mbean_name, mbean_attributes|
                 solr_mbean_name = get_solr_core_mbean_name(mbean_name, collection_name)
-                mbean_attributes_string = get_solr_core_mbean_attributes(mbean_attributes)
+                mbean_attributes_string = attributes_to_str(mbean_attributes)
                 mbean_type = get_solr_core_mbean_type(mbean_name)
                 metric_type_to_mbean_type_obj[metric_aggr_type].push(mbean_type)
                 solr_core_mbean_request = {
@@ -368,7 +368,7 @@ class SolrMBeanSummaryStats
     # Ruby 2.0 was giving it as an array of attributes from the map - metric_type_to_solr_core_mbean_attr_map and
     # that results in constructing a bad json structure in the request.
     # eg: ["Count,OneMinuteRate,FiveMinuteRate,FifteenMinuteRate"]
-    def get_solr_core_mbean_attributes(mbean_attributes)
+    def attributes_to_str(mbean_attributes)
         attributes = ''
         mbean_attributes.each { |attribute| attributes = attributes + "," + attribute}
 
@@ -411,6 +411,10 @@ class SolrMBeanSummaryStats
 
             if (mbean_name.include? "scope=#{mbean_type}") || ((is_solr7?()) && (mbean_name.include? "scope=#{mbean_scope_part}") && (mbean_name.include? "name=#{mbean_name_part}"))
 
+                # We have two separate requests for the same scope and name for ADD_METRICS and AVG_METRICS.
+                # eg: scope=/get and name=requestTimes with ["count", "5MinuteRate"] for ADD_METRICS and ["95thPercentile"] for AVG_METRICS
+                # To distinguish these two mbean response object for ADD and AVG, we will check if the response has the latency attribute - 95thPercentile.
+                # Even if we add more metrics to either of the mbean requests, latency attribute - 95thPercentile, will always be there in the AVG_METRICS and this comparison will pass
                 if metric_aggr_type == "ADD_METRICS"
                     if (!attributes.include?"95thPcRequestTime") || (!attributes.include? "95thPercentile")
                         return solr_mbean_resp
@@ -516,7 +520,7 @@ class SolrMBeanSummaryStats
         mbean_parts.each do |mbean_part|
             if mbean_part.start_with? "scope="
                 mbean_type = mbean_part.slice(mbean_part.index("scope=")+6, mbean_part.length-1)
-                # Removing the code to trim the beginning slash in scope and removing it right before writing to the log file.
+                # Removing the code to trim the beginning slash in scope and instead removing it right before writing to the log file.
                 # if mbean_type.start_with? "/"
                 #     scope_value = mbean_type.slice(1,mbean_type.length-1)
                 # else
