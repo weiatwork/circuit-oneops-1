@@ -663,7 +663,7 @@ resource "solr-collection",
       :description => 'ReplicaDistributionStatus',
       :source => '',
       :chart => {'min'=>0, 'unit'=>''},
-      :cmd => 'check_shardstatus.rb!:::node.workorder.rfcCi.ciAttributes.collection_name:::!:::node.workorder.rfcCi.ciAttributes.replication_factor:::',
+      :cmd => 'replica_distribution_validation.rb!:::node.workorder.rfcCi.ciAttributes.collection_name:::!:::node.workorder.rfcCi.ciAttributes.replication_factor:::',
       :cmd_line => '/opt/nagios/libexec/replica_distribution_validation.rb $ARG1$ $ARG2$',
       :metrics =>  {
         'ReplicaDistributionStatus' => metric( :unit => '%', :description => 'Replica Distribution Status', :dstype => 'GAUGE')
