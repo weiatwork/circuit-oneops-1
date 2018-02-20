@@ -1031,7 +1031,7 @@ module SolrCollection
       end
 
       if node['min_rf'] != nil && !node['min_rf'].empty?
-        if node['min_rf'] < node['replication_factor']
+        if node['min_rf'] <= node['replication_factor']
           init_params_props_map = {
             "25_init_params_update_handler" => {
               "parent_elem_path" => "config/initParams[@path='\/update\/**']",
@@ -1271,7 +1271,6 @@ module SolrCollection
 
       # Get updateRequestProcessorChain object from config response object.
       update_req_proc_chain_obj = solr_config_response['config']['updateRequestProcessorChain']
-      found_add_schema_field_processor = false
       update_req_proc_chain_obj.each do |processor_chain|
         processor_chain.each do |key, value|
           if key == "processor"

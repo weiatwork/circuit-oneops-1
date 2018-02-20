@@ -35,7 +35,7 @@ attribute 'show-advanced-config',
 attribute 'service-mesh-version',
           :description => 'Service Mesh Version',
           :required => 'required',
-          :default => '1.1',
+          :default => '1.3',
           :format => {
               :important => true,
               :help => 'Service mesh version, do not change if not sure what value to use',
@@ -47,7 +47,7 @@ attribute 'service-mesh-version',
 attribute 'service-mesh-root',
           :description => 'Service Mesh Root Directory',
           :required => 'required',
-          :default => '/home/app/service-mesh',
+          :default => '/opt/service-mesh',
           :format => {
               :important => false,
               :help => 'Root directory for service-mesh component',
@@ -55,5 +55,38 @@ attribute 'service-mesh-root',
               :filter   => {'all' => {'visible' => 'show-advanced-config:eq:true'}},
               :order => 5
           }
+
+attribute 'conf-override',
+          :description => 'Additional JVM Parameters',
+          :required => 'optional',
+          :default => '',
+          :format => {
+              :important => false,
+              :help => 'Additional java vm parameter config to be applied to soa linkerd process',
+              :category => '2.Advanced',
+              :filter   => {'all' => {'visible' => 'show-advanced-config:eq:true'}},
+              :order => 6
+          }
+
+attribute 'use-overridden-yaml',
+          :description => 'Override config YAML?',
+          :required => 'optional',
+          :default => 'false',
+          :format      => {
+            :help     => 'Select checkbox to see advanced configuration. Not recommended if you are not familiar with the configs',
+            :category => '2.Advanced',
+            :form     => {'field' => 'checkbox'},
+            :order    => 7
+          }
+
+attribute 'config-yaml',
+		  :description => "Complete Config YAML",
+		  :data_type => "text",
+		  :format => {
+		    :help => 'Complete config in yaml format, this will override any other config',
+		    :category => '2.Advanced',
+		    :filter   => {'all' => {'visible' => 'show-advanced-config:eq:true && use-overridden-yaml:eq:true'}},
+		    :order => 8
+  		  }
 
 recipe "restart-service-mesh-process", "Restart Service Mesh"
