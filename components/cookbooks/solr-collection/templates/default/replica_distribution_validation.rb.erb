@@ -1,0 +1,149 @@
+#!/usr/bin/env ruby
+
+require 'json'
+require 'net/http'
+
+# This method return the map map {shard_name=>[replica_ip1, replica_ip2,....]}
+# ex. {"shard1"=>["10.0.0.1", "10.0.0.2", "10.0.0.3",...], "shard2"=>["10.0.0.4", "10.0.0.5", "10.0.0.6",...],.....}
+def get_shard_name_to_replica_ips_map(host,port,collection_name)
+
+
+  # get the cluster state
+  uri = URI("http://#{host}:#{port}/solr/admin/collections?action=CLUSTERSTATUS&indexInfo=false&wt=json")
+  res = Net::HTTP.get_response(uri)
+  if !res.is_a?(Net::HTTPSuccess)
+    error = "Error while reading clusterstate : #{res.message}"
+    puts error
+    raise error
+  end
+
+
+  # extract collections from cluster state
+  data = JSON.parse(res.body)
+  collections =  data['cluster']['collections']
+  if collections.empty? || !collections.has_key?(collection_name)
+    error = "No collection found : #{collection_name}"
+    raise error
+  end
+
+
+  # if no shards found, return empty map
+  shard_replica_ips_map = Hash.new
+  shards = collections[collection_name]["shards"]
+  if shards == nil || shards.empty?
+    puts "no shard found"
+    return shard_replica_ips_map
+  end
+
+  # construct map map shard_name=>[replica_ip1, replica_ip2,....]}
+  shards.keys.each do |shard_name|
+    replicas = shards[shard_name]['replicas'].values
+    puts "replicas = #{replicas}"
+    shard_replicas_ips = replicas.map{|x| x["node_name"].split(":")[0]}
+    shard_replica_ips_map[shard_name] = shard_replicas_ips
+  end
+  return shard_replica_ips_map
+end
+
+# This method confirms if the replicas are evenly distributes across the clouds/domains
+def shard_replica_distribution_correct(collection_name, shard_name, replica_per_shard, cloud_or_domain_to_compute_ips_map, shard_replica_ip_list)
+
+  # total no. of clouds/domains
+  cloud_or_domain_count = cloud_or_domain_to_compute_ips_map.keys.size
+
+  # expected replica count for given shard per cloud/domain.
+  # ex. for 3 clouds, if there are required 2 shards & 3 replicas (6 replicas), then each cloud or domain will have 2 replica_per_cloud ((2 shards* 3 replicas_per_shards)/3 clouds_or_domains)
+  replica_per_cloud = replica_per_shard.to_i / cloud_or_domain_count.to_i
+  puts "replica_per_cloud = #{replica_per_cloud}"
+
+  # find  existing_cloud_or_domain_to_replica_count_map from the cluster_status, which may be different from expected
+  # ex. {"1___1" => ["ip1","ip2"],"0___0" => ["ip3"],"1___4" => ["ip4","ip5"]} for azure
+  # ex. {"prod-cdc5" => ["ip1","ip2"],"prod-cdc6" => ["ip3"],"prod-cdc7" => ["ip4","ip5"]} for openstack
+
+
+  existing_cloud_to_replica_count_map = Hash.new
+  cloud_or_domain_to_compute_ips_map.each do |cloud_name, ip_list|
+
+    # find how many replicas are hosted on cloud/domain ip list
+    matching_ip_count = 0
+    ip_list.each do |compute_ip|
+      matching_ip_count = matching_ip_count + shard_replica_ip_list.count(compute_ip)
+    end
+    puts "From cloud/domain #{cloud_name} #{matching_ip_count} ip matches found in existing replicas #{shard_replica_ip_list} for shard #{shard_name}"
+    existing_cloud_to_replica_count_map[cloud_name] = matching_ip_count
+  end
+
+  puts "existing_cloud_to_replica_count_map = #{existing_cloud_to_replica_count_map.to_json}"
+
+  # get list of replica count for each cloud/domain
+  # ex. [2, 2, 2] for each of 3 clouds/domains there are 2 replica each
+  existing_cloud_replica_distribution = existing_cloud_to_replica_count_map.values
+  puts "existing_cloud_replica_distribution = #{existing_cloud_replica_distribution}"
+
+  cloud_counter = 1
+
+  # transform this to hash map where key is cloud/domain number & value is replica count.
+  # cloud/domain number as key is logical value and this doesn't represent any cloud_name/domain
+  # ex. {1=>2, 2=>2, 3=>2}
+  expected_cloud_or_domain_num_to_replica_count = Hash.new()
+
+
+  # no. of distribution => either replica_per_shard or cloud_or_domain_count which ever is higher
+  limit = replica_per_shard
+  if cloud_or_domain_count.to_i > replica_per_shard.to_i
+    limit = cloud_or_domain_count
+  end
+
+  #expected_cloud_or_domain_num_to_replica_count => {1=>1,2=>1,3=>1,4=>0,5=0,6=>0} for 6 cloud & 3 replicas/shard
+  #expected_cloud_or_domain_num_to_replica_count => {1=>3,2=>3,3=>2} for 3 cloud 8 replicas/shard
+  for i in 1..limit.to_i
+    if cloud_counter > cloud_or_domain_count
+      cloud_counter = 1
+    end
+    if !expected_cloud_or_domain_num_to_replica_count.has_key?(cloud_counter)
+      expected_cloud_or_domain_num_to_replica_count[cloud_counter] = 0
+    end
+    if i <= replica_per_shard.to_i
+      expected_cloud_or_domain_num_to_replica_count[cloud_counter] = expected_cloud_or_domain_num_to_replica_count[cloud_counter] + 1
+    end
+    cloud_counter = cloud_counter +1
+  end
+
+  puts "expected_cloud_or_domain_num_to_replica_count.values = #{expected_cloud_or_domain_num_to_replica_count.values.sort}"
+
+  # transform existing cloud_or_domain to replica_count to hash map where key is cloud/domain number & value is replica count.
+  # cloud/domain number as key is logical value and this doesn't represent any cloud_name/domain
+  # ex. {1=>2, 2=>2, 3=>2}
+  cloud_counter = 1
+  existing_cloud_to_replica_count = Hash.new
+  existing_cloud_to_replica_count_map.each do |cloud_name, replica_count|
+    existing_cloud_to_replica_count[cloud_counter] = replica_count
+    cloud_counter = cloud_counter +1
+  end
+
+  puts "existing_cloud_to_replica_count.values = #{existing_cloud_to_replica_count.values.sort}"
+
+  # replica distribution matches only if on each cloud equal no. of replicas in cluster state vs expected distribution
+  return expected_cloud_or_domain_num_to_replica_count.values.sort == existing_cloud_to_replica_count.values.sort
+end
+
+collection_name = ARGV[0]
+replica_per_shard = ARGV[2]
+
+puts "collection_name=>#{collection_name} replica_per_shard=>#{replica_per_shard}"
+host = "<%= node['ipaddress'] %>"
+port_num = "<%= node['port_num'] %>"
+cloud_or_domain_to_compute_ips_map = <%= @cloud_or_domain_to_compute_ips_map %>
+
+# shard_name_to_replica_ips_map => {"shard1"=>["10.0.0.1", "10.0.0.2", "10.0.0.3",...], "shard2"=>["10.0.0.4", "10.0.0.5", "10.0.0.6",...],.....}
+shard_name_to_replica_ips_map = get_shard_name_to_replica_ips_map(host, port_num, collection_name)
+puts "shard_name_to_replica_ips_map = #{shard_name_to_replica_ips_map}"
+
+result = "replica distribution is OK | up=100"
+shard_name_to_replica_ips_map.each do |shard_name, shard_replica_ip_list|
+  if !shard_replica_distribution_correct(collection_name, shard_name, replica_per_shard, cloud_or_domain_to_compute_ips_map, shard_replica_ip_list)
+    result = "replica distribution is NOT OK | up=0"
+    break
+  end
+end
+puts result

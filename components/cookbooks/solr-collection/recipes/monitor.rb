@@ -18,3 +18,17 @@ template "/opt/nagios/libexec/check_shardstatus.rb" do
   action :create
 end
 
+cloud_provider = CloudProvider.new(node)
+cloud_or_domain_to_compute_ips_map = cloud_provider.get_zone_to_compute_ip_map()
+
+# Copy the replica_distribution_validation.rb.erb monitor to /opt/nagios/libexec/replica_distribution_validation.rb location
+template "/opt/nagios/libexec/replica_distribution_validation.rb" do
+  source "replica_distribution_validation.rb.erb"
+  owner "app"
+  group "app"
+  mode "0755"
+  variables({
+    :cloud_or_domain_to_compute_ips_map => cloud_or_domain_to_compute_ips_map
+  })
+  action :create
+end
