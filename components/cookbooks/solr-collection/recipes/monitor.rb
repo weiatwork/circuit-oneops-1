@@ -28,7 +28,7 @@ template "/opt/nagios/libexec/replica_distribution_validation.rb" do
   group "app"
   mode "0755"
   variables({
-    :cloud_or_domain_to_compute_ips_map => cloud_or_domain_to_compute_ips_map
+    :cloud_or_domain_to_compute_ips_map => cloud_or_domain_to_compute_ips_map.to_json
   })
   action :create
 end

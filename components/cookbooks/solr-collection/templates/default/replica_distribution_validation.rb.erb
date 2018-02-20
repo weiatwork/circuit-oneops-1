@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 
+require 'rubygems'
 require 'json'
 require 'net/http'
 
@@ -128,13 +129,13 @@ def shard_replica_distribution_correct(collection_name, shard_name, replica_per_
 end
 
 collection_name = ARGV[0]
-replica_per_shard = ARGV[2]
+replica_per_shard = ARGV[1]
 
 puts "collection_name=>#{collection_name} replica_per_shard=>#{replica_per_shard}"
 host = "<%= node['ipaddress'] %>"
 port_num = "<%= node['port_num'] %>"
-cloud_or_domain_to_compute_ips_map = <%= @cloud_or_domain_to_compute_ips_map %>
-
+cloud_or_domain_to_compute_ips_map = '<%= @cloud_or_domain_to_compute_ips_map %>'
+cloud_or_domain_to_compute_ips_map = JSON.parse(cloud_or_domain_to_compute_ips_map)
 # shard_name_to_replica_ips_map => {"shard1"=>["10.0.0.1", "10.0.0.2", "10.0.0.3",...], "shard2"=>["10.0.0.4", "10.0.0.5", "10.0.0.6",...],.....}
 shard_name_to_replica_ips_map = get_shard_name_to_replica_ips_map(host, port_num, collection_name)
 puts "shard_name_to_replica_ips_map = #{shard_name_to_replica_ips_map}"
