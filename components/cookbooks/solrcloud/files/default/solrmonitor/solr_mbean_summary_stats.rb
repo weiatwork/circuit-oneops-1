@@ -581,27 +581,8 @@ class SolrMBeanSummaryStats
         mbeans.each do |mbean_name, mbean_metrics|
 
             mbean_metrics.each do |metric_key, metric_value|
-                metric_value_existed = mbean_aggr_metric_map_obj[metric_key]
-                # When the node has multiple cores either for same collection or for different collection the value for the variable 'metric_value_existed' would exist from second core onwards.
-                if metric_value_existed != nil
-                    # When the variable 'metric_value_existed' existed the below if condition would execute and aggregates for all int/float metrics (like: 5minRateReqsPerSecond, 15minRateReqsPerSecond) 
-                    # otherwise it would not aggregate and overwrite with the latest metric value. (ex: when fileds like version, source is passed in the code.)
-                    if is_number?(mbean_aggr_metric_map_obj[metric_key])
-                        mbean_aggr_metric_map_obj[metric_key] = metric_value.to_f + mbean_aggr_metric_map_obj[metric_key].to_f
-                    else
-                        if metric_value.to_s.include?("bytes")
-                          metric_value = metric_value[/\d+/]
-                          mbean_aggr_metric_map_obj[metric_key] = metric_value.to_f + mbean_aggr_metric_map_obj[metric_key].to_f
-                        else
-                          mbean_aggr_metric_map_obj[metric_key] = metric_value
-                        end
-                    end
-                else
-                  if metric_value.to_s.include?("bytes")
-                    metric_value = metric_value[/\d+/]
-                  end
-                  mbean_aggr_metric_map_obj[metric_key] = metric_value
-                end
+                metric_value = get_raw_metrics(metric_value, mbean_aggr_metric_map_obj[metric_key])
+                mbean_aggr_metric_map_obj[metric_key] = metric_value
             end
         end
 
@@ -654,6 +635,48 @@ class SolrMBeanSummaryStats
 
             end
         end
+    end
+
+    def get_raw_metrics(metric_value, existing_value)
+
+        # When the node has multiple cores either for same collection or for different collection the value for the variable 'existing_value' would exist from second core onwards.
+        # When the variable 'existing_value' existed the below switch case condition would execute and aggregates for all int/float metrics (like: 5minRateReqsPerSecond, 15minRateReqsPerSecond)
+        # otherwise it would not aggregate and overwrite with the latest metric value. (ex: when fileds like version, source is passed in the code.)
+
+        if is_number? (metric_value)
+            puts "metric value is a number - #{metric_value}"
+            if existing_value != nil
+                metric_value = metric_value.to_f + existing_value.to_f
+            end
+        else
+            value_parts = metric_value.split(" ")
+            metric_raw_value = value_parts.first
+            metric_raw_value = metric_raw_value[/\d+/]
+            metric_unit = value_parts.last.upcase
+
+            if existing_value != nil
+                metric_value = case metric_unit
+                                   when "BYTES" then metric_raw_value.to_f + existing_value.to_f
+                                   when "KB" then metric_raw_value.to_f*1024 + existing_value.to_f
+                                   when "MB" then metric_raw_value.to_f*1024*1024 + existing_value.to_f
+                                   when "GB" then metric_raw_value.to_f*1024*1024*1024 + existing_value.to_f
+                                   when "TB" then metric_raw_value.to_f*1024*1024*1024*1024 + existing_value.to_f
+                                   else metric_value
+                               end
+            else
+                metric_value = case metric_unit
+                                   when "BYTES" then metric_raw_value.to_f
+                                   when "KB" then metric_raw_value.to_f*1024
+                                   when "MB" then metric_raw_value.to_f*1024*1024
+                                   when "GB" then metric_raw_value.to_f*1024*1024*1024
+                                   when "TB" then metric_raw_value.to_f*1024*1024*1024*1024
+                                   else metric_value
+                               end
+            end
+        end
+
+        return metric_value
+
     end
 
     def get_collection_core_name(mbean_name)
