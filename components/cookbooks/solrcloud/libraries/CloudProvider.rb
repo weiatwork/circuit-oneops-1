@@ -13,7 +13,7 @@ class CloudProvider
     Chef::Log.info("@cloud_name : #{@cloud_name}")
     
     #extract cloud provider 'Openstack/Azure' from compute service string {"prod-cdc5":{"ciClassName":"cloud.service.Openstack"}}
-    Chef::Log.info("node[:workorder][:services][:compute] = #{node[:workorder][:services][:compute].to_json}")
+    #Chef::Log.info("node[:workorder][:services][:compute] = #{node[:workorder][:services][:compute].to_json}")
     @cloud_provider = node[:workorder][:services][:compute][@cloud_name][:ciClassName].gsub("cloud.service.","").downcase.split(".").last
     Chef::Log.info("Cloud Provider: #{@cloud_provider}")
     
