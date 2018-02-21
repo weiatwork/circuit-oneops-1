@@ -421,6 +421,8 @@ if (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? 
     end
 
     service "solr#{node['solrmajorversion']}" do
+      provider Chef::Provider::Service::Init
+      supports  :restart => true, :status => true, :stop => true, :start => true
       action :start
     end
   elsif node['action_name'] == "update" && update_found(node)

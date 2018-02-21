@@ -666,10 +666,10 @@ resource "solr-collection",
       :cmd => 'replica_distribution_validation.rb!:::node.workorder.rfcCi.ciAttributes.collection_name:::!:::node.workorder.rfcCi.ciAttributes.replication_factor:::',
       :cmd_line => '/opt/nagios/libexec/replica_distribution_validation.rb $ARG1$ $ARG2$',
       :metrics =>  {
-        'ReplicaDistributionStatus' => metric( :unit => '%', :description => 'Replica Distribution Status', :dstype => 'GAUGE')
+        'replicaCountToMove' => metric( :unit => '%', :description => 'No. of Replicas To Move', :dstype => 'GAUGE')
       },
       :thresholds => {
-        'ReplicaDistributionStatus' => threshold('1m','avg','ReplicaDistributionStatus',trigger('<',100,2,1),reset('=',100,2,1))
+        'replicaCountToMove' => threshold('5m','avg','replicaCountToMove',trigger('>',0,15,2),reset('<=',0,15,1))
       }
     }
   }

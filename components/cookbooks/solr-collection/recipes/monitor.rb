@@ -19,7 +19,9 @@ template "/opt/nagios/libexec/check_shardstatus.rb" do
 end
 
 cloud_provider = CloudProvider.new(node)
-cloud_or_domain_to_compute_ips_map = cloud_provider.get_zone_to_compute_ip_map()
+# get map of key=>cloud_name or fault_domain_update_domain and value => list of compute ips
+cloud_to_compute_ips_map = cloud_provider.get_zone_to_compute_ip_map()
+Chef::Log.info("cloud_to_compute_ips_map = #{cloud_to_compute_ips_map.to_json}")
 
 # Copy the replica_distribution_validation.rb.erb monitor to /opt/nagios/libexec/replica_distribution_validation.rb location
 template "/opt/nagios/libexec/replica_distribution_validation.rb" do
@@ -28,7 +30,7 @@ template "/opt/nagios/libexec/replica_distribution_validation.rb" do
   group "app"
   mode "0755"
   variables({
-    :cloud_or_domain_to_compute_ips_map => cloud_or_domain_to_compute_ips_map.to_json
+    :cloud_to_compute_ips_map => cloud_to_compute_ips_map.to_json
   })
   action :create
 end
