@@ -182,23 +182,43 @@ if (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? 
   #install_solr_service using -n option to install without starting service
   install_command = "sudo ./install_solr_service.sh #{solr_download_path}/#{solr_file_name} -i #{node['installation_dir_path']} -d #{node['data_dir_path']} -u #{node['solr']['user']} -p #{node['port_no']} -s solr#{node['solrmajorversion']} -n"
   Chef::Log.info("install_command = #{install_command}")
-  # Extracts solr tgz package and execute installation script
-  # Copy the lib/ext and WEB-INF/lib jars to /app/solr-war-lib directory
-  bash "install_solr_and_copy_jars" do
+  
+  # Extracts solr package.
+  # solr_download_path = /tmp
+  # solr_file_name = solr-7.x.x.tgz or solr-6.x.x.tgz
+  execute "extract_solr_package" do
+    Chef::Log.info(solr_download_path)
+    Chef::Log.info(solr_file_name)
+    command "tar -xf #{solr_download_path}/#{solr_file_name}"
+    not_if { node['action_name'] == "update" }
+  end
+
+  # Modify the permissions to the installation script(install_solr_service.sh).
+  # solr_file_woext = solr-6.x.x or solr-7.x.x
+  execute "modify_perm_install_script" do
+    Chef::Log.info(solr_file_woext)
+    command "chmod 777 #{solr_download_path}/#{solr_file_woext}/bin/install_solr_service.sh"
+    not_if { node['action_name'] == "update" }
+  end
+
+  # Remove solr service file from /etc/init.d directory if exists
+  # Execute installation script (install_solr_service.sh) and install solr
+  bash "install_solr" do
     code <<-EOH
-      cd #{solr_download_path}
-      tar -xf #{solr_file_name}
-      cd #{solr_file_woext}/bin
-      chmod 777 install_solr_service.sh
+      unlink #{node['installation_dir_path']}/solr#{node['solrmajorversion']}
+      [ -e /etc/init.d/solr#{node['solrmajorversion']} ] && rm -- /etc/init.d/solr#{node['solrmajorversion']}
       #{install_command}
-      rm -rf /etc/default/solr#{node['solrmajorversion']}.in.sh
-      rm -rf #{node['data_dir_path']}/log4j.properties
-      cd #{node['installation_dir_path']}/solr#{node['solrmajorversion']}/server/
-      cp lib/ext/* #{node['user']['dir']}/solr-war-lib#{node['solrmajorversion']}
-      cp solr-webapp/webapp/WEB-INF/lib/* #{node['user']['dir']}/solr-war-lib#{node['solrmajorversion']}
-      echo #{node['solr_version']} > #{node['user']['dir']}/solr-#{node['solr_version']}.txt
     EOH
-    not_if { ::File.exists?(node['user']['dir']+"/solr-"+node['solr_version']+".txt") }
+    not_if { node['action_name'] == "update" }
+  end
+
+  # Copy jars from lib/ext and WEB-INF/lib directories to /app/solr-war-lib6 or /app/solr-war-lib7 directory.
+  bash "copy_jars" do
+    code <<-EOH
+      sudo cp #{node['installation_dir_path']}/solr#{node['solrmajorversion']}/server/lib/ext/* #{node['user']['dir']}/solr-war-lib#{node['solrmajorversion']}
+      sudo cp #{node['installation_dir_path']}/solr#{node['solrmajorversion']}/server/solr-webapp/webapp/WEB-INF/lib/* #{node['user']['dir']}/solr-war-lib#{node['solrmajorversion']}
+    EOH
+    not_if { node['action_name'] == "update" }
   end
 
   # maxRequestsPerSec is provided then download and copy the custom filter to server/lib
