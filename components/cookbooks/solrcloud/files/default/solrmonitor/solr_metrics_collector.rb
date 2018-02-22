@@ -97,15 +97,16 @@ class SolrMetricsCollector
       end
 
       if (@enable_jmx_metrics == "true")
-        if called_node_status_metrics == 0
-          get_solr_node_status(time, medusaLogWriter, graphiteWriter)
-        end
         jmx_medusaLogWriter = nil
         if (@enable_medusa == true)
           jmx_medusaLogger = Logger.new(File.new(@jmx_medusa_log_file, File::WRONLY | File::CREAT | File::TRUNC))
           # Ruby logger.formatter supports four input parameters : |severity, datetime, progname, msg|, here, we only need to pass msg into the proc.
           jmx_medusaLogger.formatter = proc { |_s, _d, _p, msg| "#{msg}\n" }
           jmx_medusaLogWriter = MedusaLogWriter.new(jmx_medusaLogger)
+        end
+         if called_node_status_metrics == 0
+          # Add node-status to jmx-specific log-writer if not written already to regular log-writer
+          get_solr_node_status(time, jmx_medusaLogWriter, graphiteWriter)
         end
         mbean_sum_stat_obj = SolrMBeanSummaryStats.new(jmx_medusaLogWriter, graphiteWriter, @metric_level, @jolokia_port, @solr_jmx_port, @solr_version, time)
         mbean_sum_stat_obj.collect_jmx_metrics()
@@ -136,7 +137,7 @@ class SolrMetricsCollector
       live_nodes = cluster_status["cluster"]["live_nodes"]
 
       live_nodes_metric = {
-          "total.nodes.live" => live_nodes.size
+          "total.nodes.live" => {:metric => live_nodes.size}
       }
 
       # Get the nodes states
