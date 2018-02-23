@@ -150,7 +150,8 @@ resource "dotnetframework",
   },
   :attributes   => {
     "chocolatey_package_source" => 'https://chocolatey.org/api/v2/',
-    "dotnet_version_package_name" => '{ ".Net 4.6":"dotnet4.6", ".Net 3.5":"dotnet3.5" }'
+    "dotnet_version_package_name" => '{ ".Net 4.6":"dotnet4.6", ".Net 3.5":"dotnet3.5" }',
+    "dotnet_core_package_name" => 'dotnetcore-windowshosting',
   }
 
 chocolatey_package_configure_cmd=  <<-"EOF"
@@ -318,7 +319,8 @@ resource "secgroup",
 
 resource "os",
   :attributes => {
-    "ostype"  => "windows_2012_r2"
+    "ostype"   => "windows_2012_r2",
+    "features" => "[\"Web-Server\"]"
   }
 
 resource "volume",
