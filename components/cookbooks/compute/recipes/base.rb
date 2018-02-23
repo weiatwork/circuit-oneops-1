@@ -117,22 +117,8 @@ ruby_block 'install base' do
     Chef::Log.info("Syncing #{cookbook_path} ...")
     cmd = node[:rsync_cmd].gsub("SOURCE",cookbook_path).gsub("DEST","~/shared/").gsub("IP",node[:ip])
     result = shell_out(cmd, :timeout => shell_timeout)
-
-    # It is possible to get here and ssh not be ready. This guards against that.
-    rsync_retry_max = 5
-    sleep_time = 2
-    retries = 0
-    while result.stderr =~ /Permission denied/
-      if retries >= rsync_retry_max
-        Chef::Log.debug("#{cmd} returned: #{result.stdout}")
-        result.error!
-      else
-        Chef::Log.debug("#{cmd} returned: Permission denied retrying in #{sleep_time}seconds. This is retry #{retries}")
-        retries = retries + 1
-        sleep sleep_time
-        result = shell_out(cmd, :timeout => shell_timeout)
-      end
-    end
+    Chef::Log.debug("#{cmd} returned: #{result.stdout}")
+    result.error!
 
     # remove first bom and last Component class
     class_parts = node[:workorder][:rfcCi][:ciClassName].split(".")
