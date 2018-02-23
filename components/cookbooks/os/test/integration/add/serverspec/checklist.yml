@@ -2,20 +2,13 @@ packages:
   - sudo
   - file
   - make
-  - gcc
-  - gcc-c++
-  - glibc-devel
   - libgcc
   - ruby
   - ruby-libs
-  - ruby-devel
-  - libxml2-devel
-  - libxslt-devel
   - rubygems
   - perl
   - perl-Digest-MD5
   - nagios
-  - nagios-devel
   - nagios-plugins
   - iptables-services
   - ntp
@@ -27,7 +20,6 @@ packages:
   - sysstat
   - autoconf
   - automake
-  - libtool
   - bison
   - nmap-ncat
 gems:
