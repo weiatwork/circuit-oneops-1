@@ -10,7 +10,7 @@ log_echo () {
 }
 
 zk_fqdn=<%= node["zk_host_fqdns"]%>
-log_echo "Given ZK FQDN is $zk_fqdn"
+log_echo "ZK FQDN is $zk_fqdn"
 
 
 zk_ip_list_string=$(dig +short $zk_fqdn)

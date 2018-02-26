@@ -129,6 +129,7 @@ module SolrCloud
         if "#{cilocal['platform_name']}".empty?
           raise "Zookeeper platform name should be provided for the selected option - InternalEnsemble-SameAssembly"
         end
+
         hostname = `hostname -f` # solr.dev.assemply.org.cloud_name.prod.cloud.xyz.com
         hostname_delimiter = '.'
         hostname_parts = "#{hostname}".split('.') #convert above hostname string to array using hostname_delimiter
@@ -141,6 +142,7 @@ module SolrCloud
         zk_fqdn = hostname_parts.join(".")
         node.set["zk_host_fqdns"] = zk_fqdn.strip;
         puts "ZK FQDN constructed is ---  #{node['zk_host_fqdns']}"
+
       end
 
       if ("#{zkselect}".include? "ExternalEnsemble")
