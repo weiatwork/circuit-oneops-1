@@ -65,7 +65,9 @@ attribute 'runtime_version',
   :filter    => {'all' => {'visible' => 'new_app_pool_required:eq:true'}},
   :form      => {
                   'field' => 'select',
-                  'options_for_select' => [['v2.0', 'v2.0'], ['v4.0', 'v4.0']]
+                  'options_for_select' => [['v2.0', 'v2.0'],
+                                           ['v4.0', 'v4.0'],
+                                           ['No Managed Code', 'NoManagedCode']]
                 }
 }
 
