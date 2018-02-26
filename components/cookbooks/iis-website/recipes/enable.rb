@@ -26,6 +26,14 @@ features = [
   'Web-AppInit'
 ]
 
+runtime = node.workorder.rfcCi.ciAttributes
+
+if runtime.install_dotnetcore == "true"
+  features.delete('Web-Net-Ext')
+  features.delete('Web-Asp-Net')
+  features.delete('Net-Framework-Core')
+end
+
 powershell_script 'installing windows features' do
   code "Install-WindowsFeature #{features.join(',')}"
   not_if "if ((Get-WindowsFeature #{features.join(',')} | ?{ $_.Installed -match $true }).count -eq #{features.count}) { $true } else { $false }"
