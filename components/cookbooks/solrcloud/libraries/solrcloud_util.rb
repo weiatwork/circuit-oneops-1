@@ -122,18 +122,25 @@ module SolrCloud
       end
     end
 
-    # sets the zookeeper FQDN connection string to zk_host_fqdns variable
+    # Construct and set the zookeeper FQDN to node variable (zk_host_fqdns)
     def setZkhostfqdn(zkselect,ci)
       cilocal = ci;
       if "#{zkselect}".include? "InternalEnsemble-SameAssembly"
         if "#{cilocal['platform_name']}".empty?
           raise "Zookeeper platform name should be provided for the selected option - InternalEnsemble-SameAssembly"
         end
-        hostname = `hostname -f`
-        fqdn = "#{hostname}".split('.')
-        fqdn_string = "#{hostname}".split('.',6).last
-        zk_host_fqdns = cilocal['platform_name']+"."+fqdn[1]+"."+fqdn[2]+"."+fqdn[3]+"."+fqdn_string
-        node.set["zk_host_fqdns"] = zk_host_fqdns.strip;
+        hostname = `hostname -f` # solr.dev.assemply.org.cloud_name.prod.cloud.xyz.com
+        hostname_delimiter = '.'
+        hostname_parts = "#{hostname}".split('.') #convert above hostname string to array using hostname_delimiter
+        index = 4
+        # Removing <cloud_name> from hostname at index 4 as zk_fqdn won't contain the same
+        hostname_parts.delete_at(index)
+        # Replace solr hostname by zk platform name. solr.xxxx.xxx => solr-zk.xxxx.xxx
+        hostname_parts[0] = cilocal['platform_name']
+        # Convert hostname array to '.' separated string. => solr-zk.dev.assemply.org.prod.cloud.xyz.com
+        zk_fqdn = hostname_parts.join(".")
+        node.set["zk_host_fqdns"] = zk_fqdn.strip;
+        puts "ZK FQDN constructed is ---  #{node['zk_host_fqdns']}"
       end
 
       if ("#{zkselect}".include? "ExternalEnsemble")
