@@ -1,8 +1,11 @@
 require '/opt/oneops/inductor/circuit-oneops-1/components/cookbooks/azure_base/test/integration/spec_utils'
+require '/opt/oneops/inductor/circuit-oneops-1/components/cookbooks/azure_base/libraries/utils'
 
 class AzureSpecUtils < SpecUtils
   def initialize(node)
     @node = node
+    #set the proxy if it exists as a cloud var
+    Utils.set_proxy(node['workorder']['payLoad']['OO_CLOUD_VARS'])
   end
 
   def get_azure_creds
@@ -199,5 +202,20 @@ class AzureSpecUtils < SpecUtils
 
     imagidcustom = image_id.split(':')
     imagidcustom.eql? 'Custom'
+  end
+
+  def is_unmanaged_vm
+    compute_service = Fog::Compute::AzureRM.new(get_azure_creds)
+    availability_set = compute_service.availability_sets.get(get_resource_group_name, get_availability_set_name)
+
+    availability_set.sku_name.eql? 'Classic'
+  end
+
+  def get_availability_set_name
+    get_resource_group_name
+  end
+
+  def get_os_disk_name
+    "#{get_server_name}_os_disk"
   end
 end

@@ -48,7 +48,7 @@ class SolrMBeanSummaryStats
     def get_mbeanmap_for_solr7()
 
         metric_type_to_solr_core_mbean_attr_map = {
-            "add_aggr_metrics" => {
+            "ADD_METRICS" => {
                 # category, scope, name are the elements of the mbean object
                 "category=QUERY,scope=/get,name=requestTimes" =>
                     ["Count,OneMinuteRate,FiveMinuteRate,FifteenMinuteRate"],
@@ -124,7 +124,7 @@ class SolrMBeanSummaryStats
                 #     ["Value"],
 
             },
-            "avg_aggr_metrics" => {
+            "AVG_METRICS" => {
                 # category, scope, name are the elements of the mbean object
                 "category=QUERY,scope=/get,name=requestTimes" =>
                     ["95thPercentile,99thPercentile"],
@@ -142,7 +142,7 @@ class SolrMBeanSummaryStats
     # Get mbean map object for solr higher versions from 6.4 onwards.
     def get_mbeanmap_for_higherversion
         metric_type_to_solr_core_mbean_attr_map = {
-            "add_aggr_metrics" => {
+            "ADD_METRICS" => {
                 # category, scope, name are the elements of the mbean object
                 "category=QUERY,scope=/get,name=org.apache.solr.handler.RealTimeGetHandler" =>
                 ["requests,5minRateRequestsPerSecond,15minRateRequestsPerSecond,timeouts,errors,clientErrors,serverErrors"],
@@ -169,7 +169,7 @@ class SolrMBeanSummaryStats
                 "category=CACHE,scope=fieldCache,name=org.apache.solr.search.SolrFieldCacheMBean" =>
                 ["entries_count,total_size"]
             },
-            "avg_aggr_metrics" => {
+            "AVG_METRICS" => {
                 # category, scope, name are the elements of the mbean object
                 "category=QUERY,scope=/get,name=org.apache.solr.handler.RealTimeGetHandler" =>
                 ["95thPcRequestTime,99thPcRequestTime"],
@@ -185,7 +185,7 @@ class SolrMBeanSummaryStats
     # Get mbean map object for lower than solr version 6.4 version.
     def get_mbeanmap_for_lowerversion
         metric_type_to_solr_core_mbean_attr_map = {
-            "add_aggr_metrics" => {
+            "ADD_METRICS" => {
                 "type=/get,id=org.apache.solr.handler.RealTimeGetHandler" =>
                 ["requests,5minRateReqsPerSecond,15minRateReqsPerSecond,timeouts,errors,clientErrors,serverErrors"],
                 "type=/select,id=org.apache.solr.handler.component.SearchHandler" =>
@@ -209,7 +209,7 @@ class SolrMBeanSummaryStats
                 "type=fieldCache,id=org.apache.solr.search.SolrFieldCacheMBean" =>
                 ["entries_count"]
             },
-            "avg_aggr_metrics" => {
+            "AVG_METRICS" => {
                 "type=/get,id=org.apache.solr.handler.RealTimeGetHandler" =>
                 ["95thPcRequestTime,99thPcRequestTime"],
                 "type=/select,id=org.apache.solr.handler.component.SearchHandler" =>
@@ -249,7 +249,7 @@ class SolrMBeanSummaryStats
         end
 
         updated_map = metric_type_to_solr_core_mbean_attr_map.dup
-        metric_type_to_solr_core_add_agg_map = metric_type_to_solr_core_mbean_attr_map["add_aggr_metrics"].dup
+        metric_type_to_solr_core_add_agg_map = metric_type_to_solr_core_mbean_attr_map["ADD_METRICS"].dup
         cores = collection_to_core_name_map[collection_name]
         cores.each do |core|
             if solr_version_high()
@@ -260,7 +260,7 @@ class SolrMBeanSummaryStats
                 metric_type_to_solr_core_add_agg_map.merge!(size_in_bytes_mbean_attr_map)
             end
         end
-        updated_map["add_aggr_metrics"] = metric_type_to_solr_core_add_agg_map
+        updated_map["ADD_METRICS"] = metric_type_to_solr_core_add_agg_map
         return updated_map
 
     end
@@ -344,12 +344,13 @@ class SolrMBeanSummaryStats
             metric_type_to_mbean_type_obj[metric_aggr_type] = Array.new()
             mbean_attr_map.each do |mbean_name, mbean_attributes|
                 solr_mbean_name = get_solr_core_mbean_name(mbean_name, collection_name)
+                mbean_attributes_string = attributes_to_str(mbean_attributes)
                 mbean_type = get_solr_core_mbean_type(mbean_name)
                 metric_type_to_mbean_type_obj[metric_aggr_type].push(mbean_type)
                 solr_core_mbean_request = {
                     "type" => "read",
                     "mbean" => "#{solr_mbean_name}",
-                    "attribute" => "#{mbean_attributes}",
+                    "attribute" => "#{mbean_attributes_string}",
                     "target" => {
                         "url" => "service:jmx:rmi:///jndi/rmi://127.0.0.1:#{@solr_jmx_port}/jmxrmi"
                     }
@@ -361,22 +362,71 @@ class SolrMBeanSummaryStats
         return solr_core_mbean_bulk_request, metric_type_to_mbean_type_obj
     end
 
+    # Constructing the mbean_attributes as a comma separated string of attributes as different versions of Ruby treats the array of strings differently.
+    # Ruby 1.8 was considering the array of strings as comma separated attributes which is what the request expects
+    # eg: Count,OneMinuteRate,FiveMinuteRate,FifteenMinuteRate.
+    # Ruby 2.0 was giving it as an array of attributes from the map - metric_type_to_solr_core_mbean_attr_map and
+    # that results in constructing a bad json structure in the request.
+    # eg: ["Count,OneMinuteRate,FiveMinuteRate,FifteenMinuteRate"]
+    def attributes_to_str(mbean_attributes)
+        attributes = ''
+        mbean_attributes.each { |attribute| attributes = attributes + "," + attribute}
+
+        return attributes
+    end
+
     # Execute solr jmx read request for reading certain attributes.
     def execute_solr_core_jmx_read_request(solr_core_mbean_bulk_request, metric_type_to_mbean_type_obj, collection_name)
         solr_mbean_json_resp_obj = post_no_auth("localhost", @jolokia_port, '/jolokia/', solr_core_mbean_bulk_request)
-        j = 0
         metric_type_to_mbean_type_obj.each do |metric_aggr_type, mbean_type_list|
             i = 0
             mbean_count = mbean_type_list.size
             until i >= mbean_count.to_i  do
-                if solr_mbean_json_resp_obj[j]["status"] == 200
-                    send_solr_jmx_metrics_to_metric_reporter(mbean_type_list[i], collection_name, metric_aggr_type, solr_mbean_json_resp_obj[j])
+                solr_mbean_obj = get_solr_mbean_resp_for_mbean_type(metric_aggr_type, mbean_type_list[i], solr_mbean_json_resp_obj)
+                if solr_mbean_obj["status"] == 200
+                    send_solr_jmx_metrics_to_metric_reporter(mbean_type_list[i], collection_name, metric_aggr_type, solr_mbean_obj)
                 else
-                    puts "Status is not 200.. ERROR - #{solr_mbean_json_resp_obj[j]["stacktrace"]}"
+                    puts "Status is not 200.. ERROR - #{solr_mbean_obj["stacktrace"]}"
                 end
                 i += 1
-                j += 1
             end
+        end
+    end
+
+    # Get the solr_mbean_obj specific to mbean_name
+    # Hash map doesn't keep the order while iterating in ruby.
+    def get_solr_mbean_resp_for_mbean_type(metric_aggr_type, mbean_type, solr_mbean_json_resp_obj)
+        # Iterate through the giant solr_mbean_json_resp_obj. Fetch the correct response object based on the mbean_name provided in scope.
+        # Again for scope=/update or /select or /get, you have attributes listed both under ADD_METRICS and AVG_METRICS (eg: latency comes under avg and 15minuteRate under add_aggr)
+        # Fetch the corresponding mbean repsonse based on the above conditions and return it back to write it to the log file in influxdb format.
+        solr_mbean_json_resp_obj.each do |solr_mbean_resp|
+            mbean_name = solr_mbean_resp["request"]["mbean"]
+            attributes = solr_mbean_resp["request"]["attribute"]
+
+            if is_solr7?()
+                mbean_type_splits = mbean_type.split(".")
+                mbean_scope_part = mbean_type_splits.first
+                mbean_name_part = mbean_type_splits.last
+            end
+
+            if (mbean_name.include? "scope=#{mbean_type}") || ((is_solr7?()) && (mbean_name.include? "scope=#{mbean_scope_part}") && (mbean_name.include? "name=#{mbean_name_part}"))
+
+                # We have two separate requests for the same scope and name for ADD_METRICS and AVG_METRICS.
+                # eg: scope=/get and name=requestTimes with ["count", "5MinuteRate"] for ADD_METRICS and ["95thPercentile"] for AVG_METRICS
+                # To distinguish these two mbean response object for ADD and AVG, we will check if the response has the latency attribute - 95thPercentile.
+                # Even if we add more metrics to either of the mbean requests, latency attribute - 95thPercentile, will always be there in the AVG_METRICS and this comparison will pass
+                if metric_aggr_type == "ADD_METRICS"
+                    if (!attributes.include?"95thPcRequestTime") || (!attributes.include? "95thPercentile")
+                        return solr_mbean_resp
+                    end
+                else
+
+                    if (attributes.include?"95thPcRequestTime") || (attributes.include? "95thPercentile")
+                        return solr_mbean_resp
+                    end
+                end
+            end
+
         end
     end
 
@@ -439,9 +489,9 @@ class SolrMBeanSummaryStats
             mbean_parts.each do |mbean_part|
                 if mbean_part.start_with? "scope="
                     mbean_type = mbean_part.slice(mbean_part.index("scope=")+6, mbean_part.length-1)
-                    if mbean_type.start_with? "/"
-                        mbean_type = mbean_type.slice(1,mbean_type.length-1)
-                    end
+                    # if mbean_type.start_with? "/"
+                    #     mbean_type = mbean_type.slice(1,mbean_type.length-1)
+                    # end
                 end
             end
         else
@@ -470,11 +520,12 @@ class SolrMBeanSummaryStats
         mbean_parts.each do |mbean_part|
             if mbean_part.start_with? "scope="
                 mbean_type = mbean_part.slice(mbean_part.index("scope=")+6, mbean_part.length-1)
-                if mbean_type.start_with? "/"
-                    scope_value = mbean_type.slice(1,mbean_type.length-1)
-                else
-                    scope_value = mbean_type
-                end
+                # Removing the code to trim the beginning slash in scope and instead we remove it right before writing to the log file.
+                # if mbean_type.start_with? "/"
+                #     scope_value = mbean_type.slice(1,mbean_type.length-1)
+                # else
+                scope_value = mbean_type
+                # end
             end
 
             if mbean_part.start_with? "name="
@@ -505,42 +556,39 @@ class SolrMBeanSummaryStats
 
     # Parse the solr jmx mbean json response. Aggregate and push the metrics to medusa.
     def send_solr_jmx_metrics_to_metric_reporter(mbean_type, collection_name, metric_aggr_type, solr_mbean_json_resp_obj)
+
+        if mbean_type.start_with? "/"
+            mbean_type = mbean_type.slice(1,mbean_type.length-1)
+        end
+
         # Some mbean types contains slash(/). All such slashes will be converted to '.' ex: admin/segments will be converted to admin.segments
         mbean_type = mbean_type.sub(/\//, '.')
+
+        # Format of mbeans is:
+        # {
+        # "solr:category=QUERY,dom1=core,dom2=ngiso-app_shard2_replica1,name=org.apache.solr.handler.component.SearchHandler,reporter=_jmx_994115484,scope=/select":
+        # {
+        #    "95thPcRequestTime": 0.392329,
+        #    "99thPcRequestTime": 0.392329
+        # }
+        #}
         mbeans = solr_mbean_json_resp_obj["value"]
+
+        # Format of mbean_names - solr:category=QUERY,dom1=core,dom2=ngiso-app_shard2_replica1,name=org.apache.solr.handler.component.SearchHandler,reporter=_jmx_994115484,scope=/select
         mbean_names = mbeans.keys
 
         mbean_aggr_metric_map_obj = Hash.new()
         mbeans.each do |mbean_name, mbean_metrics|
 
             mbean_metrics.each do |metric_key, metric_value|
-                metric_value_existed = mbean_aggr_metric_map_obj[metric_key]
-                # When the node has multiple cores either for same collection or for different collection the value for the variable 'metric_value_existed' would exist from second core onwards.
-                if metric_value_existed != nil
-                    # When the variable 'metric_value_existed' existed the below if condition would execute and aggregates for all int/float metrics (like: 5minRateReqsPerSecond, 15minRateReqsPerSecond) 
-                    # otherwise it would not aggregate and overwrite with the latest metric value. (ex: when fileds like version, source is passed in the code.)
-                    if is_number?(mbean_aggr_metric_map_obj[metric_key])
-                        mbean_aggr_metric_map_obj[metric_key] = metric_value.to_f + mbean_aggr_metric_map_obj[metric_key].to_f
-                    else
-                        if metric_value.to_s.include?("bytes")
-                          metric_value = metric_value[/\d+/]
-                          mbean_aggr_metric_map_obj[metric_key] = metric_value.to_f + mbean_aggr_metric_map_obj[metric_key].to_f
-                        else
-                          mbean_aggr_metric_map_obj[metric_key] = metric_value
-                        end
-                    end
-                else
-                  if metric_value.to_s.include?("bytes")
-                    metric_value = metric_value[/\d+/]
-                  end
-                  mbean_aggr_metric_map_obj[metric_key] = metric_value
-                end
+                metric_value = get_raw_metrics(metric_value, mbean_aggr_metric_map_obj[metric_key])
+                mbean_aggr_metric_map_obj[metric_key] = metric_value
             end
         end
 
         mbean_aggr_metric_map_obj.each do |metric_key, metric_agg_value|
             metric_key = metric_key.delete "\s\n"
-            if metric_aggr_type == "add_aggr_metrics"
+            if metric_aggr_type == "ADD_METRICS"
 
                 fields = {"#{mbean_type}."+metric_key => metric_agg_value.to_s }
 
@@ -587,6 +635,48 @@ class SolrMBeanSummaryStats
 
             end
         end
+    end
+
+    def get_raw_metrics(metric_value, existing_value)
+
+        # When the node has multiple cores either for same collection or for different collection the value for the variable 'existing_value' would exist from second core onwards.
+        # When the variable 'existing_value' existed the below switch case condition would execute and aggregates for all int/float metrics (like: 5minRateReqsPerSecond, 15minRateReqsPerSecond)
+        # otherwise it would not aggregate and overwrite with the latest metric value. (ex: when fileds like version, source is passed in the code.)
+
+        if is_number? (metric_value)
+            puts "metric value is a number - #{metric_value}"
+            if existing_value != nil
+                metric_value = metric_value.to_f + existing_value.to_f
+            end
+        else
+            value_parts = metric_value.split(" ")
+            metric_raw_value = value_parts.first
+            metric_raw_value = metric_raw_value[/\d+/]
+            metric_unit = value_parts.last.upcase
+
+            if existing_value != nil
+                metric_value = case metric_unit
+                                   when "BYTES" then metric_raw_value.to_f + existing_value.to_f
+                                   when "KB" then metric_raw_value.to_f*1024 + existing_value.to_f
+                                   when "MB" then metric_raw_value.to_f*1024*1024 + existing_value.to_f
+                                   when "GB" then metric_raw_value.to_f*1024*1024*1024 + existing_value.to_f
+                                   when "TB" then metric_raw_value.to_f*1024*1024*1024*1024 + existing_value.to_f
+                                   else metric_value
+                               end
+            else
+                metric_value = case metric_unit
+                                   when "BYTES" then metric_raw_value.to_f
+                                   when "KB" then metric_raw_value.to_f*1024
+                                   when "MB" then metric_raw_value.to_f*1024*1024
+                                   when "GB" then metric_raw_value.to_f*1024*1024*1024
+                                   when "TB" then metric_raw_value.to_f*1024*1024*1024*1024
+                                   else metric_value
+                               end
+            end
+        end
+
+        return metric_value
+
     end
 
     def get_collection_core_name(mbean_name)
