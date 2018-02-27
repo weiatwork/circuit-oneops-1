@@ -25,27 +25,17 @@ Excon.defaults[:write_timeout] = 300
 
 cloud_name = node[:workorder][:cloud][:ciName]
 compute_service = node[:workorder][:services][:compute][cloud_name][:ciAttributes]
+domain = compute_service.key?('domain') ? compute_service[:domain] : 'default'
 
-conn = nil
-
-if compute_service[:endpoint].include?("v3")
-  conn = Fog::Compute.new({
-    :provider => 'OpenStack',
-    :openstack_api_key => compute_service[:password],
-    :openstack_username => compute_service[:username],
-    :openstack_project_name => compute_service[:tenant],
-    :openstack_domain_name => 'default',
-    :openstack_auth_url => compute_service[:endpoint]
-  })  
-else
-  conn = Fog::Compute.new({
-    :provider => 'OpenStack',
-    :openstack_api_key => compute_service[:password],
-    :openstack_username => compute_service[:username],
-    :openstack_tenant => compute_service[:tenant],
-    :openstack_auth_url => compute_service[:endpoint]
-  })
-end
+conn = Fog::Compute.new({
+  :provider => 'OpenStack',
+  :openstack_api_key => compute_service[:password],
+  :openstack_username => compute_service[:username],
+  :openstack_tenant => compute_service[:tenant],
+  :openstack_auth_url => compute_service[:endpoint],
+  :openstack_project_name => compute_service[:tenant],
+  :openstack_domain_name => domain
+})  
 
 rfcCi = node["workorder"]["rfcCi"]
 nsPathParts = rfcCi["nsPath"].split("/")
