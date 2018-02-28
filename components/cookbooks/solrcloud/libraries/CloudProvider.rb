@@ -154,5 +154,37 @@ class CloudProvider
   def get_clouds_payload(node)
     return node.workorder.payLoad.has_key?("Clouds") ? node.workorder.payLoad.Clouds : nil
   end
+  
+  def self.get_cloud_provider_name(node)
+    cloud_provider_name = node[:workorder][:services][:compute][@cloud_name][:ciClassName].gsub("cloud.service.","").downcase.split(".").last
+    Chef::Log.info("Cloud Provider: #{cloud_provider_name}")
+    return cloud_provider_name
+  end
+  
+  def self.validate_storage(node, blockstorage_mount_point)
+    cloud_provider_name = get_cloud_provider_name(node)
+    Chef::Log.info("======= validate_storage cloud_provider_name = #{cloud_provider_name}")
+    if cloud_provider_name != 'azure'
+      return
+    end
+    # For example expected blockstorage_mount_point is '/app/' which is same as installation dir on solrcloud attr
+    if blockstorage_mount_point == nil || blockstorage_mount_point.empty?
+      error = "Blockstorage is not selected. It is required on azure."
+      puts "***FAULT:FATAL=#{error}"
+      raise error
+    end
+      
+    # For azure, we want to set '/app/' as storage mount point so that all binaries, logs & data are kept on block storage
+    installation_dir_path = node["installation_dir_path"] #=> '/app'
+    installation_dir_path.delete! '/'
+    blockstorage_mount_point.delete! '/'
+    if blockstorage_mount_point != installation_dir_path
+      error = "Blockstorage mount point must be same as solrcloud installation dir i.e. /#{installation_dir_path}/"
+      puts "***FAULT:FATAL=#{error}"
+      raise error
+    end
+    raise "intentionally failed.."
+  end
+    
 end
 
