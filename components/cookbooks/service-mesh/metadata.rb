@@ -76,6 +76,7 @@ attribute 'use-overridden-yaml',
             :help     => 'Select checkbox to see advanced configuration. Not recommended if you are not familiar with the configs',
             :category => '2.Advanced',
             :form     => {'field' => 'checkbox'},
+            :filter   => {'all' => {'visible' => 'show-advanced-config:eq:true'}},
             :order    => 7
           }
 

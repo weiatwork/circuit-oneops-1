@@ -210,7 +210,7 @@ node.set['solr_user_name'] = ci['solr_user_name']
 node.set['solr_user_password'] = ci['solr_user_password']
 node.set['enable_authentication'] = ci['enable_authentication']
 node.set['solr_admin_username'] = "solradmin"
-node.set['solr_admin_password'] = "admin123"
+node.set['solr_admin_password'] = "SOLR@cloud#ms"
 
 compute_name = ""
 

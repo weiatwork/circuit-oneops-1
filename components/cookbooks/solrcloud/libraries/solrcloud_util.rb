@@ -30,13 +30,19 @@ module SolrCloud
         Chef::Log.info("Remove the directory #{to_dir}.")
         FileUtils.rm_rf(to_dir)
         solrmajorversion = "#{solrversion}"[0,1]
-        if "#{solrversion}".start_with? "4."
-          solr_lib_path = "#{node['user']['dir']}/solr-war-lib"
-        end
-        solr_lib_path = "#{node['user']['dir']}/solr-war-lib#{solrmajorversion}"
-        command = "java -classpath .:#{solr_lib_path}/* org.apache.solr.cloud.ZkCLI -cmd downconfig -zkhost #{zkHost} -confdir #{to_dir} -confname #{configname}"
+        command = "#{node['installation_dir_path']}/solr#{solrmajorversion}/server/scripts/cloud-scripts/zkcli.sh -zkhost #{zkHost} -cmd downconfig  -confdir #{to_dir} -confname #{configname} 2>&1"
         Chef::Log.info("downloadDefaultConfig command : #{command}")
-        system "#{command}"
+
+        result = `#{command}`
+
+        # Commented out as in usual scenario the config will be not be there on zookeeper and it will fail
+        # if $? != 0
+        #   puts "***FAULT:FATAL=#{result}"
+        #   e = Exception.new("no backtrace")
+        #   e.set_backtrace("")
+        #   raise e
+        # end
+
         Chef::Log.info("Successfully downloaded config '#{configname}'")
       rescue Exception => msg
         raise "Error while downloading zookeeper config : #{msg}"
@@ -48,17 +54,44 @@ module SolrCloud
       Chef::Log.info("uploadCustomConfig : #{solrversion} : #{zkHost} : #{configname} : #{dirname}")
       solrmajorversion = "#{solrversion}"[0,1]
       begin
-        solr_lib_path = ""
-        if "#{solrversion}".start_with? "4."
-          solr_lib_path = "#{node['user']['dir']}/solr-war-lib"
-        end
-        solr_lib_path = "#{node['user']['dir']}/solr-war-lib#{solrmajorversion}"
-        command = "java -classpath .:#{solr_lib_path}/* org.apache.solr.cloud.ZkCLI -cmd upconfig -zkhost #{zkHost} -confdir #{dirname} -confname #{configname}"
+
+        command = "#{node['installation_dir_path']}/solr#{solrmajorversion}/server/scripts/cloud-scripts/zkcli.sh -zkhost #{zkHost} -cmd upconfig  -confdir #{dirname} -confname #{configname}"
+
         Chef::Log.info("uploadCustomConfig command : #{command}")
+
         bash 'upload_custom_config' do
           code <<-EOH
-            #{command}
+             #{command}
           EOH
+        end
+        
+        Chef::Log.info("Successfully uploaded custom config '#{configname}'")
+      rescue Exception => msg
+        raise "Error while uploading zookeeper config : #{msg}"
+      end
+    end
+
+    # Uploads the custom config to zookeeper
+    # The above uploadCustomConfig method has to use a Chef Resource to run the upload config command because the upstream code which extracts solr binary
+    # and installs solr runs with Chef resource blocks, so it is necessary that the upload custom config should run after the solr is installed.
+    # Hence it has to run in a bash resource block
+    # However the same code gets called when uploading config for creating a collection, however in this code path it is being invoked from a ruby_block
+    # which does not allow bash resource to be included in it.
+    # So the below method is just a duplicate of the above method except that the uploading of config is executed wihtout a bash resource block
+    # This is not ideal, but this is how th earlier code was also there
+
+    def uploadCustomConfig_without_bash_resource(solrversion,zkHost,configname,dirname)
+      Chef::Log.info("uploadCustomConfig : #{solrversion} : #{zkHost} : #{configname} : #{dirname}")
+      solrmajorversion = "#{solrversion}"[0,1]
+      begin
+
+        command = "#{node['installation_dir_path']}/solr#{solrmajorversion}/server/scripts/cloud-scripts/zkcli.sh -zkhost #{zkHost} -cmd upconfig  -confdir #{dirname} -confname #{configname}"
+
+        Chef::Log.info("uploadCustomConfig command : #{command}")
+
+        result = `#{command}`
+        if $? != 0
+          raise "uploading custom config failed: #{result}"
         end
         Chef::Log.info("Successfully uploaded custom config '#{configname}'")
       rescue Exception => msg
@@ -521,12 +554,11 @@ module SolrCloud
       node.set['config_sub_dir'] = "#{possible_subdirs[0]}"
 
       if node['config_sub_dir'] == "."
-        Chef::Log.info("java -classpath .:#{node['user']['dir']}/solr-war-lib#{node['solr_version'][0,1]}/* org.apache.solr.cloud.ZkCLI -cmd upconfig -zkhost #{node['zk_host_fqdns']} -confdir #{custom_dir_full_path} -confname #{config_name}")
-        system "java -classpath .:#{node['user']['dir']}/solr-war-lib#{node['solr_version'][0,1]}/* org.apache.solr.cloud.ZkCLI -cmd upconfig -zkhost #{node['zk_host_fqdns']} -confdir #{custom_dir_full_path} -confname #{config_name}"
+        uploadCustomConfig_without_bash_resource(node['solr_version'][0,1], node['zk_host_fqdns'], config_name, custom_dir_full_path)
       else
-        Chef::Log.info("java -classpath .:#{node['user']['dir']}/solr-war-lib#{node['solr_version'][0,1]}/* org.apache.solr.cloud.ZkCLI -cmd upconfig -zkhost #{node['zk_host_fqdns']} -confdir #{custom_dir_full_path}/#{node['config_sub_dir']} -confname #{config_name}")
-        system "java -classpath .:#{node['user']['dir']}/solr-war-lib#{node['solr_version'][0,1]}/* org.apache.solr.cloud.ZkCLI -cmd upconfig -zkhost #{node['zk_host_fqdns']} -confdir #{custom_dir_full_path}/#{node['config_sub_dir']} -confname #{config_name}"
+        uploadCustomConfig_without_bash_resource(node['solr_version'][0,1], node['zk_host_fqdns'],config_name,  "#{custom_dir_full_path}/#{node['config_sub_dir']}")
       end
+
     end
 
     def collections_exists_on_cluster(ip_address, port_no)
