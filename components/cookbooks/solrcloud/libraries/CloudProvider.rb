@@ -161,29 +161,33 @@ class CloudProvider
     return cloud_provider_name
   end
   
+  # This method will fail the deployment if on Azure-
+  # 1. volume-blockstorage is not added
+  # 2. volume-blockstorage mount point != installation dir on solrcloud component
+  # 3. volume-app mount point == installation dir on solrcloud component. We want to mount /app on blockstorage so that binaries, data & logs all are stored on blockstorage 
   def self.validate_storage(node, blockstorage_mount_point)
     cloud_provider_name = get_cloud_provider_name(node)
-    Chef::Log.info("======= validate_storage cloud_provider_name = #{cloud_provider_name}")
+    Chef::Log.info("validate_storage cloud_provider_name = #{cloud_provider_name}")
     if cloud_provider_name != 'azure'
       return
     end
-    # For example expected blockstorage_mount_point is '/app/' which is same as installation dir on solrcloud attr
+    # For example expected blockstorage_mount_point is '/app/' which is expected to be same as installation dir on solrcloud attr
     if blockstorage_mount_point == nil || blockstorage_mount_point.empty?
-      error = "Blockstorage is not selected. It is required on azure."
+      error = "Blockstorage is not selected. It is required on azure. Please add volume-blockstorage with correct mount point & storage if not added already."
       puts "***FAULT:FATAL=#{error}"
       raise error
     end
       
     # For azure, we want to set '/app/' as storage mount point so that all binaries, logs & data are kept on block storage
-    installation_dir_path = node["installation_dir_path"] #=> '/app'
+    installation_dir_path = node["installation_dir_path"] # expected as '/app'
+    #remove all '/' from installation_dir_path & blockstorage_mount_point. For. ex. '/app/' => 'app' 
     installation_dir_path.delete! '/'
     blockstorage_mount_point.delete! '/'
     if blockstorage_mount_point != installation_dir_path
-      error = "Blockstorage mount point must be same as solrcloud installation dir i.e. /#{installation_dir_path}/"
+      error = "Blockstorage mount point must be same as solrcloud installation dir i.e. /#{installation_dir_path}/."
       puts "***FAULT:FATAL=#{error}"
       raise error
     end
-    raise "intentionally failed.."
   end
     
 end
