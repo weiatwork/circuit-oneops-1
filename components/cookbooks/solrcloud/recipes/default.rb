@@ -57,8 +57,6 @@ end
 # User can never have 2 CINDER volume components, since it depends on Storage component which has 0-1 as the cardinality.
 # User can have 2 ephemeral volume components and both of them doesn't depend on solrcloud.
 cinder_volume_result = node.workorder.payLoad.DependsOn.select {|c| c[:ciClassName] =~ /Volume/ }
-Chef::Log.info("volume = #{cinder_volume_result.to_json}")
-raise "failed for testing"
 
 if (cinder_volume_result.any?)
   Chef::Log.info("Cinder storage is enabled for solrcloud!")
