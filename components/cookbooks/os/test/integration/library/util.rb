@@ -71,8 +71,6 @@ def get_dhcp_config_string(node)
   
 
   dhcp_config_content = "supersede domain-search #{customer_domains};\n"
-  dhcp_config_content += "prepend domain-name-servers 127.0.0.1;\n"
-  dhcp_config_content += "supersede domain-name-servers #{given_nameserver.gsub(";",",")};\n"
   dhcp_config_content += "send host-name \"#{full_hostname.downcase}\";\n"
 
   return dhcp_config_content
