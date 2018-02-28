@@ -67,7 +67,6 @@ end
 
 # Verify that blockstorage/cinder mount point is same as installation dir on solrcloud attr.
 CloudProvider.validate_storage(node, node['cinder_volume_mountpoint'])
-
 node.set['action_name'] = actionName
 
 node.set['jmx_port'] = ci['jmx_port']
@@ -242,5 +241,4 @@ end
 #wait for prior nodes in the deployment to completes (must be live after deployment)
 if actionName == 'replace'
   verify_prior_nodes_live(node)
-
 end
