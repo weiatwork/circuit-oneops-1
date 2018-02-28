@@ -44,7 +44,9 @@ class AuthConfigurer
   @@secrete_dir = "/app/solr_secrets"
   @@secrete_file_name = "solr_secrete_file"
 
-  def initialize(host, port, solr_admin_user, solr_admin_password, solr_app_user, solr_password, zk_classpath, zk_host)
+  # The solr_install_dir argument is expected to be "/app/solr7 or /app/solr6", the directory under which the solr is installed on the compute
+  #
+  def initialize(host, port, solr_admin_user, solr_admin_password, solr_app_user, solr_password, zk_classpath, zk_host, solr_install_dir)
     @host = host
     @port = port
     @solr_admin_user = solr_admin_user
@@ -53,6 +55,7 @@ class AuthConfigurer
     @solr_password = solr_password
     @zk_classpath = zk_classpath
     @zk_host = zk_host
+    @solr_install_dir = solr_install_dir
   end
 
   def enable_authentication()
@@ -134,11 +137,18 @@ class AuthConfigurer
         }
     }
 
-    puts "Uploading the basic template security.json file"
-    cmd = "java -classpath #{@zk_classpath} org.apache.solr.cloud.ZkCLI -zkhost #{@zk_host} -cmd put  /security.json \'#{payload.to_json}\'"
-    puts "Cmd for uploading security.json file: #{cmd}"
 
-    system "#{cmd}"
+    cmd = "#{@solr_install_dir}/server/scripts/cloud-scripts/zkcli.sh -zkhost #{@zk_host} -cmd put  /security.json   \'#{payload.to_json}\'  2>&1"
+    puts "Uploading the basic template security.json file using cmd #{cmd}"
+
+    result = `#{cmd}`
+
+    if $? != 0
+      puts "***FAULT:FATAL=#{result}"
+      e = Exception.new("no backtrace")
+      e.set_backtrace("")
+      raise e
+    end
 
   end
 
