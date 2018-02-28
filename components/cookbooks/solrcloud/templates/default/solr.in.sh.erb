@@ -34,6 +34,8 @@
 <% if node["enable_authentication"] != nil && node["enable_authentication"] == "true" %>
 SOLR_AUTH_TYPE="basic"
 SOLR_AUTHENTICATION_OPTS="-Dsolr.httpclient.config=<%= node['data_dir_path'] %>/http_client.properties"
+SOLR_ZK_CREDS_AND_ACLS="-DzkACLProvider=org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider -DzkCredentialsProvider=org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider -DzkDigestUsername=<%= node["solr_admin_username"] %> -DzkDigestPassword=<%= node["solr_admin_password"] %> -DzkDigestReadonlyUsername=<%= node["solr_user_name"] %> -DzkDigestReadonlyPassword=<%= node["solr_user_password"] %>"
+SOLR_OPTS="$SOLR_OPTS $SOLR_ZK_CREDS_AND_ACLS"
 <% end %>
 
 
@@ -137,6 +139,8 @@ SOLR_LOGS_DIR="<%= node["data_dir_path"] %>/logs"
 
 # Sets the port Solr binds to, default is 8983
 port_no="<%= node["port_no"] %>"
+
+
 
 # The below environment variable is only valid for Solr 7.x, we can uncomment it in case we want to use it in future
 # Enables HTTPS. It is implictly true if you set SOLR_SSL_KEY_STORE. Use this config
