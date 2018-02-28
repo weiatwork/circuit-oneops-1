@@ -392,6 +392,7 @@ end
 Chef::Log.info("*** Placing replicas for #{node['collection_name']} ***")
 
 collections_for_node_sharing = JSON.parse(node['collections_for_node_sharing'])
+collections_for_node_sharing.collect! {|collection_name| collection_name.strip }
 collections_for_node_sharing = collections_for_node_sharing.reject {|coll| coll == node['collection_name']}
 
 cloud_provider = CloudProvider.new(node)
