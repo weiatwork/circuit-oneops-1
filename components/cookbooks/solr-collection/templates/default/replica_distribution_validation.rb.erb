@@ -169,7 +169,7 @@ if collection_name == nil || collection_name.empty?
   raise "collection name must be provided as first argument"
 end
 if replica_per_shard == nil
-  raise "replica per shard name must be provided as second argument"
+  raise "replica per shard must be provided as second argument"
 end
 
 puts "collection_name=>#{collection_name} replica_per_shard=>#{replica_per_shard}"
@@ -183,11 +183,11 @@ cloud_to_compute_ips_map = '<%= @cloud_to_compute_ips_map %>'
 cloud_to_compute_ips_map = JSON.parse(cloud_to_compute_ips_map)
 # shard_name_to_replica_ips_map => {"shard1"=>["10.0.0.1", "10.0.0.2", "10.0.0.3",...], "shard2"=>["10.0.0.4", "10.0.0.5", "10.0.0.6",...],.....}
 shard_name_to_replica_ips_map = get_shard_name_to_replica_ips_map(host, port_num, collection_name)
-puts "shard_name_to_replica_ips_map = #{shard_name_to_replica_ips_map}"
+puts "shard_name_to_replica_ips_map = #{shard_name_to_replica_ips_map.to_json}"
 
 replica_count_to_move = 0
 shard_name_to_replica_ips_map.each do |shard_name, shard_replica_ip_list|
-  replica_count_to_move = + get_shard_replica_count_to_move(collection_name, shard_name, replica_per_shard, cloud_to_compute_ips_map, shard_replica_ip_list)
+  replica_count_to_move += get_shard_replica_count_to_move(collection_name, shard_name, replica_per_shard, cloud_to_compute_ips_map, shard_replica_ip_list)
 end
 replica_move_status = "Replica assignment is OK"
 if replica_count_to_move != 0
