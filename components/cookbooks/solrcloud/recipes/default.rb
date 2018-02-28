@@ -56,17 +56,19 @@ end
 # volume-blockstorage and volume has cardinality 0-1 and volume-app has exactly one.
 # User can never have 2 CINDER volume components, since it depends on Storage component which has 0-1 as the cardinality.
 # User can have 2 ephemeral volume components and both of them doesn't depend on solrcloud.
-cinder_volume_result = node.workorder.payLoad.DependsOn.select {|c| c[:ciClassName] =~ /Volume/ }
+cinder_volume_result = node.workorder.payLoad.DependsOn.select {|c| c['ciName'] =~ /volume-blockstorage/ }
+volume_app = node.workorder.payLoad.DependsOn.select {|c| c['ciName'] =~ /volume-app/ }
 
 if (cinder_volume_result.any?)
   Chef::Log.info("Cinder storage is enabled for solrcloud!")
-  node.set['cinder_volume_mountpoint'] = node.workorder.payLoad.DependsOn.select {|c| c[:ciClassName] =~ /Volume/}.first[:ciAttributes]['mount_point']
+  node.set['cinder_volume_mountpoint'] = cinder_volume_result.first[:ciAttributes]['mount_point']
 else
   Chef::Log.info("Cinder is not enabled. Solrcloud is mounted on Ephemeral.")
 end
-
-# Verify that blockstorage/cinder mount point is same as installation dir on solrcloud attr.
-CloudProvider.validate_storage(node, node['cinder_volume_mountpoint'])
+volume_app_mount_point = ""
+if volume_app.any?
+  volume_app_mount_point = volume_app.first[:ciAttributes]['mount_point']
+end
 node.set['action_name'] = actionName
 
 node.set['jmx_port'] = ci['jmx_port']
@@ -156,6 +158,9 @@ node.set['solr_api_timeout_sec'] = (ci['solr_api_timeout_sec'] != nil && !ci['so
 node_solr_portnum = node['port_no']
 nodeip = "#{node['ipaddress']}"
 node_solr_version = ci['solr_version']
+
+# Verify that blockstorage/cinder mount point is same as installation dir on solrcloud attr.
+CloudProvider.validate_volume(node, node['cinder_volume_mountpoint'], volume_app_mount_point)
 
 # To set the ip,port and version for each solrcloud component
 Chef::Log.info(" Node IP = " + nodeip + ", Node solr Version = " + node_solr_version + ", solr port no = " + node['port_no'] )
