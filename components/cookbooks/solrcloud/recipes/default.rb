@@ -241,4 +241,5 @@ end
 #wait for prior nodes in the deployment to completes (must be live after deployment)
 if actionName == 'replace'
   verify_prior_nodes_live(node)
+
 end
