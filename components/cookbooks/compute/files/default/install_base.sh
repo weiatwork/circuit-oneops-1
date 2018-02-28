@@ -248,7 +248,6 @@ mkdir -p -m 750 /var/log/nagios
 # On touch update; chown will break nagios if monitor cookbook does not run.
 # Still need to chown a few directories
 owner=$( ls -ld /opt/oneops/rubygems_proxy | awk '{print $3}' )
-echo "owner is : $owner"
 if [ "$owner" == "root" ] ; then
   chown -R oneops:oneops /home/oneops /opt/oneops
   chown -R nagios:nagios /etc/nagios /var/log/nagios /etc/nagios/conf.d
