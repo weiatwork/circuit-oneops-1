@@ -162,12 +162,12 @@ node_solr_version = ci['solr_version']
 cloud_provider_name = CloudProvider.get_cloud_provider_name(node)
 Chef::Log.info("cloud_provider_name = #{cloud_provider_name}")
 allow_ephemeral_on_azure = ci['allow_ephemeral_on_azure'] || "false"
-if cloud_provider_name != 'azure' && !allow_ephemeral_on_azure == 'false'
+if cloud_provider_name == 'azure' && allow_ephemeral_on_azure == 'false'
   # As solr on azure always deployed with cinder/storage, do not additionally enable cinder otherwise data folder already on storage will also be link to some other mount point
   Chef::Log.info("cinder is enabled by default on azure. hence marking enable_cinder = false to prevent from creating additional link for data on storage or If you still want to use ephemeral, please select the flag 'Allow ephemeral on Azure' in solrcloud component")
   node.set["enable_cinder"] = "false"
   # Verify that blockstorage/cinder mount point is same as installation dir on solrcloud attr.
-  CloudProvider.validate_volume(node, node['cinder_volume_mountpoint'], volume_app_mount_point)
+  CloudProvider.enforce_storage_use(node, node['cinder_volume_mountpoint'], volume_app_mount_point)
 end
 
 # To set the ip,port and version for each solrcloud component

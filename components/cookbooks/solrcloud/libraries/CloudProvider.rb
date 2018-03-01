@@ -164,7 +164,7 @@ class CloudProvider
   
   # In case of Azure, this method validates if 'volume-blockstorage' mount point is set as 'installation_dir_path' from solrcloud and 'volume-app'
   # is set to something other than 'installation_dir_path' which will not be used
-  def self.validate_volume(node, blockstorage_mount_point, volume_app_mount_point)
+  def self.enforce_storage_use(node, blockstorage_mount_point, volume_app_mount_point)
     Chef::Log.info("blockstorage_mount_point = #{blockstorage_mount_point}")
     Chef::Log.info("volume_app_mount_point = #{volume_app_mount_point}")
     # For example expected blockstorage_mount_point is '/app/' which is expected to be same as installation dir on solrcloud attr
