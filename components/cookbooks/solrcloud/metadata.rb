@@ -377,6 +377,15 @@ attribute 'enable_cinder',
     :order => 1
   }
 
+attribute 'allow_ephemeral_on_azure',
+  :description => 'Allow ephemeral on Azure',
+  :default => "false",
+  :format => {
+    :category => '8.Cinder',
+    :help => 'Setting this to false will enfore to use storage instead of ephemeral',
+    :form => {'field' => 'checkbox'},
+    :order => 2
+  }
 ######################################
 # Actions in the Operations Phase    #
 # Each recipe here becomes an action #
