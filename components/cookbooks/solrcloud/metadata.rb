@@ -339,7 +339,7 @@ attribute 'jetty_filter_url',
   }
 
 attribute 'enable_authentication',
-          :description => 'The boolean value which will indicate if authentication is enabled for Solr server or not',
+          :description => 'Enable authentication to Solr servers?',
           :default => "false",
           :format => {
               :category => '7.Solr Authentication',
