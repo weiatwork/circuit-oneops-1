@@ -455,7 +455,7 @@ if (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? 
     end
 
     service "solr#{node['solrmajorversion']}" do
-      provider Chef::Provider::Service::Init # This may required if cloud provider is other than openstack
+      provider Chef::Provider::Service::Init # for centos 7, provider should use system.d if required
       supports  :restart => true, :status => true, :stop => true, :start => true
       action :start
     end
