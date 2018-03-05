@@ -62,7 +62,7 @@ end
 
 action :start do
   if @current_resource.exists
-    if @current_resource.status != 'running'
+    if @current_resource.status != 'running' && @current_resource.startup_type != 'disabled'
       @service_windows.start_service(new_resource.service_name, new_resource.arguments)
       sleep new_resource.wait_for_status.to_i
       status = @service_windows.service_status(@current_resource.service_name)
