@@ -28,10 +28,10 @@ features = [
 
 runtime = node.workorder.rfcCi.ciAttributes
 
-if runtime.install_dotnetcore == "true"
-  features.delete('Web-Net-Ext')
-  features.delete('Web-Asp-Net')
-  features.delete('Net-Framework-Core')
+if runtime.has_key?("install_dotnetcore") && runtime.install_dotnetcore == "true"
+ features.delete('Web-Net-Ext')
+ features.delete('Web-Asp-Net')
+ features.delete('Net-Framework-Core')
 end
 
 powershell_script 'installing windows features' do
