@@ -11,17 +11,17 @@ BUFFER_SIZE = 1024 * 1024                        # 1MB
 def list_directories_or_files(conn, options, argv)
   # check if need to list files or directories
   if argv.size > 1
-    container = conn.directories.get(argv[1])
-    if container.nil?
+    directory = conn.directories.get(argv[1])
+    if directory.nil?
       puts "Container does not exist: #{argv[1]}"
       exit 1
     end
     if options[:verbose]
-      container.files.each do |file|
+      directory.files.each do |file|
         puts file.inspect if file.key !~ %r/\/objstr-seg-[0-9]{5}/
       end
     else
-      container.files.each do |file|
+      directory.files.each do |file|
         puts file.key if file.key !~ %r/\/objstr-seg-[0-9]{5}/
       end
     end
@@ -29,8 +29,8 @@ def list_directories_or_files(conn, options, argv)
     if options[:verbose]
       puts conn.directories.inspect
     else
-      conn.directories.each do |container|
-        puts container.key
+      conn.directories.each do |directory_info|
+        puts directory_info.key
       end
     end
   end
@@ -38,21 +38,21 @@ end
 
 def delete_directory_or_file(conn, argv)
   # Gets the name of the file or directory which we intent to delete
-  container_or_remote_file = argv[1]
-  if container_or_remote_file.include?('/')
-    container = container_or_remote_file.split('/').first
-    directory = conn.directories.get(container)
-    if directory.nil?
+  remote_object = argv[1]
+  if remote_object.include?('/')
+    container = remote_object.split('/').first
+    remote_files = conn.directories.get(container)
+    if remote_files.nil?
       puts "Cannot get container: #{container}"
       exit 1
     end
-    remote_parts = container_or_remote_file.split('/')
-    remote_parts.shift
-    remote_file = remote_parts.join('/')
-    directory.files.each do |file|
+    remote_file_parts = remote_object.split('/')
+    remote_file_parts.shift
+    remote_file = remote_file_parts.join('/')
+    remote_files.files.each do |file|
       if file.key == remote_file || file.key.include?("#{remote_file}/objstr-seg-")
         if file.key !~ %r/\/objstr-seg-[0-9]{5}/
-          puts "removing file: #{file.key} from #{container_or_remote_file}"
+          puts "Removing file: #{file.key} from #{remote_object}"
         end
         file.destroy
       else
@@ -60,21 +60,21 @@ def delete_directory_or_file(conn, argv)
       end
     end
   else
-    directory = conn.directories.get(container_or_remote_file)
-    directory.files.each do |file|
+    remote_files = conn.directories.get(remote_object)
+    remote_files.files.each do |file|
       if file.key !~ %r/\/objstr-seg-[0-9]{5}/
-        puts "removing file: #{file.key} from #{container_or_remote_file}"
+        puts "Removing file: #{file.key} from #{remote_object}"
       end
       file.destroy
     end
-    puts "removing container: #{container_or_remote_file}"
-    directory.destroy
+    puts "Removing container: #{remote_object}"
+    remote_files.destroy
   end
 end
 
 def upload_directory_or_file(conn, argv, provider)
   source_file_or_dir = argv[1]
-  destination_container = argv[2]
+  destination_directory = argv[2]
   file_exclustion_filter = argv[3] || '*'
 
   unless File.exist?(source_file_or_dir)
@@ -82,13 +82,13 @@ def upload_directory_or_file(conn, argv, provider)
     exit 1
   end
 
-  directory = conn.directories.get(destination_container)
+  directory = conn.directories.get(destination_directory)
   if directory.nil?
-    puts "Creating the container: #{destination_container}"
-    directory = conn.directories.create :key => destination_container
+    puts "Creating new container: #{destination_directory}"
+    directory = conn.directories.create :key => destination_directory
   end
 
-  puts "Uploading local source file/directory: #{source_file_or_dir}, filter: #{file_exclustion_filter} to container: #{destination_container}"
+  puts "Uploading local source file/directory: #{source_file_or_dir}, filter: #{file_exclustion_filter} to container: #{destination_directory}"
   files = if File.directory?(source_file_or_dir)
             Dir.chdir(source_file_or_dir)
             Dir.glob("**/#{file_exclustion_filter}").reject { |path| File.directory?(path) }
@@ -99,20 +99,20 @@ def upload_directory_or_file(conn, argv, provider)
   start_time = Time.now
   size = 0
   files.each_with_index do |file, idx|
-    puts "#{idx + 1}/#{files.size}) Upload: #{file} to container: #{destination_container}"
+    puts "#{idx + 1}/#{files.size}) Upload: #{file} to container: #{destination_directory}"
     case provider
     when /OpenStack/
-      File.open(file) do |file_upload|
+      File.open(file) do |file_handler|
         segment = 0
-        until file_upload.eof?
+        until file_handler.eof?
           segment += 1
           offset = 0
 
           # upload segment to cloud files
           segment_suffix = "objstr-seg-#{segment.to_s.rjust(5, '0')}"
-          conn.put_object(destination_container, "#{file}/#{segment_suffix}", nil) do
+          conn.put_object(destination_directory, "#{file}/#{segment_suffix}", nil) do
             if offset <= SEGMENT_LIMIT - BUFFER_SIZE
-              buf = file_upload.read(BUFFER_SIZE).to_s
+              buf = file_handler.read(BUFFER_SIZE).to_s
               offset += buf.size
               buf
             else
@@ -122,7 +122,7 @@ def upload_directory_or_file(conn, argv, provider)
         end
       end
       # write manifest file
-      conn.put_object_manifest(destination_container, file, 'X-Object-Manifest' => "#{destination_container}/#{file}/")
+      conn.put_object_manifest(destination_directory, file, 'X-Object-Manifest' => "#{destination_directory}/#{file}/")
     when /Azure/
       directory.files.create(:key => file, :body => File.open(file))
     end
@@ -150,7 +150,7 @@ def download_directory_or_file(conn, options, argv)
 
   mkdir_out = `mkdir -p #{destination_dir}`
   unless $?.success?
-    puts "error creating local destination directory: #{destination_dir} - #{mkdir_out}"
+    puts "Error creating local destination directory: #{destination_dir} - #{mkdir_out}"
     exit 1
   end
 
@@ -175,7 +175,7 @@ def download_directory_or_file(conn, options, argv)
       else
         # if bucket is supplied file will be empty
         if source_file.empty? || source_file == remote_file.key
-          puts "match on file: #{source_file} #{remote_file.key}"
+          puts "Match on file: #{source_file} #{remote_file.key}"
           # Handling in case of sub directory
           if remote_file.key.include?('/') && sub_dir.empty? || remote_file.key.include?(sub_dir)
             dirs_list = remote_file.key.split('/')
@@ -184,7 +184,7 @@ def download_directory_or_file(conn, options, argv)
             puts "Making local sub directory: #{destination_dir + dirs}"
             `mkdir -p #{destination_dir + dirs}`
             unless $?.success?
-              puts "error creating local sub directory: #{destination_dir + dirs}"
+              puts "Error creating local sub directory: #{destination_dir + dirs}"
               exit 1
             end
           end
@@ -236,9 +236,9 @@ action = ARGV[0]
 if action.nil?
   puts 'usage: '
   puts 'objectstore list <container>'
-  puts 'objectstore upload <directory/file> <container>'
-  puts 'objectstore download <container/blob> <local-path>'
-  puts 'objectstore delete <container>/<blob>'
+  puts 'objectstore upload <container/file> <container>'
+  puts 'objectstore download <container/file> <local-path>'
+  puts 'objectstore delete <container>/<file>'
   exit 1
 end
 

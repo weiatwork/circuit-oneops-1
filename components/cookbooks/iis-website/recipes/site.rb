@@ -51,9 +51,10 @@ end
 
 dotnetcore = node.workorder.rfcCi.ciAttributes
 
-dotnetcore_selected = (dotnetcore.install_dotnetcore == "true" && dotnetcore.dotnet_core_package_name == "dotnetcore-windowshosting")
-
-runtime_version = "" if (dotnetcore_selected || (runtime_version == "NoManagedCode"))
+if dotnetcore.has_key?("install_dotnetcore")
+ dotnetcore_selected = (dotnetcore.install_dotnetcore == "true" && dotnetcore.dotnet_core_package_name == "dotnetcore-windowshosting")
+ runtime_version = "" if (dotnetcore_selected || (runtime_version == "NoManagedCode"))
+end
 
 iis_app_pool platform_name do
   managed_runtime_version runtime_version
