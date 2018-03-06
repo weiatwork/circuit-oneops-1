@@ -2,6 +2,10 @@ cloud_name = node[:workorder][:cloud][:ciName]
 cloud_type = node[:workorder][:services][:filestore][cloud_name][:ciClassName].split('.').last.downcase
 ciAttr = node[:workorder][:services][:filestore][cloud_name][:ciAttributes]
 
+domain = ciAttr.key('domain') ? ciAttr[:domain] : 'default'
+auth_url = ciAttr[:endpoint].include?('tokens') ? 
+  ciAttr[:endpoint] : "#{ciAttr[:endpoint]}/tokens"
+
 case cloud_type
 when /swift/
   creds = {
@@ -9,8 +13,10 @@ when /swift/
     :openstack_api_key  => ciAttr[:password],
     :openstack_username => ciAttr[:username],
     :openstack_tenant   => ciAttr[:tenant],
-    :openstack_auth_url => ciAttr[:endpoint] + '/tokens',
-    :openstack_region   => ciAttr[:regionname]
+    :openstack_auth_url => auth_url,
+    :openstack_region   => ciAttr[:regionname],
+    :openstack_project_name => ciAttr[:tenant],
+    :openstack_domain_name => domain
   }
 when /azureobjectstore/
   creds = {
