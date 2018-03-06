@@ -15,9 +15,9 @@ TEST_BLOB_SIZE         = '10M'.freeze
 
 OUTPUT                 = "usage: \n"                                            \
                          "objectstore list <container>\n"                       \
-                         "objectstore upload <directory/file> <container>\n"    \
-                         "objectstore download <container/blob> <local-path>\n" \
-                         "objectstore delete <container>/<blob>\n".freeze
+                         "objectstore upload <container/file> <container>\n"    \
+                         "objectstore download <container/file> <local-path>\n" \
+                         "objectstore delete <container>/<file>\n".freeze
 
 describe file(OBJECTSTORE_EXE_FILE) do
   it { should exist }
