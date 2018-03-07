@@ -16,7 +16,7 @@ variable "install_dir",
 
 variable "version",
          :description => 'Zookeeper version',
-         :value => '3.4.9'
+         :value => '3.4.6'
 
 resource "secgroup",
          :cookbook => "oneops.1.secgroup",
@@ -279,7 +279,6 @@ resource "jolokia_proxy",
 [
   {:from => 'user-zookeeper', :to => 'volume'},
   {:from => 'volume', :to => 'os'},
-  {:from => 'user-zookeeper', :to => 'volume'},
   {:from => 'user-zookeeper', :to => 'os'},
   {:from => 'zookeeper', :to => 'user-zookeeper'},
   {:from => 'zookeeper', :to => 'os'},
