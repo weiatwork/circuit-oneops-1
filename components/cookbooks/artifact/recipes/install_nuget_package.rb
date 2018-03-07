@@ -3,8 +3,8 @@ application = node.workorder.rfcCi.ciAttributes
 version = application.version
 package_name = application.package_name
 repository_url = application.repository_url
-iisreset_before_deployment = application.iisreset_before_deployment == "true"
-iisreset_after_deployment = application.iisreset_before_deployment == "true"
+iisreset_before_deployment = application.iisreset_before_deployment == "true" if application.has_key?("iisreset_before_deployment")
+iisreset_after_deployment = application.iisreset_after_deployment == "true" if application.has_key?("iisreset_after_deployment")
 output_directory = ::File.join(File.dirname(application.physical_path), "platform_deployment")
 Chef::Log.info "The output directory is #{output_directory}"
 
