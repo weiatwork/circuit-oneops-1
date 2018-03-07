@@ -279,6 +279,7 @@ resource "jolokia_proxy",
 [
   {:from => 'volume', :to => 'user-zookeeper'},
   {:from => 'volume', :to => 'os'},
+  {:from => 'user-zookeeper', :to => 'volume'},
   {:from => 'user-zookeeper', :to => 'os'},
   {:from => 'zookeeper', :to => 'user-zookeeper'},
   {:from => 'zookeeper', :to => 'os'},
