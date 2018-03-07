@@ -55,7 +55,13 @@ module AzureNetwork
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error deleting PublicIP '#{public_ip_name}' in ResourceGroup '#{resource_group_name}'. Exception: #{e.body}")
       rescue => e
-        OOLog.fatal("Error deleting PublicIP '#{public_ip_name}' in ResourceGroup '#{resource_group_name}'. Exception: #{e.message}")
+        if e.to_s =~ %r/Resource group \S+ could not be found./ 
+          OOLog.info("The Resource Group #{resource_group_name} does not exist. Moving on...")
+        elsif e.to_s =~ %r/The Resource \S+ under resource group \S+ was not found./
+          OOLog.info("The Public IP #{public_ip_name} does not exist. Moving on...")
+        else
+          OOLog.fatal("Error deleting PublicIP '#{public_ip_name}' in ResourceGroup '#{resource_group_name}'. Exception: #{e.message}")
+        end
       end
       end_time = Time.now.to_i
       duration = end_time - start_time

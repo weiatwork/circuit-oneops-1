@@ -88,15 +88,21 @@ module AzureNetwork
         OOLog.info("Deleting load balancer '#{load_balancer_name}' from '#{resource_group_name}' ")
         start_time = Time.now.to_i
         result = @azure_network_service.load_balancers.get(resource_group_name, load_balancer_name).destroy
-        end_time = Time.now.to_i
-        duration = end_time - start_time
       rescue  MsRestAzure::AzureOperationError => e
         msg = "Error Code: #{e.body['error']['code']}"
         msg += "Error Message: #{e.body['error']['message']}"
         OOLog.fatal("Error deleting load balancer '#{load_balancer_name}'. #{msg} ")
       rescue => ex
-        OOLog.fatal("Error deleting load balancer '#{load_balancer_name}'. #{ex.message} ")
+        if ex.to_s =~ %r/Resource group \S+ could not be found./ 
+          OOLog.info("The Resource Group #{resource_group_name} does not exist. Moving on...")
+        elsif ex.to_s =~ %r/The Resource \S+ under resource group \S+ was not found./
+          OOLog.info("The Load Balancer #{load_balancer_name} does not exist. Moving on...")
+        else
+          OOLog.fatal("Error deleting load balancer '#{load_balancer_name}'. #{ex.message} ")
+        end
       end
+      end_time = Time.now.to_i
+      duration = end_time - start_time
       OOLog.info("operation took #{duration} seconds")
       result
     end
