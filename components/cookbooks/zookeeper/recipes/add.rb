@@ -8,7 +8,9 @@
 
 #Production cloud topology check for prod environments.
 include_recipe "zookeeper::validate_config"
-
+node.set[:zookeeper][:home_dir] = node[:zookeeper][:install_dir]
+node.set[:zookeeper][:exported_jars] = [ ::File.join(node[:zookeeper][:home_dir], "zookeeper.jar"), ]
+Chef::Log.info("exported_jars path = #{node[:zookeeper][:exported_jars]}")
 zk_loc_basename = "#{node[:zookeeper][:version]}"
 zk_basename = "zookeeper-#{node[:zookeeper][:version]}"
 ci = node.workorder.rfcCi.ciAttributes;
