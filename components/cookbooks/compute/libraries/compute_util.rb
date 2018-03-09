@@ -68,3 +68,47 @@ def is_propagate_update
   end
   return false
 end
+
+# Returns the image object from Openstack
+# Looks up by name if global flag is set and flavor is not baremetal
+# Reverts to image id lookup if no Fast Image is found by name
+def get_image(node, conn, flavor, dummy_flag, dummy_flag_testingmode)
+  if dummy_flag && flavor.name.downcase !~ /baremetal/
+    return_image = nil
+    images = conn.images
+    images.each do |image|
+      # check if valid
+      dummy_flag_testingmode ? (pattern = "wmlabs-#{node['ostype'].gsub(/\./, "")}.*snapshot") : (pattern = "wmlabs-#{node['ostype'].gsub(/\./, "")}")
+      puts "FINDSTRING pattern: #{pattern}"
+      if image.name =~ /#{pattern}/i
+        # break up name into its parts
+        image_name_parts = image.name.split('-')
+
+        # get age
+        age_current = "#{image_name_parts[4].gsub(/v/, "")}#{image_name_parts[5]}".to_i
+
+        # check against saved if exists
+        if return_image.nil?
+          return_image = image
+        else
+          age_old =  "#{(return_image.name.split('-'))[4].gsub(/v/, "")}#{(return_image.name.split('-'))[5]}".to_i
+          if age_current > age_old
+            return_image = image
+          end
+        end
+      end
+    end
+
+    if return_image.nil?
+      return conn.images.get node.image_id
+    else
+      node.set[:image_id] = return_image.id
+      return return_image
+    end
+
+  else
+
+    return conn.images.get node.image_id
+
+  end
+end

@@ -23,6 +23,10 @@ Excon.defaults[:write_timeout] = 300
 # supports openstack-v2 auth
 #
 
+# dummy flags until global fast image flag is ready
+dummy_flag = true
+dummy_flag_testingmode = true
+
 cloud_name = node[:workorder][:cloud][:ciName]
 compute_service = node[:workorder][:services][:compute][cloud_name][:ciAttributes]
 domain = compute_service.key?('domain') ? compute_service[:domain] : 'default'
@@ -135,12 +139,13 @@ ruby_block 'set flavor/image/availability_zone' do
       # size / flavor
       flavor = conn.flavors.get node.size_id
       Chef::Log.info("flavor: "+flavor.inspect.gsub("\n"," ").gsub("<","").gsub(">",""))
+      exit_with_error "Invalid compute size provided #{node.size_id} .. Please specify different Compute size." if flavor.nil?
 
       # image_id
-      image = conn.images.get node.image_id
+      #image = conn.images.get node.image_id
+      image = get_image(node, conn, flavor, dummy_flag, dummy_flag_testingmode)
+      puts "FINDSTRING image.name: #{image.name}"
       Chef::Log.info("image: "+image.inspect.gsub("\n"," ").gsub("<","").gsub(">",""))
-
-      exit_with_error "Invalid compute size provided #{node.size_id} .. Please specify different Compute size." if flavor.nil?
       exit_with_error "Invalid compute image provided #{node.image_id} .. Please specify different OS type." if image.nil?
 
       if image.name.downcase =~ /baremetal/
