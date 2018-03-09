@@ -177,17 +177,17 @@ class CloudProvider
     # For azure, we want to set '/app/' as storage mount point so that all binaries, logs & data are kept on block storage
     installation_dir_path = node["installation_dir_path"] # expected as '/app'
     #remove all '/' from installation_dir_path & blockstorage_mount_point. For. ex. '/app/' => 'app' 
-    volume_app_mount_point.delete! '/'
-    installation_dir_path.delete! '/'
-    blockstorage_mount_point.delete! '/'
+    volume_app = volume_app_mount_point.delete '/'
+    installation_dir = installation_dir_path.delete '/'
+    blockstorage_dir = blockstorage_mount_point.delete '/'
     
-    if volume_app_mount_point == installation_dir_path
-      error = "On azure, ephemeral is not used and blockstorage will be used to store data as well as logs & binaries. Hence please change the mount point on volume-app to something other than '#{installation_dir_path}' for example `/app-not-used/` and mount pount on volume-blockstorage to '/#{installation_dir_path}'"
+    if volume_app == installation_dir
+      error = "On azure, ephemeral is not used and blockstorage will be used to store data as well as logs & binaries. Hence please change the mount point on volume-app to something other than '#{installation_dir_path}' for example `/app-not-used/` and mount pount on volume-blockstorage to '#{installation_dir_path}'"
       puts "***FAULT:FATAL=#{error}"
       raise error
     end
     
-    if blockstorage_mount_point != installation_dir_path
+    if blockstorage_dir != installation_dir
       error = "Blockstorage mount point must be same as solrcloud installation dir i.e. /#{installation_dir_path}/."
       puts "***FAULT:FATAL=#{error}"
       raise error
