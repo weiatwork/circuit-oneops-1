@@ -416,7 +416,7 @@ class SolrMBeanSummaryStats
                 # To distinguish these two mbean response object for ADD and AVG, we will check if the response has the latency attribute - 95thPercentile.
                 # Even if we add more metrics to either of the mbean requests, latency attribute - 95thPercentile, will always be there in the AVG_METRICS and this comparison will pass
                 if metric_aggr_type == "ADD_METRICS"
-                    if (!attributes.include?"95thPcRequestTime") || (!attributes.include? "95thPercentile")
+                    if (!attributes.include?"95thPcRequestTime") && (!attributes.include? "95thPercentile")
                         return solr_mbean_resp
                     end
                 else

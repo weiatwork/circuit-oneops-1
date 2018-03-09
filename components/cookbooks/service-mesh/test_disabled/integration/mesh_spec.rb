@@ -7,11 +7,6 @@ describe file(mesh_dir) do
   it { should be_directory }
 end
 
-log_dir =  /log/logmon
-describe file(log_dir) do
-  it { should be_directory }
-end
-
 status_check = '/etc/init.d/servicemesh status'
 describe command(status_check) do
   its(:stdout) { should contain('service-mesh is running') }
@@ -19,11 +14,6 @@ end
 
 admin_port = 9990
 describe port(admin_port) do
-  it { should be_listening }
-end
-
-egress_port = 4140
-describe port(egress_port) do
   it { should be_listening }
 end
 
