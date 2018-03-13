@@ -88,10 +88,15 @@ class SolrMetricsCollector
         graphiteWriter.open_tcp_sockets
       end
 
-      called_node_status_metrics = 0
-      if (@enable_rest_metrics == "true")
+      # keeping both the node status metrics and jmx metrics separately since our JMX metrics scripts could stop working for any reason
+      # (eg, metric names changes with diff solr versions etc).
+      # If it breaks, telegraf will block all metrics that comes from jmx metrics file.
+      # So better to keep node status metrics separately from JMX metrics. Telegraf will read from both at any point of time provided jmx_metrics are enabled.
+      if (@enable_rest_metrics == "true" || @enable_jmx_metrics == "true")
         get_solr_node_status(time, medusaLogWriter, graphiteWriter)
-        called_node_status_metrics += 1
+      end
+
+      if (@enable_rest_metrics == "true")
         # Get the metrics from Solr REST APIs
         SolrClusterSummaryStats.get_stats(@hostname, @port, time, medusaLogWriter, graphiteWriter, @solr_version, @collections)
       end
@@ -103,10 +108,6 @@ class SolrMetricsCollector
           # Ruby logger.formatter supports four input parameters : |severity, datetime, progname, msg|, here, we only need to pass msg into the proc.
           jmx_medusaLogger.formatter = proc { |_s, _d, _p, msg| "#{msg}\n" }
           jmx_medusaLogWriter = MedusaLogWriter.new(jmx_medusaLogger)
-        end
-         if called_node_status_metrics == 0
-          # Add node-status to jmx-specific log-writer if not written already to regular log-writer
-          get_solr_node_status(time, jmx_medusaLogWriter, graphiteWriter)
         end
         mbean_sum_stat_obj = SolrMBeanSummaryStats.new(jmx_medusaLogWriter, graphiteWriter, @metric_level, @jolokia_port, @solr_jmx_port, @solr_version, time)
         mbean_sum_stat_obj.collect_jmx_metrics()
