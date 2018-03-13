@@ -57,6 +57,14 @@ file '/opt/meghacache/log/telegraf/stats.log' do
   group 'root'
   mode '0644'
   action :create_if_missing
+  end
+
+file '/opt/meghacache/log/telegraf/mcroutertko.log' do
+  content "# Logfile created on #{Time.now.to_s} by #{__FILE__}\n"
+  owner 'root'
+  group 'root'
+  mode '0644'
+  action :create_if_missing
 end
 
 return_status = -1
