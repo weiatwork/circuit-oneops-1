@@ -368,13 +368,13 @@ end
 end
 
 # compute needs to be in place before dns is set up, because ip
-[{ :from => 'fqdn', :to => 'dn-hadoop-yarn-cluster' }].each do |link|
+[{ :from => 'fqdn', :to => 'compute' }].each do |link|
     relation "#{link[:from]}::depends_on::#{link[:to]}",
         :except => [ '_default', 'single' ],
         :relation_name => 'DependsOn',
         :from_resource => link[:from],
         :to_resource   => link[:to],
-        :attributes    => { "propagate_to" => 'from', "flex" => false, "min" => 1, "max" => 1 }
+        :attributes    => { "flex" => false, "min" => 1, "max" => 1 }
 end
 
 # managed_via (this specifies where the resources are run)
