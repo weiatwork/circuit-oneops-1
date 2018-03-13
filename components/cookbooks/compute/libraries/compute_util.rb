@@ -72,14 +72,12 @@ end
 # Returns the image object from Openstack
 # Looks up by name if global flag is set and flavor is not baremetal
 # Reverts to image id lookup if no Fast Image is found by name
-def get_image(node, conn, flavor, dummy_flag, dummy_flag_testingmode)
-  if dummy_flag && flavor.name.downcase !~ /baremetal/
+def get_image(images, flavor, flag_FAST_IMAGE, flag_TESTING_MODE, default_image, custom_id, ostype)
+  if flag_FAST_IMAGE =~ /true/ && flavor.name.downcase !~ /baremetal/ && !custom_id
     return_image = nil
-    images = conn.images
     images.each do |image|
       # check if valid
-      dummy_flag_testingmode ? (pattern = "wmlabs-#{node['ostype'].gsub(/\./, "")}.*snapshot") : (pattern = "wmlabs-#{node['ostype'].gsub(/\./, "")}")
-      puts "FINDSTRING pattern: #{pattern}"
+      flag_TESTING_MODE =~ /true/ ? (pattern = "wmlabs-#{ostype.gsub(/\./, "")}.*snapshot") : (pattern = "wmlabs-#{ostype.gsub(/\./, "")}")
       if image.name =~ /#{pattern}/i
         # break up name into its parts
         image_name_parts = image.name.split('-')
@@ -100,15 +98,14 @@ def get_image(node, conn, flavor, dummy_flag, dummy_flag_testingmode)
     end
 
     if return_image.nil?
-      return conn.images.get node.image_id
+      return default_image
     else
-      node.set[:image_id] = return_image.id
       return return_image
     end
 
   else
 
-    return conn.images.get node.image_id
+    return default_image
 
   end
 end
