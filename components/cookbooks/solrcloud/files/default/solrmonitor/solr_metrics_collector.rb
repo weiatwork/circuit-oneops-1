@@ -219,12 +219,12 @@ class SolrMetricsCollector
         end
       end
 
-      @cluster_status_metrics = { "total.nodes.down" => {:metric => down_nodes.size},
-                                  "total.nodes.active" => {:metric => active_nodes.size},
-                                  "total.nodes.recovering" => {:metric => recovering_nodes.size},
+      @cluster_status_metrics = { "total.cores.down" => {:metric => down_nodes.size},
+                                  "total.cores.active" => {:metric => active_nodes.size},
+                                  "total.cores.recovering" => {:metric => recovering_nodes.size},
                                   "total.active.shards.count" => {:metric => active_shards_count},
                                   "total.active.replicas.count" => {:metric => active_replicas_count},
-                                  "total.nodes.recovery.failed" => {:metric => recovery_failed_nodes.size}
+                                  "total.cores.recovery.failed" => {:metric => recovery_failed_nodes.size}
       }
 
       if (medusaLogWriter != nil)
