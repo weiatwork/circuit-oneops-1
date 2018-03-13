@@ -211,6 +211,8 @@ ruby_block 'set flavor/image/availability_zone' do
       exit_with_error "#{msg}"
     else
       node.set[:existing_server] = true
+      image = conn.images.get node.image_id
+      node.set[:fast_image] = (!image.nil? && image.name =~ /#{pattern}/i)
     end
 
   end
