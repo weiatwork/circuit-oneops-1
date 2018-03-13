@@ -20,7 +20,7 @@ RSpec.configure do |c|
 end
 
 RSpec.configure do |c|
-  c.filter_run_excluding :custom_image => AzureSpecUtils.new($node).is_imagetypecustom
+  c.filter_run_excluding :custom_image => !AzureSpecUtils.new($node).is_imagetypecustom
 end
 
 describe "azure node::create" do
