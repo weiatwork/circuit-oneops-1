@@ -57,6 +57,8 @@ else
   end
 end
 
+puts "lb name: #{lb_name}"
+
 host = cloud_service['ciAttributes']['host']
 
 encoded = Base64.encode64("#{cloud_service['ciAttributes']['username']}:#{cloud_service['ciAttributes']['password']}").gsub("\n","")
