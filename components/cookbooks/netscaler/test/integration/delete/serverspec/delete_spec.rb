@@ -27,7 +27,6 @@ vnames_map.keys.each do |key|
     lb_name = key
   end
 end
-puts "lb_name: #{lb_name}"
 
 context "LB name" do
   it "should not exist" do
@@ -67,7 +66,6 @@ resp_obj = JSON.parse(conn.request(
     :method=>:get,
     :path=>"/nitro/v1/config/lbvserver/#{lb_name}").body)
 
-puts "resp_object: #{resp_obj}"	
 exists = resp_obj["message"] =~ /No such resource/ ? true : false
 
 context "lbserver" do
