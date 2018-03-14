@@ -8,6 +8,9 @@ Utils.set_proxy(node['workorder']['payLoad']['OO_CLOUD_VARS'])
 
 # get all necessary info from node
 cloud_name = node['workorder']['cloud']['ciName']
+
+return if cloud_name =~ %r/\S+-wm-nc/
+
 compute_service = node['workorder']['services']['compute'][cloud_name]['ciAttributes']
 cred_hash = {
     tenant_id: compute_service['tenant_id'],

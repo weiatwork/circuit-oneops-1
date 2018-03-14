@@ -4,15 +4,21 @@ require 'fog/azurerm'
 Dir.glob('/opt/oneops/inductor/circuit-oneops-1/components/cookbooks/azure_base/libraries/*.rb') do |lib|
   require lib
 end
-require "/opt/oneops/inductor/circuit-oneops-1/components/cookbooks/azuresecgroup/libraries/network_security_group.rb"
+require '/opt/oneops/inductor/circuit-oneops-1/components/cookbooks/azuresecgroup/libraries/network_security_group.rb'
 
-describe "Azure Security Group" do
+RSpec.configure do |c|
+  cloud_name = AzureSpecUtils.new($node).get_cloud_name
+  if cloud_name =~ %r/\S+-wm-nc/
+    c.filter_run_excluding :new_cloud => true
+  end
+end
+describe 'Azure Security Group', :new_cloud => true do
   before(:each) do
     @spec_utils = AzureSpecUtils.new($node)
   end
 
-  context "Security Group" do
-    it "should not exist" do
+  context 'Security Group' do
+    it 'should not exist' do
       nsgclient = AzureNetwork::NetworkSecurityGroup.new(@spec_utils.get_azure_creds)
 
       rginfo = @spec_utils.get_resource_group_name

@@ -147,6 +147,17 @@ module Utils
     return tags
   end
 
+  def get_nsg_rg_name(location)
+    "#{location.upcase}_NSGs_RG"
+  end
+
+  def get_network_security_group_name(node, nsg_version)
+    "#{get_pack_name(node)}_nsg_v_#{nsg_version}"
+  end
+
+  def get_pack_name(node)
+    node['workorder']['box']['ciAttributes']['pack']
+  end
 
   module_function :get_credentials,
                   :set_proxy,
@@ -156,6 +167,9 @@ module Utils
                   :abbreviate_location,
                   :get_fault_domains,
                   :get_update_domains,
-                  :get_resource_tags
+                  :get_resource_tags,
+                  :get_nsg_rg_name,
+                  :get_network_security_group_name,
+                  :get_pack_name
 
 end

@@ -139,6 +139,78 @@ module AzureNetwork
     rescue Exception => e
       OOLog.fatal("Exception trying to check existence of network security group #{network_security_group_name} #{e.body} Exception is: #{e.message}")
     end
+
+    def get_sec_rules_definition(node, network_security_group_name, resource_group_name)
+      # Creating security rules objects
+      rules = node['secgroup']['inbound'].tr('"[]\\', '').split(',')
+      sec_rules = []
+      priority = 100
+      reg_ex = /(\d+|\*|\d+-\d+)\s(\d+|\*|\d+-\d+)\s([A-Za-z]+|\*)\s\S+/
+      rules.each do |item|
+        raise "#{item} is not a valid security rule" unless reg_ex.match(item)
+        item2 = item.split(' ')
+        security_rule_access = Fog::ARM::Network::Models::SecurityRuleAccess::Allow
+        security_rule_description = node['secgroup']['description']
+        security_rule_source_addres_prefix = item2[3]
+        security_rule_destination_port_range = item2[1].to_s
+        security_rule_direction = Fog::ARM::Network::Models::SecurityRuleDirection::Inbound
+        security_rule_priority = priority
+        security_rule_protocol = case item2[2].downcase
+                                when 'tcp'
+                                  Fog::ARM::Network::Models::SecurityRuleProtocol::Tcp
+                                when 'udp'
+                                  Fog::ARM::Network::Models::SecurityRuleProtocol::Udp
+                                else
+                                  Fog::ARM::Network::Models::SecurityRuleProtocol::Asterisk
+                                end
+        security_rule_provisioning_state = nil
+        security_rule_destination_addres_prefix = '*'
+        security_rule_source_port_range = '*'
+        security_rule_name = network_security_group_name + '-' + priority.to_s
+        sec_rules << { name: security_rule_name, resource_group: resource_group_name, protocol: security_rule_protocol, network_security_group_name: network_security_group_name, source_port_range: security_rule_source_port_range, destination_port_range: security_rule_destination_port_range, source_address_prefix: security_rule_source_addres_prefix, destination_address_prefix: security_rule_destination_addres_prefix, access: security_rule_access, priority: security_rule_priority, direction: security_rule_direction }
+        priority += 100
+      end
+      sec_rules
+    end
+
+    def match_nsg_rules(net_sec_groups_list, sec_rules)
+      net_sec_groups_list.each do |net_sec_group|
+        rules_matched = 0
+        next unless net_sec_group.security_rules.count == sec_rules.count
+          sec_rules.count.times do |i|
+            net_sec_group.security_rules.count.times do |j|
+              if (net_sec_group.security_rules[j].protocol == sec_rules[i][:protocol] &&
+                net_sec_group.security_rules[j].source_port_range == sec_rules[i][:source_port_range] &&
+                net_sec_group.security_rules[j].destination_port_range == sec_rules[i][:destination_port_range] &&
+                net_sec_group.security_rules[j].source_address_prefix == sec_rules[i][:source_address_prefix] &&
+                net_sec_group.security_rules[j].destination_address_prefix == sec_rules[i][:destination_address_prefix] &&
+                net_sec_group.security_rules[j].access == sec_rules[i][:access] &&
+                net_sec_group.security_rules[j].direction == sec_rules[i][:direction] &&
+                net_sec_group.security_rules[j].priority == sec_rules[i][:priority])
+                rules_matched += 1
+              end
+            end
+          end
+
+          if rules_matched == sec_rules.count
+            puts "RULES MATCHED #{net_sec_group.name}"
+            puts "***RESULT:net_sec_group_id=" + net_sec_group.id
+            return net_sec_group.name
+          end
+        end
+      end
+      return nil
+    end
+
+    def get_matching_nsgs(net_sec_groups_list, pack_name)
+      matched_nsgs = []
+      net_sec_groups_list.each do |net_sec_group|
+        if net_sec_group.name.include? "#{pack_name}_"
+          matched_nsgs << net_sec_group
+        end
+      end
+      matched_nsgs
+    end
     # end of class
   end
   # end of module
