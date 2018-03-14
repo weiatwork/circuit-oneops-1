@@ -9,31 +9,9 @@ log_echo () {
   fi
 }
 
-<% if node["zk_select"].include? "InternalEnsemble-SameAssembly" %>
-
-zk_platform_name=<%= node["platform_name"]%>
-log_echo "ZK platform name is $zk_platform_name"
-
-hostname=$(hostname -f) #solr.dev.assemply.org.cloud_name.prod.cloud.xyz.com
-hostname_delimiter='.'
-hostname_parts=(${hostname//./ }) #convert above hostname string to array using hostname_delimiter
-index=4
-#Removing <cloud_name> from hostname at index 4 as zk_fqdn won't contain the same
-hostname_parts=(${hostname_parts[@]:0:$index} ${hostname_parts[@]:$(expr $index + 1)})
-#Replace solr hostname by zk platform name. solr.xxxx.xxx => solr-zk.xxxx.xxx
-hostname_parts[0]=$zk_platform_name 
-#Convert hostname array to '.' separated string. => .solr-zk.dev.assemply.org.prod.cloud.xyz.com
-zk_fqdn=$(printf "${hostname_delimiter}%s" "${hostname_parts[@]}")
-#Remove '.' prefix ".solr-zk.dev.assemply.org.prod.cloud.xyz.com" => "solr-zk.dev.assemply.org.prod.cloud.xyz.com"
-zk_fqdn=${zk_fqdn:${#hostname_delimiter}} 
-log_echo "ZK FQDN constructed is $zk_fqdn"
-
-<% else %>
-
 zk_fqdn=<%= node["zk_host_fqdns"]%>
-log_echo "Given ZK FQDN is $zk_fqdn"
+log_echo "ZK FQDN is $zk_fqdn"
 
-<% end %>
 
 zk_ip_list_string=$(dig +short $zk_fqdn)
 log_echo "IP List from zk_fqdn is $zk_ip_list_string"
