@@ -150,8 +150,23 @@ gems.each do |a_gem|
 end
 
 # Proxys
-# TODO
-# Parse repo map and check against yum and gem
+
+# Check against yum repos
+yum_repos_url = `yum repolist enabled -v | grep Repo-baseurl | awk  '{print $3}'`.split
+yum_repos_url.each do |yum_url|
+  describe command("curl -I #{yum_url}") do
+    its(:exit_status) { should eq 0 }
+    its(:stdout) { should match /200 OK/ }
+  end
+end
+
+# Check against Gem sources
+describe command("curl -I `gem source | grep http -m 1`") do
+  its(:exit_status) { should eq 0 }
+  its(:stdout) { should match /200 OK/ }
+end
+
+
 describe user("oneops") do
   it { should exist }
 end

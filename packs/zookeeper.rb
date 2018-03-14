@@ -277,7 +277,7 @@ resource "jolokia_proxy",
 
 # depends_on
 [
-  {:from => 'volume', :to => 'user-zookeeper'},
+  {:from => 'user-zookeeper', :to => 'volume'},
   {:from => 'volume', :to => 'os'},
   {:from => 'user-zookeeper', :to => 'os'},
   {:from => 'zookeeper', :to => 'user-zookeeper'},
@@ -288,6 +288,7 @@ resource "jolokia_proxy",
   {:from => 'zookeeper', :to => 'java'},
   {:from => 'java', :to => 'os'},
   {:from => 'diskcleanup-job', :to => 'os'},
+  {:from => 'diskcleanup-job', :to => 'volume'},
   {:from => 'jolokia_proxy', :to => 'java'}
 ].each do |link|
   relation "#{link[:from]}::depends_on::#{link[:to]}",

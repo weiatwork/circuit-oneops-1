@@ -339,7 +339,7 @@ attribute 'jetty_filter_url',
   }
 
 attribute 'enable_authentication',
-          :description => 'The boolean value which will indicate if authentication is enabled for Solr server or not',
+          :description => 'Enable authentication to Solr servers?',
           :default => "false",
           :format => {
               :category => '7.Solr Authentication',
@@ -377,6 +377,15 @@ attribute 'enable_cinder',
     :order => 1
   }
 
+attribute 'allow_ephemeral_on_azure',
+  :description => 'Allow ephemeral on Azure',
+  :default => "false",
+  :format => {
+    :category => '8.Cinder',
+    :help => 'Setting this to false will enfore to use storage instead of ephemeral',
+    :form => {'field' => 'checkbox'},
+    :order => 2
+  }
 ######################################
 # Actions in the Operations Phase    #
 # Each recipe here becomes an action #

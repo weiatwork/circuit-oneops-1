@@ -4,6 +4,8 @@
 #
 # The recipe extracts the solr distribution, copies the WEB-INF/lib/ jars to solr-war-lib folder and sets up the solrcloud
 #
+#
+
 
 extend SolrCloud::Util
 
@@ -182,7 +184,7 @@ if (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? 
   #install_solr_service using -n option to install without starting service
   install_command = "sudo #{solr_download_path}/#{solr_file_woext}/bin/install_solr_service.sh #{solr_download_path}/#{solr_file_name} -i #{node['installation_dir_path']} -d #{node['data_dir_path']} -u #{node['solr']['user']} -p #{node['port_no']} -s solr#{node['solrmajorversion']} -n"
   Chef::Log.info("install_command = #{install_command}")
-  
+
   if node['action_name'] != "update"
 
     # Extracts solr package.
@@ -191,14 +193,16 @@ if (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? 
     execute "extract_solr_package" do
       Chef::Log.info(solr_download_path)
       Chef::Log.info(solr_file_name)
-      command "tar -xf #{solr_download_path}/#{solr_file_name}"
+      cmd =  "#{solr_download_path}/#{solr_file_name}"
+      Chef::Log.info("Extracting Solr archive with command: #{cmd}")
+      command "tar -xf #{solr_download_path}/#{solr_file_name} -C #{solr_download_path}"
     end
 
     # Modify the permissions to the installation script(install_solr_service.sh).
     # solr_file_woext = solr-6.x.x or solr-7.x.x
     execute "modify_perm_install_script" do
       Chef::Log.info(solr_file_woext)
-      command "chmod 777 #{solr_download_path}/#{solr_file_woext}/bin/install_solr_service.sh"
+      command "sudo chmod 777 #{solr_download_path}/#{solr_file_woext}/bin/install_solr_service.sh"
     end
 
     # Remove solr service file from /etc/init.d directory if exists
@@ -273,6 +277,16 @@ if (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? 
     mode '0755'
     notifies :run, "ruby_block[solr_restart_warning]", :delayed
   end
+
+  # Create or Update zkcli.sh file under the below path
+  template "#{node['installation_dir_path']}/solr#{node['solrmajorversion']}/server/scripts/cloud-scripts/zkcli.sh" do
+    source 'zkcli.sh.erb'
+    owner node['solr']['user']
+    group node['solr']['user']
+    mode '0755'
+  end
+
+
 
   # Create or Update /etc/init.d/solr#{node['solrmajorversion']} service
   template "/etc/init.d/solr#{node['solrmajorversion']}" do
@@ -432,7 +446,17 @@ if (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? 
   end
   # Note: No restart on update. User should manually restart (rolling restart) from action on update
   if node['action_name'] =~ /add|replace/
+
+    #stop solr if already running. for ex. during add/replace, node started but failed after and retry
+    #will fail on start as the node is already running, hence we must stop the node before start again
+    execute "stop_solr" do
+      command "service solr#{node['solrmajorversion']} stop"
+      returns [0,1]
+    end
+
     service "solr#{node['solrmajorversion']}" do
+      provider Chef::Provider::Service::Init # for centos 7, provider should use system.d if required
+      supports  :restart => true, :status => true, :stop => true, :start => true
       action :start
     end
   elsif node['action_name'] == "update" && update_found(node)

@@ -154,5 +154,45 @@ class CloudProvider
   def get_clouds_payload(node)
     return node.workorder.payLoad.has_key?("Clouds") ? node.workorder.payLoad.Clouds : nil
   end
+  
+  def self.get_cloud_provider_name(node)
+    cloud_name = node[:workorder][:cloud][:ciName]
+    cloud_provider_name = node[:workorder][:services][:compute][cloud_name][:ciClassName].gsub("cloud.service.","").downcase.split(".").last
+    Chef::Log.info("Cloud Provider: #{cloud_provider_name}")
+    return cloud_provider_name
+  end
+  
+  # In case of Azure, this method validates if 'volume-blockstorage' mount point is set as 'installation_dir_path' from solrcloud and 'volume-app'
+  # is set to something other than 'installation_dir_path' which will not be used
+  def self.enforce_storage_use(node, blockstorage_mount_point, volume_app_mount_point)
+    Chef::Log.info("blockstorage_mount_point = #{blockstorage_mount_point}")
+    Chef::Log.info("volume_app_mount_point = #{volume_app_mount_point}")
+    # For example expected blockstorage_mount_point is '/app/' which is expected to be same as installation dir on solrcloud attr
+    if blockstorage_mount_point == nil || blockstorage_mount_point.empty?
+      error = "Blockstorage is not selected. It is required on azure. Please add volume-blockstorage with correct mount point & storage if not added already or If you still want to use ephemeral, please select the flag 'Allow ephemeral on Azure' in solrcloud component"
+      puts "***FAULT:FATAL=#{error}"
+      raise error
+    end
+      
+    # For azure, we want to set '/app/' as storage mount point so that all binaries, logs & data are kept on block storage
+    installation_dir_path = node["installation_dir_path"] # expected as '/app'
+    #remove all '/' from installation_dir_path & blockstorage_mount_point. For. ex. '/app/' => 'app' 
+    volume_app = volume_app_mount_point.delete '/'
+    installation_dir = installation_dir_path.delete '/'
+    blockstorage_dir = blockstorage_mount_point.delete '/'
+    
+    if volume_app == installation_dir
+      error = "On azure, ephemeral is not used and blockstorage will be used to store data as well as logs & binaries. Hence please change the mount point on volume-app to something other than '#{installation_dir_path}' for example `/app-not-used/` and mount pount on volume-blockstorage to '#{installation_dir_path}'"
+      puts "***FAULT:FATAL=#{error}"
+      raise error
+    end
+    
+    if blockstorage_dir != installation_dir
+      error = "Blockstorage mount point must be same as solrcloud installation dir i.e. /#{installation_dir_path}/."
+      puts "***FAULT:FATAL=#{error}"
+      raise error
+    end
+  end
+    
 end
 

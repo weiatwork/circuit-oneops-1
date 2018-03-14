@@ -105,6 +105,7 @@ if node.workorder.payLoad.has_key?("SolrCloudPayload") && !node.workorder.payLoa
   node.set['solrmajorversion'] = "#{node['solr_version']}"[0,1]
   node.set['user']['dir'] = "/app"
   node.set['solr']['user'] = "app"
+  node.set['installation_dir_path'] = solrcloud_ci['installation_dir_path']
 else
 	error = "SolrCloudPayload payload not found, please pull the design"
 	puts "***FAULT:FATAL= #{error}"
