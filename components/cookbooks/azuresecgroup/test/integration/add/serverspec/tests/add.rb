@@ -8,52 +8,84 @@ require 'fog/azurerm'
 Dir.glob('/opt/oneops/inductor/circuit-oneops-1/components/cookbooks/azure_base/libraries/*.rb') do |lib|
   require lib
 end
-require "/opt/oneops/inductor/circuit-oneops-1/components/cookbooks/azuresecgroup/libraries/network_security_group.rb"
+require '/opt/oneops/inductor/circuit-oneops-1/components/cookbooks/azuresecgroup/libraries/network_security_group.rb'
+require '/opt/oneops/inductor/circuit-oneops-1/components/cookbooks/azure/libraries/resource_group.rb'
 
-describe "Azure Security Group" do
-  before(:each) do
+RSpec.configure do |c|
+  cloud_name = AzureSpecUtils.new($node).get_cloud_name
+  if cloud_name =~ %r/\S+-wm-oc/
+    c.filter_run_excluding :old_cloud => true
+  end
+end
+
+describe 'Azure Security Group' do
+  before(:all) do
     @spec_utils = AzureSpecUtils.new($node)
+    @creds = @spec_utils.get_azure_creds
+    @nsgclient = AzureNetwork::NetworkSecurityGroup.new(@creds)
+    @cloud_name = @spec_utils.get_cloud_name
+
+    if @cloud_name =~ %r/\S+-wm-oc/
+      @rg_name =  @spec_utils.get_resource_group_name
+      @nsg_name = $node['name']
+
+    elsif @cloud_name =~ %r/\S+-wm-nc/
+      @rg_location = @spec_utils.get_nsg_rg_location
+      @rg_name = Utils.get_nsg_rg_name(@rg_location)
+      sec_rules = @nsgclient.get_sec_rules_definition($node, 'net-sec-group', @rg_name)
+
+      all_nsgs_in_rg = @nsgclient.list_security_groups(@rg_name)
+      matching_nsgs = @nsgclient.get_matching_nsgs(all_nsgs_in_rg, Utils.get_pack_name($node))
+      @nsg_name = @nsgclient.match_nsg_rules(matching_nsgs, sec_rules)
+    end
   end
 
-  context "Security Group" do
-    it "should exist" do
-      nsgclient = AzureNetwork::NetworkSecurityGroup.new(@spec_utils.get_azure_creds)
-
-      rginfo = @spec_utils.get_resource_group_name
-      nsgname = $node['name']
-
-      nsg = nsgclient.get(rginfo, nsgname)
-      puts(nsg)
-      expect(nsg).not_to be_nil
-      expect(nsg.name).to eq(nsgname)
+  context 'NSGs Common Resource Group', :old_cloud => true do
+    before :all do
+      compute_service = $node['workorder']['services']['compute'][@cloud_name]['ciAttributes']
+      @rg_client = AzureResources::ResourceGroup.new(compute_service)
+      @resource_group = @rg_client.get(@rg_name)
+    end
+    it 'should exist' do
+      expect(@resource_group).not_to eq(nil)
     end
 
-    it "should have the right rule count" do
+    it 'should have the correct name of pattern: \'Location_NSGs_RG\'' do
+      expect(@resource_group.name).to match(%r/#{@rg_location.upcase}_NSGs_RG/)
+      expect(@resource_group.name).to eq(@rg_name)
+    end
+  end
+
+  context 'Security Group' do
+    it 'should exist' do
+      nsg = @nsgclient.get(@rg_name, @nsg_name)
+      expect(nsg).not_to be_nil
+      expect(nsg.name).to eq(@nsg_name)
+    end
+
+    it 'should have the correct name of pattern: \'pack_name_nsg_v_*\'', :old_cloud => true do
+      nsg = @nsgclient.get(@rg_name, @nsg_name)
+      expect(nsg.name).to match(%r/#{Utils.get_pack_name($node)}_nsg_v_\d/)
+      expect(nsg.name).to eq(@nsg_name)
+    end
+
+    it 'should have the right rule count' do
       rulelist = $node['secgroup']['inbound'].tr('"[]\\', '').split(',')
-      puts("\t\tLooking for #{rulelist.length} rules in NSG.")      
-      nsgclient = AzureNetwork::NetworkSecurityGroup.new(@spec_utils.get_azure_creds)
-      rginfo = @spec_utils.get_resource_group_name
-      nsgname = $node['name']
+      puts("\t\tLooking for #{rulelist.length} rules in NSG.")
 
-      nsgrules = nsgclient.list_rules(rginfo, nsgname)
-
-
+      nsgrules = @nsgclient.list_rules(@rg_name, @nsg_name)
+      
       expect(nsgrules.length).to eq(rulelist.length)
     end
 
-    it "should set rules correctly" do
-      nsgname = $node['name']      
-      rginfo = @spec_utils.get_resource_group_name      
+    it 'should set rules correctly' do
       rulelist = $node['secgroup']['inbound'].tr('"[]\\', '').split(',')
-      ruleset = @spec_utils.get_azure_rule_definition(rginfo, nsgname, rulelist, $node)
+      ruleset = @spec_utils.get_azure_rule_definition(@rg_name, @nsg_name, rulelist, $node)
 
-#      puts(ruleset)
-    
-      nsgclient = AzureNetwork::NetworkSecurityGroup.new(@spec_utils.get_azure_creds)
-      
+
       ruleset.each do |rset|
         puts("\t\tTesting Rule #{rset[:name]}")
-        nsgrule = nsgclient.get_rule(rginfo, nsgname, rset[:name])
+        nsgrule = @nsgclient.get_rule(@rg_name, @nsg_name, rset[:name])
 
         expect(nsgrule).not_to be_nil
         expect(nsgrule.protocol).to eq(rset[:protocol])

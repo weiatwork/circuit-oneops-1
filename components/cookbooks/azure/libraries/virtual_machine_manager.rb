@@ -11,6 +11,7 @@ module AzureCompute
                   :compute_client,
                   :storage_profile,
                   :network_profile,
+                  :net_sec_group_profile,
                   :virtual_machine_lib,
                   :availability_set_response,
                   :tags
@@ -24,7 +25,6 @@ module AzureCompute
       @location = @compute_service[:location]
       @initial_user = @compute_service[:initial_user]
       @express_route_enabled = @compute_service['express_route_enabled']
-      @secgroup_name = get_security_group_name(node)
       @image_id = node['image_id'].split(':')
       @size_id = node['size_id']
       @oosize_id = node[:oosize_id]
@@ -46,7 +46,10 @@ module AzureCompute
       @virtual_machine_lib = AzureCompute::VirtualMachine.new(@creds)
       @storage_profile = AzureCompute::StorageProfile.new(@creds)
       @network_profile = AzureNetwork::NetworkInterfaceCard.new(@creds)
+      @net_sec_group_profile = AzureNetwork::NetworkSecurityGroup.new(@creds)
       @availability_set_response = @compute_client.availability_sets.get(@resource_group_name, @resource_group_name)
+
+      @secgroup_id = get_security_group_id(node)
     end
 
     def create_or_update_vm
@@ -131,7 +134,7 @@ module AzureCompute
                                                       (@compute_service[:subnet_address]).split(','),
                                                       (@compute_service[:dns_ip]).split(','),
                                                       @ip_type,
-                                                      @secgroup_name)
+                                                      @secgroup_id)
 
       vm_hash[:network_interface_card_ids] = [nic_id]
 
@@ -223,15 +226,17 @@ module AzureCompute
       return storage_account, vhd_uri, datadisk_uri
     end
 
-    def get_security_group_name(node)
+    def get_security_group_id(node)
       secgroup = node['workorder']['payLoad']['DependsOn'].detect {|d| d['ciClassName'] =~ /Secgroup/}
       if secgroup.nil?
         OOLog.fatal("No Secgroup found in workorder. This is required for VM creation.")
       else
-        return secgroup['ciName']
+        return secgroup['ciAttributes']['net_sec_group_id'] if @cloud_name =~ %r/\S+-wm-nc/
+        net_sec_group = @net_sec_group_profile.get(@resource_group_name, secgroup['ciName'])
+        return net_sec_group.id
       end
     end
 
-    private :get_security_group_name
+    private :get_security_group_id
   end
 end

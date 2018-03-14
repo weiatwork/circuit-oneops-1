@@ -78,6 +78,7 @@ module AzureDns
     end
 
     def remove_record_set(record_set_name, record_type)
+      return unless exists?(record_set_name, record_type)
       begin
         record_set = @dns_client.record_sets.get(@dns_resource_group, record_set_name, @zone, record_type)
         !record_set.nil? ? record_set.destroy : Chef::Log.info('AzureDns::RecordSet - 404 code, trying to delete something that is not there.')
