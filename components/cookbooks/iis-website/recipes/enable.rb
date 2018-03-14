@@ -26,13 +26,19 @@ features = [
   'Web-AppInit'
 ]
 
-runtime = node.workorder.rfcCi.ciAttributes
+dotnetframework = node.workorder.payLoad.DependsOn.select { |d| d[:ciClassName] =~ /Dotnetframework/ }
 
-if runtime.has_key?("install_dotnetcore") && runtime.install_dotnetcore == "true"
- features.delete('Web-Net-Ext')
- features.delete('Web-Asp-Net')
- features.delete('Net-Framework-Core')
+dotnetframework.each do | framework |
+  runtime = framework["ciAttributes"]
+  if runtime.has_key?("install_dotnetcore") && runtime.install_dotnetcore == "true"
+   features.delete('Web-Net-Ext')
+   features.delete('Web-Asp-Net')
+   features.delete('Net-Framework-Core')
+   node.set['workorder']['rfcCi']['ciAttributes']['install_dotnetcore'] = "true"
+  end
 end
+
+Chef::Log.info("WindowsFeatures: #{features}")
 
 powershell_script 'installing windows features' do
   code "Install-WindowsFeature #{features.join(',')}"
