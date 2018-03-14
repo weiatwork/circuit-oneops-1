@@ -155,7 +155,7 @@ module SolrCloud
       end
     end
 
-    # Construct and set the zookeeper FQDN to node variable (zk_host_fqdns)
+    # Construct and set the zookeeper FQDN to node level variable (zk_host_fqdns)
     def setZkhostfqdn(zkselect,ci)
       if zkselect != nil && zkselect.include?("InternalEnsemble-SameAssembly")
         if ci['platform_name'].empty?
