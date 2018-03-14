@@ -25,7 +25,8 @@ location = compute_service[:location]
 network_security_group_name = node[:name]
 
 # Get resource group name
-resource_group_name = AzureResources::ResourceGroup.get_name(org, assembly, platform_ci_id, environment, location)
+rg_manager = AzureBase::ResourceGroupManager.new(node)
+resource_group_name = rg_manager.rg_name
 
 # Creating security rules objects
 nsg = AzureNetwork::NetworkSecurityGroup.new(cred_hash)
