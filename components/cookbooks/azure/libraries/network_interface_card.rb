@@ -184,6 +184,7 @@ module AzureNetwork
         # define the nic
         network_interface = define_network_interface(nic_ip_config)
 
+        # include the network securtiry group to the network interface
         network_interface.network_security_group_id = security_group_id unless security_group_id.nil?
         # create the nic
         nic = create_update(network_interface)
@@ -244,6 +245,7 @@ module AzureNetwork
 
     def get_all_nics_in_rg(resource_group_name)
       OOLog.info("Getting all NetworkInterfaceCards from '#{resource_group_name}' ")
+      nic_list = nil
       begin
         nic_list = @network_client.network_interfaces(resource_group: resource_group_name)
       rescue MsRestAzure::AzureOperationError => e

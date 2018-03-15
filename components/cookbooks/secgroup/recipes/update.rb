@@ -4,7 +4,10 @@
 #
 cloud_name = node['workorder']['cloud']['ciName']
 provider = node[:workorder][:services][:compute][cloud_name][:ciClassName].downcase
-if provider =~ /azure/ && cloud_name =~ %r/\S+-wm-nc/
+
+is_new_cloud = Utils.is_new_cloud(node)
+
+if provider =~ /azure/ && is_new_cloud == true
   include_recipe 'azuresecgroup::update_secgroup'
 else
   include_recipe 'secgroup::add'

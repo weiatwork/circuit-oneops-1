@@ -147,16 +147,26 @@ module Utils
     return tags
   end
 
+  def is_new_cloud(node)
+    cloud_name = node['workorder']['cloud']['ciName']
+    cloud_name =~ /^azure-.*-wm-.*$/ ? true : false
+  end
+
   def get_nsg_rg_name(location)
     "#{location.upcase}_NSGs_RG"
   end
 
-  def get_network_security_group_name(node, nsg_version)
-    "#{get_pack_name(node)}_nsg_v_#{nsg_version}"
+  def get_nsg_name(node)
+    "#{get_pack_name(node)}_nsg_v#{current_time}"
   end
 
   def get_pack_name(node)
     node['workorder']['box']['ciAttributes']['pack']
+  end
+
+  def current_time
+    time = Time.now.to_f.to_s
+    time.split(/\W+/).join
   end
 
   module_function :get_credentials,
@@ -168,8 +178,9 @@ module Utils
                   :get_fault_domains,
                   :get_update_domains,
                   :get_resource_tags,
+                  :is_new_cloud,
                   :get_nsg_rg_name,
-                  :get_network_security_group_name,
+                  :get_nsg_name,
                   :get_pack_name
 
 end

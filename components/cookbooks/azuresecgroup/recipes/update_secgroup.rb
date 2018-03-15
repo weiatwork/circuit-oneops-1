@@ -21,7 +21,6 @@ credentials = {
 location = compute_service[:location]
 
 nic_client = AzureNetwork::NetworkInterfaceCard.new(credentials)
-nsg_client = AzureNetwork::NetworkSecurityGroup.new(credentials)
 
 ns_path_parts = node['workorder']['rfcCi']['nsPath'].split('/')
 org = ns_path_parts[1]
@@ -44,53 +43,14 @@ nic_list = nic_client.get_all_nics_in_rg(resource_group_name)
 
 nics = []
 nic_list.each do |nic_object|
-  if nic_object.network_security_group_id == previous_nsg_id
-    nics << nic_object
-  end
+  nics << nic_object if nic_object.network_security_group_id == previous_nsg_id
 end
 
-nsg_resource_group_name = Utils.get_nsg_rg_name(location)
+include_recipe 'azuresecgroup::add_net_sec_group'
 
-nsg_version = 0
-all_nsgs_in_rg = nil
-matched_nsgs = []
-pack_name = Utils.get_pack_name(node)
-
-all_nsgs_in_rg = nsg_client.list_security_groups(nsg_resource_group_name)
-matched_nsgs = nsg_client.get_matching_nsgs(all_nsgs_in_rg, pack_name)
-nsg_version = matched_nsgs.count
-
-network_security_group_name = Utils.get_network_security_group_name(node, nsg_version + 1)
-
-sec_rules = nsg_client.get_sec_rules_definition(node, network_security_group_name, nsg_resource_group_name)
-
-unless matched_nsgs.empty?
-  matched_nsg_name = nsg_client.match_nsg_rules(matched_nsgs, sec_rules)
-  unless matched_nsg_name.nil?
-    matched_nsg = nsg_client.get(nsg_resource_group_name, matched_nsg_name)
-    nics.each do |nic|
-      nic.network_security_group_id = matched_nsg.id
-      nic_client.create_update(nic)
-    end
-    return
-  end
-end
-
-parameters = Fog::Network::AzureRM::NetworkSecurityGroup.new
-parameters.location = location
-parameters.security_rules = sec_rules
-
-nsg_result = nsg_client.create_update(nsg_resource_group_name, network_security_group_name, parameters)
-
-puts "***RESULT:net_sec_group_id=" + nsg_result.id
+nsg_id = node['updated_nsg_id']
 
 nics.each do |nic|
-  nic.network_security_group_id = nsg_result.id
+  nic.network_security_group_id = nsg_id
   nic_client.create_update(nic)
-end
-
-if !nsg_result.nil?
-  Chef::Log.info("The network security group has been created\n\rid: '#{nsg_result.id}'\n\r'#{nsg_result.location}'\n\r'#{nsg_result.name}'\n\r")
-else
-  raise 'Error creating network security group'
 end

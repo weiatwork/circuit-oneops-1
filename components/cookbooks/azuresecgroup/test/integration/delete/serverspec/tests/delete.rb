@@ -7,10 +7,8 @@ end
 require '/opt/oneops/inductor/circuit-oneops-1/components/cookbooks/azuresecgroup/libraries/network_security_group.rb'
 
 RSpec.configure do |c|
-  cloud_name = AzureSpecUtils.new($node).get_cloud_name
-  if cloud_name =~ %r/\S+-wm-nc/
-    c.filter_run_excluding :new_cloud => true
-  end
+  is_new_cloud = Utils.is_new_cloud($node)
+  c.filter_run_excluding :new_cloud => true if is_new_cloud
 end
 describe 'Azure Security Group', :new_cloud => true do
   before(:each) do
