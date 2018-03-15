@@ -61,11 +61,11 @@ end if node[:workorder][:rfcCi][:rfcAction] !~ /update/
 ruby_block 'install base' do
   block do
 
-    fast_image = (node['image_name'] =~ /FAST/)
+    fast_image = (node.has_key?('fast_image') && node['fast_image'])
     if fast_image
-      Chef::Log.info("Detected fast image for: #{node['image_name']}");
+      Chef::Log.info("Detected fast image");
     else
-      Chef::Log.info("No fast image detected for: #{node['image_name']}");
+      Chef::Log.info("No fast image detected");
     end
 
     Chef::Resource::RubyBlock.send(:include, Chef::Mixin::ShellOut)
