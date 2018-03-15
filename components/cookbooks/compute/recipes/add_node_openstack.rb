@@ -137,11 +137,11 @@ ruby_block 'set flavor/image/availability_zone' do
       Chef::Log.info("flavor: "+flavor.inspect.gsub("\n"," ").gsub("<","").gsub(">",""))
       exit_with_error "Invalid compute size provided #{node.size_id} .. Please specify different Compute size." if flavor.nil?
 
-      # image_id
+      # Get image by name if fast image
       node[:workorder][:payLoad].has_key?("os") ? (os = node[:workorder][:payLoad][:os].first) : os = nil
       custom_id = (!os.nil? && os[:ciAttributes].has_key?("image_id") && !os[:ciAttributes][:image_id].empty?)
       image = get_image(conn.images, flavor, node['workorder']['config']['FAST_IMAGE'], node['workorder']['config']['TESTING_MODE'], (conn.images.get node.image_id), custom_id, node['ostype'])
-      pattern = "wmlabs-#{node['ostype'].gsub(/\./, "")}"
+      pattern = "wmlabs-#{ostype.gsub(/\./, "")}"
       if !image.nil? && image.name =~ /#{pattern}/i
         node.set[:fast_image] = true
         node.set[:image_id] = image.id
@@ -211,6 +211,8 @@ ruby_block 'set flavor/image/availability_zone' do
       exit_with_error "#{msg}"
     else
       node.set[:existing_server] = true
+
+      # detects fast image on update
       image = conn.images.get node.image_id
       node.set[:fast_image] = (!image.nil? && image.name =~ /#{pattern}/i)
     end

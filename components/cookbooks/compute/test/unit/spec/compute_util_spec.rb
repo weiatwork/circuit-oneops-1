@@ -20,7 +20,7 @@ describe 'get_image' do
   context 'When TESTING_MODE flag is on' do
     it '' do
       return_image = get_image(images, Image.new('randomString', 'randomString'), 'true', 'true', default_image, false, ostype)
-      expect(return_image.name).to eql('wmlabs-centos-73-1611-v20180309-1106-snapshot')
+      expect(return_image.name).to eql('wmlabs-centos-73-1611-v20180309-1632-snapshot')
     end
   end
 
@@ -37,8 +37,7 @@ describe 'get_image' do
       expect(return_image.name).to eql('wmlabs-centos-73-1611-v20180309-1531')
     end
   end
-
-
+  
   # ----- FAST_IMAGE
   context 'When FAST_IMAGE flag is false' do
     it '' do

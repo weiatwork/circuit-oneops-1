@@ -1,9 +1,11 @@
 module AzureCompute
   class VirtualMachineManager
+    require '/opt/oneops/inductor/circuit-oneops-1/components/cookbooks/compute/libraries/compute_util'
     attr_accessor :compute_service,
                   :initial_user,
                   :private_ip,
                   :ip_type,
+                  :fast_image_flag,
                   :compute_ci_id,
                   :resource_group_name,
                   :server_name,
@@ -33,6 +35,13 @@ module AzureCompute
       @platform_ci_id = node['workorder']['box']['ciId']
       @compute_ci_id = node['workorder']['rfcCi']['ciId']
       @tags = {}
+
+      # Fast image vars
+      @FAST_IMAGE = node['workorder']['config']['FAST_IMAGE']
+      @TESTING_MODE = node['workorder']['config']['TESTING_MODE']
+      @ostype = node['ostype']
+      @fast_image_flag = false
+      #----------------
 
       @creds = {
           tenant_id: @compute_service['tenant_id'],
@@ -95,19 +104,50 @@ module AzureCompute
       vm_hash[:storage_account_name] = @storage_profile.get_managed_osdisk_name if @availability_set_response.sku_name.eql? 'Aligned'
       vm_hash[:storage_account_name] = @storage_profile.get_storage_account_name if @availability_set_response.sku_name.eql? 'Classic'
 
-      if @image_id[0].eql? 'Custom'
+
+      # Fast image logic
+      begin
+
+        # connection
+        token_provider = MsRestAzure::ApplicationTokenProvider.new(@creds[:tenant_id], @creds[:client_id], @creds[:client_secret])
+        credentials = MsRest::TokenCredentials.new(token_provider)
+        client = Azure::ARM::Resources::ResourceManagementClient.new(credentials)
+        client.subscription_id = @creds[:subscription_id]
+
+        # get image list
         customimage_resource_group = @compute_service['resource_group'].sub("mrg","img")
-        image_ref = "/subscriptions/#{@compute_service['subscription']}/resourceGroups/#{customimage_resource_group}/providers/Microsoft.Compute/images/#{@image_id[2]}"
-        OOLog.info('image ref: ' + image_ref )
-        vm_hash[:image_ref] = image_ref
+        images = client.resource_groups.list_resources(customimage_resource_group)
 
-      else
+        # find fast image
+        OOLog.debug("FAST_IMAGE_Flag: #{@FAST_IMAGE}, TESTING_MODE_FLAG: #{@TESTING_MODE}")
+        image = get_image(images, nil, @FAST_IMAGE, @TESTING_MODE, nil, false, @ostype)
+        OOLog.debug("Image nil? #{image.nil?}")
 
-        vm_hash[:publisher] = @image_id[0]
-        vm_hash[:offer] = @image_id[1]
-        vm_hash[:sku] = @image_id[2]
-        vm_hash[:version] = @image_id[3]
+        # if not fast do old way
+        if !image.nil?
+          image_ref = "/subscriptions/#{@compute_service['subscription']}/resourceGroups/#{customimage_resource_group}/providers/Microsoft.Compute/images/#{image.name}"
+          OOLog.info('image ref: ' + image_ref )
+          vm_hash[:image_ref] = image_ref
+          @fast_image_flag = true
+
+        elsif @image_id[0].eql? 'Custom'
+          customimage_resource_group = @compute_service['resource_group'].sub("mrg","img")
+          image_ref = "/subscriptions/#{@compute_service['subscription']}/resourceGroups/#{customimage_resource_group}/providers/Microsoft.Compute/images/#{@image_id[2]}"
+          OOLog.info('image ref: ' + image_ref )
+          vm_hash[:image_ref] = image_ref
+          @fast_image_flag = false
+        else
+          vm_hash[:publisher] = @image_id[0]
+          vm_hash[:offer] = @image_id[1]
+          vm_hash[:sku] = @image_id[2]
+          vm_hash[:version] = @image_id[3]
+          @fast_image_flag = false
+        end
+      rescue MsRestAzure::AzureOperationError => e
+        OOLog.debug("Error Body: #{e.body}")
+        OOLog.fatal('Error getting list of images')
       end
+      # -------------
 
       vm_hash[:platform] = @platform
 
