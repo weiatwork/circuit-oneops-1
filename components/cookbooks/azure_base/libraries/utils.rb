@@ -153,23 +153,23 @@ module Utils
 
     if cloud_name = ~/^azure-.*-wm-.*$/
       is_new_cloud = true
+    else
+      is_new_cloud = false
     end
-  elseB
 
-    is_new_cloud = false
+    is_new_cloud
+    end
+
+
+    module_function :get_credentials,
+                    :set_proxy,
+                    :set_proxy_from_env,
+                    :get_component_name,
+                    :get_dns_domain_label,
+                    :abbreviate_location,
+                    :get_fault_domains,
+                    :get_update_domains,
+                    :get_resource_tags,
+                    :is_new_cloud
 
   end
-
-
-  module_function :get_credentials,
-                  :set_proxy,
-                  :set_proxy_from_env,
-                  :get_component_name,
-                  :get_dns_domain_label,
-                  :abbreviate_location,
-                  :get_fault_domains,
-                  :get_update_domains,
-                  :get_resource_tags,
-                  :is_new_cloud
-
-end
