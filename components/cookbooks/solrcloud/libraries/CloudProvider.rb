@@ -158,8 +158,8 @@ class CloudProvider
   def self.get_cloud_provider_name(node)
     #Chef::Log.info("node[:workorder][:services][:compute] = #{node[:workorder][:services][:compute].to_json}")
     cloud_name = node[:workorder][:cloud][:ciName]
-    if node[:workorder][:services].has_key?("compute1")
-      error = "compute service is missing in the cloud services list, make sure you did pull pack and design pull so that compute service is available"
+    if !node[:workorder][:services].has_key?("compute")
+      error = "compute service is missing in the cloud services list, please make sure to do pull pack and design pull so that compute service is available"
       puts "***FAULT:FATAL=#{error}"
       raise error
     end
