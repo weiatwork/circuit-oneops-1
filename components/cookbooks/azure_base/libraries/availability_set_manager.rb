@@ -11,7 +11,7 @@ module AzureBase
     def initialize(node)
       super(node)
       # set availability set name same as resource group name
-      @as_name = @rg_name
+      @as_name = get_availability_set_name
       @compute_client = Fog::Compute::AzureRM.new(@creds)
     end
 
@@ -59,5 +59,16 @@ module AzureBase
         end
       end
     end
+
+    def get_availability_set_name
+
+      @org[0..15] + '-' +
+          @assembly[0..15] + '-' +
+          @platform_ci_id.to_s + '-' +
+          @environment[0..15] + '-' +
+          Utils.abbreviate_location(@location)
+
+    end
+
   end
 end
