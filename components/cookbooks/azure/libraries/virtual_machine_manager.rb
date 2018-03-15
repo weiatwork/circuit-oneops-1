@@ -43,10 +43,10 @@ module AzureCompute
       @TESTING_MODE = false
       @fast_image_flag = false
       @ostype = node[:ostype]
-      if node[:workorder][:config].has_key?('FAST_IMAGE')
+      if node[:workorder].has_key?('config') && node[:workorder][:config].has_key?('FAST_IMAGE')
         @FAST_IMAGE = node[:workorder][:config][:FAST_IMAGE].to_s.downcase
       end
-      if node[:workorder][:config].has_key?('TESTING_MODE')
+      if node[:workorder].has_key?('config') && node[:workorder][:config].has_key?('TESTING_MODE')
         @TESTING_MODE = node[:workorder][:config][:TESTING_MODE].to_s.downcase
       end
       #----------------
