@@ -139,8 +139,8 @@ ruby_block 'set flavor/image/availability_zone' do
 
       # Fast image logic
       node[:workorder][:payLoad].has_key?("os")          ? (os = node[:workorder][:payLoad][:os].first)              : (os = nil)
-      node[:workorder][:config].has_key?('FAST_IMAGE')   ? (fast_flag = node[:workorder][:config][:FAST_IMAGE])      : (fast_flag = 'false')
-      node[:workorder][:config].has_key?('TESTING_MODE') ? (testing_flag = node[:workorder][:config][:TESTING_MODE]) : (testing_flag = 'false')
+      (node[:workorder].has_key?('config') && node[:workorder][:config].has_key?('FAST_IMAGE'))   ? (fast_flag = node[:workorder][:config][:FAST_IMAGE])      : (fast_flag = 'false')
+      (node[:workorder].has_key?('config') && node[:workorder][:config].has_key?('TESTING_MODE')) ? (testing_flag = node[:workorder][:config][:TESTING_MODE]) : (testing_flag = 'false')
 
       custom_id = (!os.nil? && os[:ciAttributes].has_key?("image_id") && !os[:ciAttributes][:image_id].empty?)
       image = get_image(conn.images, flavor, fast_flag, testing_flag, (conn.images.get node.image_id), custom_id, node[:ostype])
