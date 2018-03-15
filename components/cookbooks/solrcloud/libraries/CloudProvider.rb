@@ -13,7 +13,6 @@ class CloudProvider
     Chef::Log.info("@cloud_name : #{@cloud_name}")
     
     @cloud_provider = self.class.get_cloud_provider_name(node)
-    #@cloud_provider = node[:workorder][:services][:compute][@cloud_name][:ciClassName].gsub("cloud.service.","").downcase.split(".").last
     Chef::Log.info("Initializing Cloud Provider : #{@cloud_provider}")
     
     # Replica distribution varies based on cloud provider. For ex. with 'Openstack' cloud provider, we distribute replicas across clouds and witn 'Azure', 
