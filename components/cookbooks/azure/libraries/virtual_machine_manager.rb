@@ -13,7 +13,8 @@ module AzureCompute
                   :network_profile,
                   :virtual_machine_lib,
                   :availability_set_response,
-                  :tags
+                  :tags,
+                  :availability_set_name
 
     def initialize(node)
       @cloud_name = node['workorder']['cloud']['ciName']
@@ -21,6 +22,7 @@ module AzureCompute
       @keypair_service = node['workorder']['payLoad']['SecuredBy'].first
       @server_name = node['server_name']
       @resource_group_name = node['platform-resource-group']
+      @availability_set_name = node['platform-availability-set']
       @location = @compute_service[:location]
       @initial_user = @compute_service[:initial_user]
       @express_route_enabled = @compute_service['express_route_enabled']
@@ -46,7 +48,7 @@ module AzureCompute
       @virtual_machine_lib = AzureCompute::VirtualMachine.new(@creds)
       @storage_profile = AzureCompute::StorageProfile.new(@creds)
       @network_profile = AzureNetwork::NetworkInterfaceCard.new(@creds)
-      @availability_set_response = @compute_client.availability_sets.get(@resource_group_name, @resource_group_name)
+      @availability_set_response = @compute_client.availability_sets.get(@resource_group_name, @availability_set_name)
     end
 
     def create_or_update_vm

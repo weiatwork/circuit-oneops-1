@@ -13,7 +13,9 @@ module AzureBase
                   :platform_ci_id,
                   :location,
                   :subscription,
-                  :resource_client
+                  :resource_client,
+                  :environment_ci_id,
+                  :is_new_cloud
 
     def initialize(node)
       super(node)
@@ -24,6 +26,8 @@ module AzureBase
       @assembly = nsPathParts[2]
       @environment = nsPathParts[3]
       @platform_ci_id = node['workorder']['box']['ciId']
+      @environment_ci_id = node['workorder']['payLoad']['Environment'][0]['ciId']
+      @is_new_cloud = Utils.is_new_cloud(node)
       if !@service['location'].nil?
         @location = @service['location']
       elsif !@service['region'].nil?
@@ -41,6 +45,7 @@ module AzureBase
         # get the name
         @rg_name = get_name if @rg_name.nil?
         OOLog.info("RG Name is: #{@rg_name}")
+        OOLog.info("New  cloud Pattern or old: #{@is_new_cloud}")
         # check if the rg is there
         if !exists?
           OOLog.info('RG does NOT exists.  Creating...')
@@ -88,11 +93,22 @@ module AzureBase
     # de-provision platforms in the same assembly / env / location without
     # destroying all of them together.
     def get_name
-      @org[0..15] + '-' +
-      @assembly[0..15] + '-' +
-      @platform_ci_id.to_s + '-' +
-      @environment[0..15]  + '-' +
-      Utils.abbreviate_location(@location)
+
+      if @is_new_cloud
+        @org[0..15] + '-' +
+            @assembly[0..15] + '-' +
+            @environment_ci_id.to_s + '-' +
+            @environment[0..15] + '-' +
+            Utils.abbreviate_location(@location)
+
+      else
+
+        @org[0..15] + '-' +
+            @assembly[0..15] + '-' +
+            @platform_ci_id.to_s + '-' +
+            @environment[0..15] + '-' +
+            Utils.abbreviate_location(@location)
+      end
     end
   end
 end
