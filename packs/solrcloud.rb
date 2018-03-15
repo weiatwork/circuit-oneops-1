@@ -168,7 +168,7 @@ resource "solrcloud",
     'solr_opts_params' => '["solr.autoSoftCommit.maxTime=15000", "solr.autoCommit.maxTime=60000", "solr.directoryFactory=solr.MMapDirectoryFactory", "socketTimeout=30000", "connTimeout=30000", "maxConnectionsPerHost=100", "distribUpdateSoTimeout=60000", "distribUpdateConnTimeout=40000", "solr.jetty.threads.max=3000"]',
     'skip_solrcloud_comp_execution' => 'false',
     'enable_cinder' => 'true',
-    'solr_custom_component_version' => '0.0.2',
+    'solr_custom_component_version' => '0.0.3',
     'solr_api_timeout_sec' => '300'
   },
 
@@ -478,7 +478,8 @@ resource "jolokia_proxy",
     :services => "mirror"
   },
   :attributes => {
-    :bind_port => '$OO_LOCAL{jolokia_port}'
+    :bind_port => '$OO_LOCAL{jolokia_port}',
+    :jvm_parameters => '-Xms512m -Xmx1g'
   },
   :monitors => {
     'JolokiaProxyProcess' => {
