@@ -70,7 +70,12 @@ module AzureBase
     # This method will delete the resource group
     def delete
       begin
-        @resource_client.resource_groups.get(@rg_name).destroy
+        rg_exists = @resource_client.resource_groups.check_resource_group_exists(@rg_name)
+        if !rg_exists
+          OOLog.info("The Resource Group #{@rg_name} does not exist. Moving on...")
+        else
+          @resource_client.resource_groups.get(@rg_name).destroy
+        end
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error deleting resource group: #{e.body}")
       rescue => ex
