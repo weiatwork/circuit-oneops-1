@@ -225,10 +225,10 @@ class AzureSpecUtils < SpecUtils
     customimage_resource_group = @node[:workorder][:services][:compute][cloud_name][:ciAttributes][:resource_group].sub("mrg","img")
     image                      = nil
 
-    if node[:workorder][:config].has_key?('FAST_IMAGE')
+    if @node[:workorder].has_key?('config') && @node[:workorder][:config].has_key?('FAST_IMAGE')
       fast_image_flag = (@node[:workorder][:config][:FAST_IMAGE].to_s.downcase == "true")
     end
-    if node[:workorder][:config].has_key?('TESTING_MODE')
+    if @node[:workorder].has_key?('config') && @node[:workorder][:config].has_key?('TESTING_MODE')
       testing_mode_flag  = (@node[:workorder][:config][:TESTING_MODE].to_s.downcase == "true")
     end
 
