@@ -56,12 +56,6 @@ if is_new_cloud
     end
   end
 else
-  ns_path_parts = node['workorder']['rfcCi']['nsPath'].split('/')
-  org = ns_path_parts[1]
-  assembly = ns_path_parts[2]
-  environment = ns_path_parts[3]
-  platform_ci_id = node['workorder']['box']['ciId']
-
   network_security_group_name = node[:name]
 
   # Get resource group name

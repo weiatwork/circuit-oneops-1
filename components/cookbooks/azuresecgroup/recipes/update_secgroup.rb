@@ -22,19 +22,15 @@ location = compute_service[:location]
 
 nic_client = AzureNetwork::NetworkInterfaceCard.new(credentials)
 
-ns_path_parts = node['workorder']['rfcCi']['nsPath'].split('/')
-org = ns_path_parts[1]
-assembly = ns_path_parts[2]
-environment = ns_path_parts[3]
-platform_ci_id = node['workorder']['box']['ciId']
-
 previous_nsg_id = if node['workorder']['rfcCi']['ciBaseAttributes']['net_sec_group_id'].nil?
                     node['workorder']['rfcCi']['ciAttributes']['net_sec_group_id']
                   else
                     node['workorder']['rfcCi']['ciBaseAttributes']['net_sec_group_id']
                   end
 
-resource_group_name = AzureResources::ResourceGroup.get_name(org, assembly, platform_ci_id, environment, location)
+# Get resource group name
+rg_manager = AzureBase::ResourceGroupManager.new(node)
+resource_group_name = rg_manager.rg_name
 
 nic_client.rg_name = resource_group_name
 nic_client.flag = false
