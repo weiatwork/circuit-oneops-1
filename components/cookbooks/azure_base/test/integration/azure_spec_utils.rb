@@ -1,5 +1,8 @@
-require '/opt/oneops/inductor/circuit-oneops-1/components/cookbooks/azure_base/test/integration/spec_utils'
-require '/opt/oneops/inductor/circuit-oneops-1/components/cookbooks/azure_base/libraries/utils'
+COOKBOOKS_PATH ||= "/opt/oneops/inductor/circuit-oneops-1/components/cookbooks"
+
+require "#{COOKBOOKS_PATH}/azure_base/test/integration/spec_utils"
+require "#{COOKBOOKS_PATH}/azure_base/libraries/utils"
+require "#{COOKBOOKS_PATH}/azure_base/libraries/resource_group_manager"
 
 class AzureSpecUtils < SpecUtils
   def initialize(node)
