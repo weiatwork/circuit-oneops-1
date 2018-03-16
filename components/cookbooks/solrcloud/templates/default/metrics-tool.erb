@@ -59,7 +59,7 @@ if (graphite_servers != nil && graphite_servers.length > 0)
   solrcloud_monitor.collect_all_stats
 end
 
-# Send to DF graphite servers for prod
+# Send metrics to DF graphite servers for prod profile solr clusters
 # if (oo_env =~ /(?i)prod/)
 #  name = "#{oo_org}-#{oo_assembly}-#{oo_platform}-#{environment_name}"
 
