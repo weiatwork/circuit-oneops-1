@@ -23,20 +23,15 @@ class AzureSpecUtils < SpecUtils
     credentials
   end
   def get_resource_group_name
-    nsPathParts = get_ns_path_parts
-    org = nsPathParts[1]
-    assembly = nsPathParts[2]
-    environment = nsPathParts[3]
-
-    svc = get_service
-    location = svc['location']
-
-    resource_group_name = org[0..15] + '-' + assembly[0..15] + '-' + @node['workorder']['box']['ciId'].to_s + '-' + environment[0..15] + '-' + Utils.abbreviate_location(location)
+    rg_svc = AzureBase::ResourceGroupManager.new($node)
+    resource_group_name = rg_svc.rg_name
     resource_group_name
+
   end
   def set_attributes_on_node_required_for_vm_manager
     @node.set['image_id'] = get_image_id
     @node.set['platform-resource-group'] = get_resource_group_name
+    @node.set['platform-availability-set'] = get_availability_set_name
   end
   def is_express_route_enabled
     svc = get_service
@@ -212,7 +207,10 @@ class AzureSpecUtils < SpecUtils
   end
 
   def get_availability_set_name
-    get_resource_group_name
+       avg_mgr = AzureBase::AvailabilitySetManager.new($node)
+       availability_set_name = avg_mgr.as_name
+       availability_set_name
+
   end
 
   def get_os_disk_name
