@@ -23,8 +23,15 @@ if provider =~ /openstack/i
   compute_service = $node['workorder']['services']['compute'][cloud_name]['ciAttributes']
   rfcCi = $node['workorder']['rfcCi']
   nsPathParts = rfcCi['nsPath'].split("/")
+
+  # TO-DO incapsulate server_name into a separate function.
+  # Save in a library file and use for both compute recipes and KCI tests
   server_name = $node['workorder']['box']['ciName']+'-'+nsPathParts[3]+'-'+nsPathParts[2]+'-'+nsPathParts[1]+'-'+ rfcCi['ciId'].to_s
-  
+  if(server_name.size > 63)
+    server_name = server_name.slice(0, 63 - rfcCi['ciId'].to_s.size - 1) +
+      '-' + rfcCi['ciId'].to_s
+  end
+
   domain = compute_service.key?('domain') ? compute_service[:domain] : 'default'
 
   conn = Fog::Compute.new({
