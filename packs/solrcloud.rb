@@ -478,7 +478,8 @@ resource "jolokia_proxy",
     :services => "mirror"
   },
   :attributes => {
-    :bind_port => '$OO_LOCAL{jolokia_port}'
+    :bind_port => '$OO_LOCAL{jolokia_port}',
+    :jvm_parameters => '-Xms512m -Xmx1g'
   },
   :monitors => {
     'JolokiaProxyProcess' => {

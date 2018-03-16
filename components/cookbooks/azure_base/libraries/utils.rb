@@ -49,21 +49,21 @@ module Utils
   def get_component_name(type, ciId)
     ciId = ciId.to_s
     if type == "nic"
-      return "nic-"+ciId
+      return "nic-" + ciId
     elsif type == "publicip"
-      return "publicip-"+ciId
+      return "publicip-" + ciId
     elsif type == "privateip"
-      return "nicprivateip-"+ciId
+      return "nicprivateip-" + ciId
     elsif type == "lb_publicip"
-      return "lb-publicip-"+ciId
+      return "lb-publicip-" + ciId
     elsif type == "ag_publicip"
-      return "ag_publicip-"+ciId
+      return "ag_publicip-" + ciId
     end
   end
 
   def get_dns_domain_label(platform_name, cloud_id, instance_id, subdomain)
     subdomain = subdomain.gsub(".", "-")
-    return (platform_name+"-"+cloud_id+"-"+instance_id.to_s+"-"+subdomain).downcase
+    return (platform_name + "-" + cloud_id + "-" + instance_id.to_s + "-" + subdomain).downcase
   end
 
   # this is a static method to generate a name based on a ciId and location.
@@ -106,7 +106,7 @@ module Utils
       when 'westus'
         abbr = 'wus'
       when 'ukwest'
-        abbr ='wuk'
+        abbr = 'wuk'
       when 'uksouth'
         abbr = 'suk'
       else
@@ -136,14 +136,14 @@ module Utils
 
     azuretagkeys = ["applicationname", "notificationdistlist", "costcenter", "platform", "deploymenttype", "environmentinfo", "sponsorinfo", "ownerinfo"]
 
-    org_tags = JSON.parse(node['workorder']['payLoad']['Organization'][0]['ciAttributes']['tags']).select{ |k, v| azuretagkeys.include?(k) }
-    assembly_tags = JSON.parse(node['workorder']['payLoad']['Assembly'][0]['ciAttributes']['tags']).select{ |k, v| azuretagkeys.include?(k) }
+    org_tags = JSON.parse(node['workorder']['payLoad']['Organization'][0]['ciAttributes']['tags']).select {|k, v| azuretagkeys.include?(k)}
+    assembly_tags = JSON.parse(node['workorder']['payLoad']['Assembly'][0]['ciAttributes']['tags']).select {|k, v| azuretagkeys.include?(k)}
     assembly_owner_tag = node['workorder']['payLoad']['Assembly'][0]['ciAttributes']["owner"] || "Unknown"
 
     tags.merge!(org_tags)
     tags.merge!(assembly_tags)
     tags['owner'] = assembly_owner_tag
-    
+
     return tags
   end
 
@@ -182,5 +182,4 @@ module Utils
                   :get_nsg_rg_name,
                   :get_nsg_name,
                   :get_pack_name
-
-end
+  end

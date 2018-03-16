@@ -135,12 +135,26 @@ ruby_block 'set flavor/image/availability_zone' do
       # size / flavor
       flavor = conn.flavors.get node.size_id
       Chef::Log.info("flavor: "+flavor.inspect.gsub("\n"," ").gsub("<","").gsub(">",""))
-
-      # image_id
-      image = conn.images.get node.image_id
-      Chef::Log.info("image: "+image.inspect.gsub("\n"," ").gsub("<","").gsub(">",""))
-
       exit_with_error "Invalid compute size provided #{node.size_id} .. Please specify different Compute size." if flavor.nil?
+
+      # Fast image logic
+      node[:workorder][:payLoad].has_key?("os")          ? (os = node[:workorder][:payLoad][:os].first)              : (os = nil)
+      (node[:workorder].has_key?('config') && node[:workorder][:config].has_key?('FAST_IMAGE'))   ? (fast_flag = node[:workorder][:config][:FAST_IMAGE])      : (fast_flag = 'false')
+      (node[:workorder].has_key?('config') && node[:workorder][:config].has_key?('TESTING_MODE')) ? (testing_flag = node[:workorder][:config][:TESTING_MODE]) : (testing_flag = 'false')
+
+      custom_id = (!os.nil? && os[:ciAttributes].has_key?("image_id") && !os[:ciAttributes][:image_id].empty?)
+      image = get_image(conn.images, flavor, fast_flag, testing_flag, (conn.images.get node.image_id), custom_id, node[:ostype])
+      pattern = "wmlabs-#{ostype.gsub(/\./, "")}"
+      if !image.nil? && image.name =~ /#{pattern}/i
+        node.set[:fast_image] = true
+        node.set[:image_id] = image.id
+      else
+        node.set[:fast_image] = false
+      end
+      #----------------
+
+
+      Chef::Log.info("image: "+image.inspect.gsub("\n"," ").gsub("<","").gsub(">",""))
       exit_with_error "Invalid compute image provided #{node.image_id} .. Please specify different OS type." if image.nil?
 
       if image.name.downcase =~ /baremetal/
@@ -203,6 +217,10 @@ ruby_block 'set flavor/image/availability_zone' do
       exit_with_error "#{msg}"
     else
       node.set[:existing_server] = true
+
+      # detects fast image on update
+      image = conn.images.get node.image_id
+      node.set[:fast_image] = (!image.nil? && image.name =~ /#{pattern}/i)
     end
 
   end

@@ -68,3 +68,49 @@ def is_propagate_update
   end
   return false
 end
+
+def find_latest_fast_image(images, pattern, pattern_snap)
+  return_image = nil
+  images.each do |image|
+    # check if valid
+    if image.name =~ /#{pattern}/i && image.name !~ /#{pattern_snap}/i
+      # break up name into its parts
+      image_name_parts = image.name.split('-')
+
+      # get age
+      age_current = "#{image_name_parts[4].gsub(/v/, "")}#{image_name_parts[5]}".to_i
+
+      # check against saved if exists
+      if return_image.nil?
+        return_image = image
+      else
+        age_old =  "#{(return_image.name.split('-'))[4].gsub(/v/, "")}#{(return_image.name.split('-'))[5]}".to_i
+        if age_current > age_old
+          return_image = image
+        end
+      end
+    end
+  end
+  return return_image
+end
+
+# Returns the image object from Openstack
+# Looks up by name if global flag is set and flavor is not baremetal
+# Reverts to image id lookup if no Fast Image is found by name
+def get_image(images, flavor, flag_FAST_IMAGE, flag_TESTING_MODE, default_image, custom_id, ostype)
+  if flag_FAST_IMAGE.to_s.downcase == "true" && (flavor.nil? || flavor.name.downcase !~ /baremetal/i) && !custom_id
+    pattern = "wmlabs-#{ostype.gsub(/\./, "")}"
+    flag_TESTING_MODE.to_s.downcase == "true" ? pattern_snap = "RandomString" : pattern_snap = "snapshot"
+    return_image = find_latest_fast_image(images, pattern, pattern_snap)
+
+    if return_image.nil?
+      return default_image
+    else
+      return return_image
+    end
+
+  else
+    return default_image
+
+  end
+end

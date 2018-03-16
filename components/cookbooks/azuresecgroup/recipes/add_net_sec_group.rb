@@ -65,8 +65,9 @@ else
   network_security_group_name = node[:name]
 
   # Get resource group name
-  resource_group_name = AzureResources::ResourceGroup.get_name(org, assembly, platform_ci_id, environment, location)
-
+  rg_manager = AzureBase::ResourceGroupManager.new(node)
+  resource_group_name = rg_manager.rg_name
+  
   sec_rules = nsg_service.get_sec_rules(node, network_security_group_name, resource_group_name)
 end
 
