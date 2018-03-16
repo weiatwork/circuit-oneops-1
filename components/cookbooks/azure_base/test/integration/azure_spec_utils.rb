@@ -221,7 +221,7 @@ class AzureSpecUtils < SpecUtils
     cloud_name = get_cloud_name
     @node['workorder']['services']['compute'][cloud_name]['ciAttributes']['location']
   end
-  
+
   def is_fast_image
     cloud_name                 = @node[:workorder][:cloud][:ciName]
     cloud                      = @node[:workorder][:services][:compute][cloud_name][:ciAttributes]

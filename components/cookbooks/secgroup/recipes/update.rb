@@ -7,7 +7,7 @@ provider = node[:workorder][:services][:compute][cloud_name][:ciClassName].downc
 
 is_new_cloud = Utils.is_new_cloud(node)
 
-if provider =~ /azure/ && is_new_cloud == true
+if provider =~ /azure/ && is_new_cloud
   include_recipe 'azuresecgroup::update_secgroup'
 else
   include_recipe 'secgroup::add'

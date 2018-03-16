@@ -19,7 +19,7 @@ RSpec.configure do |c|
   c.filter_run_excluding :express_route_enabled => !AzureSpecUtils.new($node).is_express_route_enabled
 end
 RSpec.configure do |c|
-  c.filter_run_excluding :custom_image => !(AzureSpecUtils.new($node).is_imagetypecustom || AzureSpecUtils.new($node).is_fast_image)
+  c.filter_run_excluding :custom_image => !(AzureSpecUtils.new($node).is_imagetypecustom)# || AzureSpecUtils.new($node).is_fast_image)
 end
 
 describe "azure node::create" do
@@ -221,8 +221,10 @@ describe "azure node::create" do
       expect(nic_subnet_vnet).to eq(predefined_vnet)
     end
 
-    it "has oneops org and assembly tags" do
-      tags_from_work_order = Utils.get_resource_tags($node)
+    it "has platform tags" do
+      tags_from_work_order = {
+        "platform_id" => $node['workorder']['box']['ciId']
+      }
 
       nic_svc = AzureNetwork::NetworkInterfaceCard.new(@spec_utils.get_azure_creds)
       nic_svc.ci_id = $node['workorder']['rfcCi']['ciId']
