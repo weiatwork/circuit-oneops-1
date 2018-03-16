@@ -91,33 +91,29 @@ if provider =~ /openstack/i
   describe 'Image used' do
     image_used = conn.images.get (server.image)['id']
     pattern = "wmlabs-#{ostype.gsub(/\./, "")}"
-    $node['workorder']['config']['TESTING_MODE'].to_s.downcase == "true" ? pattern_snap = "RandomString" : pattern_snap = "snapshot"
-    images = conn.images
+    testing_mode_flag_exists = ($node[:workorder].has_key?('config') && $node[:workorder][:config].has_key?('TESTING_MODE'))
+    if $node[:workorder].has_key?('config') && $node[:workorder][:config].has_key?('FAST_IMAGE')
+      (testing_mode_flag_exists && $node['workorder']['config']['TESTING_MODE'].to_s.downcase == "true") ? pattern_snap = "RandomString" : pattern_snap = "snapshot"
+      images = conn.images
 
-    if image_used.name =~ /#{pattern}/i && image_used.name !~ /#{pattern_snap}/i
-      context "When a fast image" do
-        it "Flag should be set" do
-          expect($node['workorder']['config']['FAST_IMAGE'].to_s.downcase == "true").to be true
-        end
-        it 'Should be latest' do
-          latest = find_latest_fast_image(images, pattern, pattern_snap)
-          expect(latest.name).to eql(image_used.name)
-        end
-      end
-    end
-
-    if image_used.name =~ /#{pattern_snap}/i
-      context "When a fast image snapshot" do
-        it 'Flag should be set' do
-          expect($node['workorder']['config']['TESTING_MODE'].to_s.downcase == "true").to be true
-        end
-        it 'Should be latest' do
-
-          latest = find_latest_fast_image(images, pattern, pattern_snap)
-          expect(latest.name).to eql(image_used.name)
+      if image_used.name =~ /#{pattern}/i
+        context "When a fast image" do
+          it "Flag should be set" do
+            expect($node['workorder']['config']['FAST_IMAGE'].to_s.downcase == "true").to be true
+          end
+          if pattern_snap.eql?("RandomString")
+            context "When a fast image snapshot" do
+              it 'Flag should be set' do
+                expect($node['workorder']['config']['TESTING_MODE'].to_s.downcase == "true").to be true
+              end
+            end
+          end
+          it 'Should be latest' do
+            latest = find_latest_fast_image(images, pattern, pattern_snap)
+            expect(latest.name).to eql(image_used.name)
+          end
         end
       end
     end
-
   end
 end
