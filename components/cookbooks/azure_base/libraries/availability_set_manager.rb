@@ -70,5 +70,10 @@ module AzureBase
 
     end
 
+    def delete
+      avset = @compute_client.availability_sets.get(@rg_name, @as_name)
+      avset.destroy
+    end
+
   end
 end
