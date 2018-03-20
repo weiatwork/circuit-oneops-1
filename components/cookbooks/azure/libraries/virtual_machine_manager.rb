@@ -1,6 +1,6 @@
 module AzureCompute
   class VirtualMachineManager
-    require '/opt/oneops/inductor/circuit-oneops-1/components/cookbooks/compute/libraries/compute_util'
+    require File.expand_path('../../../compute/libraries/compute_util', __FILE__)
     attr_accessor :compute_service,
                   :initial_user,
                   :private_ip,
@@ -153,7 +153,8 @@ module AzureCompute
           image_ref = "/subscriptions/#{@compute_service['subscription']}/resourceGroups/#{customimage_resource_group}/providers/Microsoft.Compute/images/#{@image_id[2]}"
           OOLog.info('image ref: ' + image_ref )
           vm_hash[:image_ref] = image_ref
-          @fast_image_flag = false
+          pattern = "wmlabs-#{ostype.gsub(/\./, "")}"
+          @fast_image_flag = (@image_id[2] =~ /#{pattern}/)
         else
           vm_hash[:publisher] = @image_id[0]
           vm_hash[:offer] = @image_id[1]
