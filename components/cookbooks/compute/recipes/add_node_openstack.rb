@@ -347,11 +347,6 @@ ruby_block 'create server' do
             :key_name => node.kp_name
           }
         end
-        i = 0
-        server_request.each do |key,value|
-          Chef::Log.debug("findstring server_request#{(i = i + 1).to_s}: [#{key}: #{value}]")
-        end
-
 
         start_time = Time.now.to_i
 
