@@ -28,7 +28,7 @@ module AzureCompute
       @location = @compute_service[:location]
       @initial_user = @compute_service[:initial_user]
       @express_route_enabled = @compute_service['express_route_enabled']
-      @secgroup_name = get_security_group_name(node)
+      @secgroup_id = get_security_group_id(node)
       @image_id = node['image_id'].split(':')
       @size_id = node['size_id']
       @oosize_id = node[:oosize_id]
@@ -37,6 +37,7 @@ module AzureCompute
       @platform_ci_id = node['workorder']['box']['ciId']
       @compute_ci_id = node['workorder']['rfcCi']['ciId']
       @tags = {}
+      @is_new_cloud = Utils.is_new_cloud(node)
 
       # Fast image vars
       @FAST_IMAGE   = false
@@ -89,6 +90,7 @@ module AzureCompute
       @network_profile.location = @location
       @network_profile.rg_name = @resource_group_name
       @network_profile.ci_id = @compute_ci_id
+      @network_profile.platform_ci_id = @platform_ci_id if @is_new_cloud
       @network_profile.tags = @tags
       # build hash containing vm info
       # used in Fog::Compute::AzureRM::create_virtual_machine()
@@ -187,7 +189,7 @@ module AzureCompute
                                                       (@compute_service[:subnet_address]).split(','),
                                                       (@compute_service[:dns_ip]).split(','),
                                                       @ip_type,
-                                                      @secgroup_name)
+                                                      @secgroup_id)
 
       vm_hash[:network_interface_card_ids] = [nic_id]
 
@@ -279,15 +281,15 @@ module AzureCompute
       return storage_account, vhd_uri, datadisk_uri
     end
 
-    def get_security_group_name(node)
+    def get_security_group_id(node)
       secgroup = node['workorder']['payLoad']['DependsOn'].detect {|d| d['ciClassName'] =~ /Secgroup/}
       if secgroup.nil?
         OOLog.fatal("No Secgroup found in workorder. This is required for VM creation.")
       else
-        return secgroup['ciName']
+        secgroup['ciAttributes']['net_sec_group_id']
       end
     end
 
-    private :get_security_group_name
+    private :get_security_group_id
   end
 end
