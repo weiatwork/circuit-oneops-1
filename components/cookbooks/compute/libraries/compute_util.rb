@@ -77,7 +77,7 @@ def find_latest_fast_image(images, pattern, pattern_snap)
   return_image = nil
   images.each do |image|
     # check if valid
-    if image.name =~ /#{pattern}/i && image.name !~ /#{pattern_snap}/i
+    if image.name =~ /#{pattern}/i && image.name !~ /#{pattern_snap}/i && image.name !~ /-raw/i
       # break up name into its parts
       image_name_parts = image.name.split('-')
 
