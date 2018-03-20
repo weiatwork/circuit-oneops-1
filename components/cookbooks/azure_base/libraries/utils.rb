@@ -169,6 +169,41 @@ module Utils
     time.split(/\W+/).join
   end
 
+  # This method is to get the resource group for action work orders
+  def get_resource_group(node, org, assembly, platform_ciID, environment, location, environment_ciID)
+
+    new_cloud = is_new_cloud(node)
+    OOLog.info("Resource Group org: #{org}")
+    OOLog.info("Resource Group assembly: #{assembly}")
+    OOLog.info("Resource Group Environment: #{environment}")
+    OOLog.info("Resource Group location: #{location}")
+
+    if new_cloud
+
+      OOLog.info("Resource Group Environment ci ID: #{environment_ciID}")
+
+      resource_group_name = org[0..15] + '-' +
+          assembly[0..15] + '-' +
+          environment_ciID.to_s + '-' +
+          environment[0..15] + '-' +
+          Utils.abbreviate_location(location)
+
+    else
+
+      OOLog.info("Resource Group Platform ci ID: #{platform_ciID}")
+
+      resource_group_name = org[0..15] + '-' +
+          assembly[0..15] + '-' +
+          platform_ciID.to_s + '-' +
+          environment[0..15] + '-' +
+          Utils.abbreviate_location(location)
+    end
+    OOLog.info("Resource Group Name is: #{resource_group_name}")
+    OOLog.info("Resource Group Name Length: #{resource_group_name.length}")
+
+    resource_group_name
+  end
+
   module_function :get_credentials,
                   :set_proxy,
                   :set_proxy_from_env,
@@ -179,7 +214,9 @@ module Utils
                   :get_update_domains,
                   :get_resource_tags,
                   :is_new_cloud,
+                  :get_resource_group,
                   :get_nsg_rg_name,
                   :get_nsg_name,
                   :get_pack_name
+
   end
