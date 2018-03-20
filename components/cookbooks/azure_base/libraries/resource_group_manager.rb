@@ -83,6 +83,17 @@ module AzureBase
       end
     end
 
+    # This method will get the resource group
+    def get
+      begin
+        @resource_client.resource_groups.get(@rg_name)
+      rescue MsRestAzure::AzureOperationError => e
+        OOLog.fatal("Error getting resource group: #{e.body}")
+      rescue => ex
+        OOLog.fatal("Error getting resource group: #{ex.message}")
+      end
+    end
+
     # this method will return the resource group and availability set names
     # in the correct format
     # There is a hard limit of 64 for the name in azure, so we are taking

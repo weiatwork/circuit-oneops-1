@@ -221,16 +221,15 @@ describe "azure node::create" do
       expect(nic_subnet_vnet).to eq(predefined_vnet)
     end
 
-    it "has platform tags" do
-      tags_from_work_order = {
-        "platform_id" => $node['workorder']['box']['ciId']
-      }
+    it "has oneops org and assembly tags" do
+      tags_from_work_order = Utils.get_resource_tags($node)
 
       nic_svc = AzureNetwork::NetworkInterfaceCard.new(@spec_utils.get_azure_creds)
       nic_svc.ci_id = $node['workorder']['rfcCi']['ciId']
+      nic_svc.platform_ci_id = $node['workorder']['box']['ciId'] if Utils.is_new_cloud($node)
       rg_svc = AzureBase::ResourceGroupManager.new($node)
       nic_svc.rg_name = rg_svc.rg_name
-      nic_name = Utils.get_component_name('nic', nic_svc.ci_id)
+      nic_name = Utils.get_component_name('nic', nic_svc.ci_id, nic_svc.platform_ci_id)
       nic = nic_svc.get(nic_name)
 
       tags_from_work_order.each do |key, value|

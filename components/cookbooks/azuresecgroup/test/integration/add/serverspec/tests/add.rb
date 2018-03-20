@@ -30,8 +30,8 @@ describe 'Azure Security Group' do
 
       all_nsgs_in_rg = @nsgclient.list_security_groups(@rg_name)
       matching_nsgs = @nsgclient.get_matching_nsgs(all_nsgs_in_rg, Utils.get_pack_name($node))
-      @nsg_ID = @nsgclient.match_nsg_rules(matching_nsgs, sec_rules)
-      @nsg_name = @nsg_ID.split('/')[8]
+      @nsg_id = @nsgclient.match_nsg_rules(matching_nsgs, sec_rules)
+      @nsg_name = @nsg_id.split('/')[8]
 
     else
       @rg_name =  @spec_utils.get_resource_group_name
@@ -41,10 +41,9 @@ describe 'Azure Security Group' do
 
   context 'NSGs Common Resource Group', :old_cloud => true do
     before :all do
-      cloud_name = @spec_utils.get_cloud_name
-      compute_service = $node['workorder']['services']['compute'][cloud_name]['ciAttributes']
-      @rg_client = AzureResources::ResourceGroup.new(compute_service)
-      @resource_group = @rg_client.get(@rg_name)
+      @rg_manager = AzureBase::ResourceGroupManager.new($node)
+      @rg_manager.rg_name = @rg_name
+      @resource_group = @rg_manager.get
     end
     it 'should exist' do
       expect(@resource_group).not_to eq(nil)
@@ -52,7 +51,6 @@ describe 'Azure Security Group' do
 
     it 'should have the correct name of pattern: \'Location_NSGs_RG\'' do
       expect(@resource_group.name).to match(%r{#{@rg_location.upcase}_NSGs_RG})
-      expect(@resource_group.name).to eq(@rg_name)
     end
   end
 
@@ -66,7 +64,6 @@ describe 'Azure Security Group' do
     it 'should have the correct name of pattern: \'pack_name_nsg_v*\'', :old_cloud => true do
       nsg = @nsgclient.get(@rg_name, @nsg_name)
       expect(nsg.name).to match(%r{#{Utils.get_pack_name($node)}_nsg_v\d})
-      expect(nsg.name).to eq(@nsg_name)
     end
 
     it 'should have the right rule count' do

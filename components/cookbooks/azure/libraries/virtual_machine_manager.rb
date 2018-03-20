@@ -37,6 +37,7 @@ module AzureCompute
       @platform_ci_id = node['workorder']['box']['ciId']
       @compute_ci_id = node['workorder']['rfcCi']['ciId']
       @tags = {}
+      @is_new_cloud = Utils.is_new_cloud(node)
 
       # Fast image vars
       @FAST_IMAGE   = false
@@ -89,9 +90,8 @@ module AzureCompute
       @network_profile.location = @location
       @network_profile.rg_name = @resource_group_name
       @network_profile.ci_id = @compute_ci_id
-      @network_profile.tags = {
-        "platform_id" => @platform_ci_id
-      }
+      @network_profile.platform_ci_id = @platform_ci_id if @is_new_cloud
+      @network_profile.tags = @tags
       # build hash containing vm info
       # used in Fog::Compute::AzureRM::create_virtual_machine()
       vm_hash = {}
@@ -286,7 +286,7 @@ module AzureCompute
       if secgroup.nil?
         OOLog.fatal("No Secgroup found in workorder. This is required for VM creation.")
       else
-        return secgroup['ciAttributes']['net_sec_group_id']
+        secgroup['ciAttributes']['net_sec_group_id']
       end
     end
 

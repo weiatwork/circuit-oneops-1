@@ -17,7 +17,7 @@ credentials = {
 }
 
 location = compute_service[:location]
-rg_service = AzureResources::ResourceGroup.new(compute_service)
+rg_manager = AzureBase::ResourceGroupManager.new(node)
 nsg_service = AzureNetwork::NetworkSecurityGroup.new(credentials)
 
 sec_rules = []
@@ -27,13 +27,16 @@ network_security_group_name = nil
 is_new_cloud = Utils.is_new_cloud(node)
 
 if is_new_cloud
-  resource_group_name = Utils.get_nsg_rg_name(location)
-
   all_nsgs_in_rg = nil
   matched_nsgs = []
   pack_name = Utils.get_pack_name(node)
 
-  rg_exists = rg_service.check_existence(resource_group_name)
+  rg_manager.rg_name = Utils.get_nsg_rg_name(location)
+  rg_manager.location = location
+
+  resource_group_name = rg_manager.rg_name
+
+  rg_exists = rg_manager.exists?
 
   if rg_exists
     all_nsgs_in_rg = nsg_service.list_security_groups(resource_group_name)
@@ -41,7 +44,7 @@ if is_new_cloud
       matched_nsgs = nsg_service.get_matching_nsgs(all_nsgs_in_rg, pack_name)
     end
   else
-    rg_service.add(resource_group_name, location)
+    rg_manager.add
   end
 
   network_security_group_name = Utils.get_nsg_name(node)
@@ -59,9 +62,8 @@ else
   network_security_group_name = node[:name]
 
   # Get resource group name
-  rg_manager = AzureBase::ResourceGroupManager.new(node)
   resource_group_name = rg_manager.rg_name
-  
+
   sec_rules = nsg_service.get_sec_rules(node, network_security_group_name, resource_group_name)
 end
 

@@ -18,8 +18,6 @@ credentials = {
   subscription_id: compute_service[:subscription]
 }
 
-location = compute_service[:location]
-
 nic_client = AzureNetwork::NetworkInterfaceCard.new(credentials)
 
 previous_nsg_id = if node['workorder']['rfcCi']['ciBaseAttributes']['net_sec_group_id'].nil?
@@ -32,8 +30,7 @@ previous_nsg_id = if node['workorder']['rfcCi']['ciBaseAttributes']['net_sec_gro
 rg_manager = AzureBase::ResourceGroupManager.new(node)
 resource_group_name = rg_manager.rg_name
 
-platform_id = node['workorder']['box']['ciId']
-
+platform_ci_id = node['workorder']['box']['ciId']
 nic_client.rg_name = resource_group_name
 nic_client.flag = false
 
@@ -41,7 +38,8 @@ nic_list = nic_client.get_all_nics_in_rg(resource_group_name)
 
 nics = []
 nic_list.each do |nic_object|
-  nics << nic_object if nic_object.tags["platform_id"] == platform_id.to_s && nic_object.network_security_group_id == previous_nsg_id
+  nic_platform_ci_id = nic_object.name.split('-')[1]
+  nics << nic_object if nic_platform_ci_id == platform_ci_id.to_s && nic_object.network_security_group_id == previous_nsg_id
 end
 
 include_recipe 'azuresecgroup::add_net_sec_group'

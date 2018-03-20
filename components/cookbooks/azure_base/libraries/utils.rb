@@ -46,8 +46,11 @@ module Utils
     end
   end
 
-  def get_component_name(type, ciId)
+  def get_component_name(type, ciId, platform_ci_id = nil)
     ciId = ciId.to_s
+    unless platform_ci_id.nil?
+      return "nic-#{platform_ci_id}-#{ciId}" if type == "nic"
+    end
     if type == "nic"
       return "nic-" + ciId
     elsif type == "publicip"

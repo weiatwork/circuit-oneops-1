@@ -9,7 +9,7 @@ require 'ipaddr'
 module AzureNetwork
   # class to implement all functionality needed for an Azure NIC.
   class NetworkInterfaceCard
-    attr_accessor :location, :rg_name, :private_ip, :profile, :ci_id, :network_client, :publicip, :subnet_cls, :virtual_network, :nsg, :flag, :tags
+    attr_accessor :location, :rg_name, :private_ip, :profile, :ci_id, :platform_ci_id, :network_client, :publicip, :subnet_cls, :virtual_network, :nsg, :flag, :tags
     attr_reader :creds, :subscription
 
     def initialize(creds)
@@ -45,7 +45,7 @@ module AzureNetwork
     def define_network_interface(nic_ip_config)
       network_interface = Fog::Network::AzureRM::NetworkInterface.new
       network_interface.location = @location
-      network_interface.name = Utils.get_component_name('nic', @ci_id)
+      network_interface.name = Utils.get_component_name('nic', @ci_id, @platform_ci_id)
       network_interface.ip_configuration_id = nic_ip_config.id
       network_interface.ip_configuration_name = nic_ip_config.name
       network_interface.subnet_id = nic_ip_config.subnet_id
@@ -245,7 +245,7 @@ module AzureNetwork
 
     def get_all_nics_in_rg(resource_group_name)
       OOLog.info("Getting all NetworkInterfaceCards from '#{resource_group_name}' ")
-      nic_list = nil
+      nic_list = []
       begin
         nic_list = @network_client.network_interfaces(resource_group: resource_group_name)
       rescue MsRestAzure::AzureOperationError => e

@@ -40,18 +40,6 @@ module AzureResources
 
     # This method will retrieve the resource group from azure.
     def get(rg_name)
-      resource_group = nil
-      begin
-        resource_group = @client.resource_groups.get(rg_name)
-      rescue MsRestAzure::AzureOperationError => e
-        OOLog.fatal("Error getting resource group: #{e.body}")
-      rescue => ex
-        OOLog.fatal("Error getting resource group: #{ex.message}")
-      end
-      resource_group
-    end
-
-    def check_existence(rg_name)
       begin
         @client.resource_groups.check_existence(rg_name)
       rescue MsRestAzure::AzureOperationError => e
