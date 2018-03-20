@@ -43,6 +43,9 @@ customer_domain = node["customer_domain"]
 owner = node.workorder.payLoad.Assembly[0].ciAttributes["owner"] || "na"
 ostype = node.workorder.payLoad.os[0].ciAttributes["ostype"]
 
+# Fast Image matching pattern
+fast_image_pattern = "wmlabs-#{ostype.gsub(/\./, "")}"
+
 #Baremetal condition
 additional_properties = JSON.parse(node.workorder.services.compute[cloud_name][:ciAttributes][:additional_properties])
 Chef::Log.info("additional_properties: #{additional_properties.inspect}")
@@ -138,19 +141,23 @@ ruby_block 'set flavor/image/availability_zone' do
       exit_with_error "Invalid compute size provided #{node.size_id} .. Please specify different Compute size." if flavor.nil?
 
       # Fast image logic
-      node[:workorder][:payLoad].has_key?("os")          ? (os = node[:workorder][:payLoad][:os].first)              : (os = nil)
+      (node[:workorder][:payLoad].has_key?("os"))                                                 ? (os = node[:workorder][:payLoad][:os].first)              : (os = nil)
       (node[:workorder].has_key?('config') && node[:workorder][:config].has_key?('FAST_IMAGE'))   ? (fast_flag = node[:workorder][:config][:FAST_IMAGE])      : (fast_flag = 'false')
       (node[:workorder].has_key?('config') && node[:workorder][:config].has_key?('TESTING_MODE')) ? (testing_flag = node[:workorder][:config][:TESTING_MODE]) : (testing_flag = 'false')
 
-      custom_id = (!os.nil? && os[:ciAttributes].has_key?("image_id") && !os[:ciAttributes][:image_id].empty?)
-      image = get_image(conn.images, flavor, fast_flag, testing_flag, (conn.images.get node.image_id), custom_id, node[:ostype])
-      pattern = "wmlabs-#{ostype.gsub(/\./, "")}"
-      if !image.nil? && image.name =~ /#{pattern}/i
+      fast_image    = nil
+      default_image = conn.images.get node.image_id
+      image_list    = conn.images
+      custom_id     = (!os.nil? && os[:ciAttributes].has_key?("image_id") && !os[:ciAttributes][:image_id].empty?)
+      fast_image    = get_image(image_list, flavor, fast_flag, testing_flag, default_image, custom_id, node[:ostype])
+      
+      if !fast_image.nil? && fast_image.name =~ /#{fast_image_pattern}/i
         node.set[:fast_image] = true
-        node.set[:image_id] = image.id
+        node.set[:image_id]   = fast_image.id
       else
         node.set[:fast_image] = false
       end
+      image = fast_image
       #----------------
 
 
@@ -219,8 +226,9 @@ ruby_block 'set flavor/image/availability_zone' do
       node.set[:existing_server] = true
 
       # detects fast image on update
-      image = conn.images.get node.image_id
-      node.set[:fast_image] = (!image.nil? && image.name =~ /#{pattern}/i)
+      fast_image = conn.images.get node.image_id
+      node.set[:fast_image] = (!fast_image.nil? && fast_image.name =~ /#{fast_image_pattern}/i)
+      image = fast_image
     end
 
   end
