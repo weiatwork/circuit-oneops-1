@@ -116,7 +116,7 @@ module AzureCompute
 
 
       # Fast image logic
-      OOLog.debug("FAST_IMAGE_Flag: #{@FAST_IMAGE}, TESTING_MODE_FLAG: #{@TESTING_MODE}")
+      OOLog.info("FAST_IMAGE_Flag: #{@FAST_IMAGE}, TESTING_MODE_FLAG: #{@TESTING_MODE}")
       if @FAST_IMAGE =~ /true/i
         begin
 
@@ -142,7 +142,7 @@ module AzureCompute
           # ostype                    # must be in format of "type-major.minor"
           # )
           fast_image = get_image(images, nil, @FAST_IMAGE, @TESTING_MODE, nil, false, @ostype)
-
+          
         rescue MsRestAzure::AzureOperationError => e
           OOLog.debug("Error Body: #{e.body}")
           OOLog.fatal('Error getting list of images')
