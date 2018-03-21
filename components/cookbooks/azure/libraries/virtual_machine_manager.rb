@@ -116,55 +116,59 @@ module AzureCompute
 
 
       # Fast image logic
-      begin
+      OOLog.debug("FAST_IMAGE_Flag: #{@FAST_IMAGE}, TESTING_MODE_FLAG: #{@TESTING_MODE}")
+      if @FAST_IMAGE =~ /true/i
+        begin
 
-        # connection
-        token_provider = MsRestAzure::ApplicationTokenProvider.new(@creds[:tenant_id], @creds[:client_id], @creds[:client_secret])
-        credentials = MsRest::TokenCredentials.new(token_provider)
-        client = Azure::ARM::Resources::ResourceManagementClient.new(credentials)
-        client.subscription_id = @creds[:subscription_id]
+          # connection
+          token_provider         = MsRestAzure::ApplicationTokenProvider.new(@creds[:tenant_id], @creds[:client_id], @creds[:client_secret])
+          credentials            = MsRest::TokenCredentials.new(token_provider)
+          client                 = Azure::ARM::Resources::ResourceManagementClient.new(credentials)
+          client.subscription_id = @creds[:subscription_id]
 
-        # get image list
-        customimage_resource_group = @compute_service['resource_group'].sub("mrg","img")
-        images = client.resource_groups.list_resources(customimage_resource_group)
+          # get image list
+          customimage_resource_group = @compute_service['resource_group'].sub("mrg","img")
+          images                     = client.resource_groups.list_resources(customimage_resource_group)
 
-        # find fast image
-        OOLog.debug("FAST_IMAGE_Flag: #{@FAST_IMAGE}, TESTING_MODE_FLAG: #{@TESTING_MODE}")
+          # find fast image
 
-        # get_image(
-        # image list,               # array of objects: List of images. must have name for each. example: images[i].name
-        # flavor,                   # object, nil: Flavor object can be nil
-        # fast image cms switch,    # bool, string, nil: cms flag
-        # testing mode cms switch,  # bool, string, nil: cms flag
-        # default image,            # object, nil: default image option for openstack
-        # custom id?,               # bool: custom id option for openstack
-        # ostype                    # must be in format of "type-major.minor"
-        # )
-        image = get_image(images, nil, @FAST_IMAGE, @TESTING_MODE, nil, false, @ostype)
+          # get_image(
+          # image list,               # array of objects: List of images. must have name for each. example: images[i].name
+          # flavor,                   # object, nil: Flavor object can be nil
+          # fast image cms switch,    # bool, string, nil: cms flag
+          # testing mode cms switch,  # bool, string, nil: cms flag
+          # default image,            # object, nil: default image option for openstack
+          # custom id?,               # bool: custom id option for openstack
+          # ostype                    # must be in format of "type-major.minor"
+          # )
+          fast_image = get_image(images, nil, @FAST_IMAGE, @TESTING_MODE, nil, false, @ostype)
 
-        # if not fast do old way
-        if !image.nil?
-          image_ref = "/subscriptions/#{@compute_service['subscription']}/resourceGroups/#{customimage_resource_group}/providers/Microsoft.Compute/images/#{image.name}"
-          OOLog.info('image ref: ' + image_ref )
-          vm_hash[:image_ref] = image_ref
-          @fast_image_flag = true
-
-        elsif @image_id[0].eql? 'Custom'
-          image_ref = "/subscriptions/#{@compute_service['subscription']}/resourceGroups/#{customimage_resource_group}/providers/Microsoft.Compute/images/#{@image_id[2]}"
-          OOLog.info('image ref: ' + image_ref )
-          vm_hash[:image_ref] = image_ref
-          pattern = "wmlabs-#{ostype.gsub(/\./, "")}"
-          @fast_image_flag = (@image_id[2] =~ /#{pattern}/)
-        else
-          vm_hash[:publisher] = @image_id[0]
-          vm_hash[:offer] = @image_id[1]
-          vm_hash[:sku] = @image_id[2]
-          vm_hash[:version] = @image_id[3]
-          @fast_image_flag = false
+        rescue MsRestAzure::AzureOperationError => e
+          OOLog.debug("Error Body: #{e.body}")
+          OOLog.fatal('Error getting list of images')
         end
-      rescue MsRestAzure::AzureOperationError => e
-        OOLog.debug("Error Body: #{e.body}")
-        OOLog.fatal('Error getting list of images')
+      end
+
+      # if not fast do old way
+      if !fast_image.nil?
+        image_ref           = "/subscriptions/#{@compute_service['subscription']}/resourceGroups/#{customimage_resource_group}/providers/Microsoft.Compute/images/#{fast_image.name}"
+        vm_hash[:image_ref] = image_ref
+        @fast_image_flag    = true
+
+        OOLog.info('image ref: ' + image_ref )
+      elsif @image_id[0].eql? 'Custom'
+        image_ref           = "/subscriptions/#{@compute_service['subscription']}/resourceGroups/#{customimage_resource_group}/providers/Microsoft.Compute/images/#{@image_id[2]}"
+        vm_hash[:image_ref] = image_ref
+        pattern             = "wmlabs-#{ostype.gsub(/\./, "")}"
+        @fast_image_flag    = (@image_id[2] =~ /#{pattern}/)
+
+        OOLog.info('image ref: ' + image_ref )
+      else
+        vm_hash[:publisher] = @image_id[0]
+        vm_hash[:offer]     = @image_id[1]
+        vm_hash[:sku]       = @image_id[2]
+        vm_hash[:version]   = @image_id[3]
+        @fast_image_flag    = false
       end
       # -------------
 
