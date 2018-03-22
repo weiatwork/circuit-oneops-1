@@ -13,10 +13,14 @@
 # limitations under the License.
 
 # Cookbook Name:: fqdn
-# Recipe:: remove_old_aliases
+# Recipe:: cleanup
 #
-# builds a list of dns entries based on entrypoint, aliases, zone and platform
+# clean up dns record for entries that no longer
+# valid.
 # no ManagedVia - recipes will run on the gw
+
+extend Fqdn::Base
+Chef::Resource::RubyBlock.send(:include, Fqdn::Base)
 
 def get_record_type (dns_values)
   record_type = "cname"
