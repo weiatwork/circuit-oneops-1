@@ -57,7 +57,9 @@ end
 mcrouter_stats = ['num_servers', 'num_servers_up', 'num_servers_down',
             'num_suspect_servers', 'cmd_cas', 'cmd_delete',
             'cmd_get', 'cmd_gets', 'cmd_set',
-            'duration_us', 'asynclog_requests', 'num_clients']
+            'duration_us', 'asynclog_requests', 'num_clients',
+            'destination_pending_reqs', 'destination_inflight_reqs',
+            'proxy_reqs_processing', 'proxy_reqs_waiting']
 # The list of stats for which we want delta values (note--these don't have to match the stats list)
 mcrouter_delta_stats = []
 
