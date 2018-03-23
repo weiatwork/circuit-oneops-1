@@ -159,8 +159,8 @@ module AzureCompute
       elsif @image_id[0].eql? 'Custom'
         image_ref           = "/subscriptions/#{@compute_service['subscription']}/resourceGroups/#{customimage_resource_group}/providers/Microsoft.Compute/images/#{@image_id[2]}"
         vm_hash[:image_ref] = image_ref
-        pattern             = "wmlabs-#{ostype.gsub(/\./, "")}"
-        @fast_image_flag    = (@image_id[2] =~ /#{pattern}/)
+        pattern             = /[a-zA-Z]{1,20}-#{ostype.gsub(/\./, "")}-\d{4}-v\d{8}-\d{4}/i
+        @fast_image_flag    = (@image_id[2] =~ pattern)
 
         OOLog.info('image ref: ' + image_ref )
       else
