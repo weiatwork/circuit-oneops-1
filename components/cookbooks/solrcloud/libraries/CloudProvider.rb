@@ -41,8 +41,8 @@ class CloudProvider
         end
         @zone_name = "#{@fault_domain}___#{@update_domain}"
         Chef::Log.info("@zone_name : #{@zone_name}")
-        # in case of azure, key -> zone i.e. fault_domain_update_domain. ex 1_1
-        @zone_to_compute_ip_map = get_compute_zone_to_compute_ip_map(node)
+        # in case of azure, key -> fault_domain
+        @zone_to_compute_ip_map = get_fault_domain_to_compute_ip_map(node)
       else #/vagrant/
         # in case of other (openstack), key -> cloud_name ex. prod-cdc5
         @zone_to_compute_ip_map = get_cloud_name_to_compute_ip_map(node)
@@ -90,36 +90,68 @@ class CloudProvider
     return cloud_name_to_ip_map
   end
 
-  # get domain and computes map information from the payload
-  # where key-> <fauld_domain>_<update_domain> & value-> list of ips
-  # For ex. {"1_1":[ip1, ip2],"1_2":[ip3, ip4]}
-  def get_compute_zone_to_compute_ip_map(node)
-    #define map with key as <fault_domain>_<update_domain>. ex=>1_1, 1_2 and value=>[ip1,ip2]
-    zone_to_ips_map = Hash.new
+  # get fault domain and computes map information from the payload
+  #[
+  #  {
+  #    "ciAttributes": {
+  #      "private_ip": "ip1",
+  #      "zone": {
+  #        "fault_domain": 0,
+  #        "update_domain": 1
+  #      }
+  #    }
+  #  },
+  #  {
+  #    "ciAttributes": {
+  #      "private_ip": "ip2",
+  #      "zone": {
+  #        "fault_domain": 1,
+  #        "update_domain": 2
+  #      }
+  #    }
+  #  },
+  #  {
+  #    "ciAttributes": {
+  #      "private_ip": "ip3",
+  #      "zone": {
+  #        "fault_domain": 0,
+  #        "update_domain": 3
+  #      }
+  #    }
+  #  },
+  #  {
+  #    "ciAttributes": {
+  #      "private_ip": "ip4",
+  #      "zone": {
+  #        "fault_domain": 1,
+  #        "update_domain": 4
+  #      }
+  #    }
+  #  }
+  #]
+  # This method returns the result as {0=>["ip1","ip3"],1=>["ip2","ip4"]}
+  def get_fault_domain_to_compute_ip_map(node)
+    
+    fault_domain_to_ip_map = Hash.new
     computes = get_computes_payload(node)
 
     computes.each do |compute|
-
-      # each compute's ciAttribute must have zone info like "zone": "{\"fault_domain\":0,\"update_domain\":0}"
+      next if compute[:ciAttributes][:private_ip].nil?
       if zone_info_missing?(compute)
         raise "Zone attrribute with fault_domain/update_domain information is required."
       end
-
-      # get <fault_domain>_<update_domain> e. 0_1
-      zone_info = get_zone_info(compute)
-
-      # add zone_info as key if doesn't exists
-      ip = compute[:ciAttributes][:private_ip]
-      if !zone_to_ips_map.has_key?(zone_info)
-        zone_to_ips_map[zone_info] = []
+      zone  = JSON.parse(compute['ciAttributes']['zone'])
+      fault_domain = zone['fault_domain']
+      if !fault_domain_to_ip_map.has_key?fault_domain
+        fault_domain_to_ip_map[fault_domain] = []
       end
-      # add ip to zone_info
-      zone_to_ips_map[zone_info].push ip
+      fault_domain_to_ip_map[fault_domain].push compute[:ciAttributes][:private_ip]
     end
-    Chef::Log.info("zone_to_ips_map = #{zone_to_ips_map.to_json}")
-    return zone_to_ips_map
+    
+    Chef::Log.info("fault_domain_to_ip_map = #{fault_domain_to_ip_map.to_json}")
+    return fault_domain_to_ip_map
   end
-
+  
   def get_zone_to_compute_ip_map()
     return @zone_to_compute_ip_map
   end
