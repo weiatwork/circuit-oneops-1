@@ -12,10 +12,8 @@ class CloudProvider
     @cloud_name = node[:workorder][:cloud][:ciName]
     Chef::Log.info("@cloud_name : #{@cloud_name}")
     
-    #extract cloud provider 'Openstack/Azure' from compute service string {"prod-cdc5":{"ciClassName":"cloud.service.Openstack"}}
-    #Chef::Log.info("node[:workorder][:services][:compute] = #{node[:workorder][:services][:compute].to_json}")
-    @cloud_provider = node[:workorder][:services][:compute][@cloud_name][:ciClassName].gsub("cloud.service.","").downcase.split(".").last
-    Chef::Log.info("Cloud Provider: #{@cloud_provider}")
+    @cloud_provider = self.class.get_cloud_provider_name(node)
+    Chef::Log.info("Initializing Cloud Provider : #{@cloud_provider}")
     
     # Replica distribution varies based on cloud provider. For ex. with 'Openstack' cloud provider, we distribute replicas across clouds and witn 'Azure', 
     # replicas are distributes across domains. If no cloud provider in payload, then error out. 
@@ -151,12 +149,22 @@ class CloudProvider
     return node.workorder.payLoad.has_key?("RequiresComputes") ? node.workorder.payLoad.RequiresComputes : node.workorder.payLoad.computes
   end
   
+  # This method may be called from solrcloud or solr-collection recipe and both resources in pack has cloud payload with
+  # different names. for ex. solrcloud's cloud payload has name 'CloudPayload' & solr-collection's cloud payload is 'Clouds'
+  # hence it should fetch the payload with name 'Clouds' if it exists otherwise 'CloudPayload'
   def get_clouds_payload(node)
-    return node.workorder.payLoad.has_key?("Clouds") ? node.workorder.payLoad.Clouds : nil
+    return node.workorder.payLoad.has_key?("Clouds") ? node.workorder.payLoad.Clouds : (node.workorder.payLoad.has_key?("CloudPayload") ? node.workorder.payLoad.CloudPayload : nil)
   end
   
+  #extract cloud provider 'Openstack/Azure' from compute service string {"prod-cdc5":{"ciClassName":"cloud.service.Openstack"}}
   def self.get_cloud_provider_name(node)
+    #Chef::Log.info("node[:workorder][:services][:compute] = #{node[:workorder][:services][:compute].to_json}")
     cloud_name = node[:workorder][:cloud][:ciName]
+    if !node[:workorder][:services].has_key?("compute")
+      error = "compute service is missing in the cloud services list, please make sure to do pull pack and design pull so that compute service becomes available"
+      puts "***FAULT:FATAL=#{error}"
+      raise error
+    end
     cloud_provider_name = node[:workorder][:services][:compute][cloud_name][:ciClassName].gsub("cloud.service.","").downcase.split(".").last
     Chef::Log.info("Cloud Provider: #{cloud_provider_name}")
     return cloud_provider_name
