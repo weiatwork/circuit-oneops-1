@@ -178,6 +178,10 @@ EXIT_SUCCESS=0
 EXIT_CRITICAL=2
 IS_FORMATTED=0
 
+swapfile=$(cat /proc/swaps | grep #{initial_mountpoint} | awk '{print $1}')
+if [ $swapfile ]; then
+  swapoff $swapfile
+fi
 umount #{initial_mountpoint}
 pvcreate -f #{ephemeral_device}
 vgcreate #{platform_name}-eph #{ephemeral_device}
