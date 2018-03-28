@@ -1,5 +1,5 @@
-name             "Medusa-kafka-broker"
-description      "Cloud service for Kafka Broker where Medusa telegraf metrics will be sent to"
+name             "Medusa-metrics-sink"
+description      "Cloud service for the sink (URL to the Kafka Broker)  where metrics for medusa (from telegraf agent) will be sent to"
 version          "1.0"
 maintainer       "OneOps"
 maintainer_email "support@oneops.com"
