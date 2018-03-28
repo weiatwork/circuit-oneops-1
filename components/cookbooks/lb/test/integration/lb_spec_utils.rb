@@ -34,9 +34,19 @@ class LbSpecUtils
     end
 
     cloud_dns_id = cloud_service['ciAttributes']['cloud_dns_id']
-    env_name = @node['workorder']['payLoad']['Environment'][0]['ciName']
-    asmb_name = @node['workorder']['payLoad']['Assembly'][0]['ciName']
-    org_name = @node['workorder']['payLoad']['Organization'][0]['ciName']
+
+    if @node['workorder'].has_key?('actionName') && @node['workorder']['actionName'] == "status"
+      metadata = @node['workorder']['payLoad']['DependsOn'][0]['ciAttributes']['metadata']
+      metadata_obj= JSON.parse(metadata)
+      org_name = metadata_obj['organization']
+      asmb_name = metadata_obj['assembly']
+      env_name = metadata_obj['environment']
+    else
+      env_name = @node['workorder']['payLoad']['Environment'][0]['ciName']
+      asmb_name = @node['workorder']['payLoad']['Assembly'][0]['ciName']
+      org_name = @node['workorder']['payLoad']['Organization'][0]['ciName']
+    end
+
     dns_zone = dns_service['ciAttributes']['zone']
 
     dc_dns_zone = ""
