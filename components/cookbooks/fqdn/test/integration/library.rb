@@ -166,4 +166,80 @@ class Library
     return false
   end
 
+  def get_record_type (dns_name, dns_values)
+    record_type = "cname"
+    ips = dns_values.grep(/\d+\.\d+\.\d+\.\d+/)
+    dns_values.each do |dns_value|
+      if dns_value =~ Resolv::IPv6::Regex
+        record_type = "aaaa"
+      end
+    end
+
+
+    if ips.size > 0
+      record_type = "a"
+    end
+    if dns_name =~ /^\d+\.\d+\.\d+\.\d+$/ || dns_name =~ Resolv::IPv6::Regex
+      record_type = "ptr"
+    end
+    if dns_name =~ /^txt-/
+      record_type = "txt"
+    end
+    return record_type
+  end
+
+  def check_record (dns_name, dns_value)
+
+    delete_type = get_record_type(dns_name,[dns_value])
+
+    api_version = "v1.0"
+
+    record = { :name => dns_name.downcase }
+
+    conn = get_infoblox_connection
+
+    res =  conn.request(:method=>:get,:path=>"/wapi/v1.0/network")
+    if(res.status != 200)
+      raise res.body
+    else
+      puts "connection successful"
+    end
+
+    records = JSON.parse(conn.request(:method=>:get,
+                                                    :path=>"/wapi/#{api_version}/record:#{delete_type}", :body => JSON.dump(record) ).body)
+
+    if records.size == 0
+      puts "entry is already deleted"
+      return true
+    else
+      records.each do |r|
+        ref = r["_ref"]
+        resp = conn.request(:method => :delete, :path => "/wapi/#{api_version}/#{ref}")
+        puts "status: #{resp.status}"
+        if (resp.status.to_i != 200)
+          puts "response: #{resp.inspect}"
+        else
+          puts "response: #{resp.inspect}"
+        end
+      end
+      puts "entry is still there"
+      return false
+    end
+  end
+
+  def get_infoblox_connection
+    service = get_dns_service
+
+    host = service['host']
+    username = service['username']
+    password = service['password']
+    domain_name = service['zone']
+
+    encoded = Base64.encode64("#{username}:#{password}").gsub("\n","")
+    conn = Excon.new('https://'+host,
+                     :headers => {'Authorization' => "Basic #{encoded}"}, :ssl_verify_peer => false)
+
+    return conn
+  end
+
 end
