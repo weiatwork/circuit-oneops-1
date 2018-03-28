@@ -3,7 +3,100 @@
 require '/opt/memcached/lib/memcache_stats'
 require '/opt/meghacache/lib/graphite_writer'
 require '/opt/meghacache/lib/telegraf_writer'
+require 'socket'
 require 'json'
+
+#Read McRouter Config and parse json to data hash
+def mcrouter_config_data_hash(mcrouter_config)
+    file = File.read(mcrouter_config)
+    data_hash = JSON.parse(file)
+    data_hash
+end
+
+def getServerIps(mc_config_data_hash, current_host_ip)
+    server_ips =[]
+    mc_config_data_hash['pools'].select {|k, v| k.start_with?('cloud-')}.each_pair {|cloud_key, servers_hash|
+        servers_hash.each {|key, value| value.each {|ip|
+            next if  current_host_ip.include?(ip)
+            server_ips.push(ip.split(":").first)
+        }}
+    }
+    server_ips
+end
+
+def write_to_telegraph(logfiles_path, stat_hash, telegraph_name)
+    begin
+        tw = TelegrafWriter.new(telegraph_name, logfiles_path)
+        tw.write_influx(stat_hash)
+    rescue => e
+        puts e.message
+    end
+end
+
+def write_to_graphite(graphite_prefix, graphite_servers, logfiles_path, oo_cloud, oo_env, stat_hash, environment_name)
+    begin
+        gw = GraphiteWriter.new(graphite_prefix, graphite_servers, oo_env, oo_cloud, logfiles_path, environment_name)
+        gw.open_tcp_sockets
+        gw.write_to_graphite(stat_hash)
+        gw.close_tcp_sockets
+    rescue => e
+        puts e.message
+    end
+end
+
+def time_socket_open_close(ip, port, seconds=2.5)
+    begin
+        beginning_time = Time.now
+        Timeout::timeout(seconds) do
+            begin
+                TCPSocket.new(ip, port).close
+                diff_millis = (Time.now - beginning_time)*1000;
+                puts ("Check ip:#{ip} port:#{port}. Time: #{diff_millis} milliseconds")
+                return diff_millis
+            rescue Errno::ECONNREFUSED, Errno::EHOSTUNREACH => e
+                diff_millis = (Time.now - beginning_time)*1000;
+                puts ("Check ip:#{ip} port:#{port} closed  #{diff_millis} milliseconds #{e.message}")
+                return diff_millis
+            end
+        end
+    rescue Timeout::Error
+        diff_millis = (Time.now - beginning_time)*1000;
+        puts ("Check ip:#{ip} port:#{port} Time elapsed #{diff_millis} milliseconds")
+        return diff_millis
+    end
+end
+
+def write_pings(current_host_ip, graphite_prefix, graphite_servers, logfiles_path, oo_cloud, oo_env, server_ips)
+    begin
+        if server_ips != nil
+            server_ips.each do |ip|
+                next if ip.nil? || ip.empty? || current_host_ip.include?(ip)
+                ping_id = (current_host_ip + ".ping." + ip).gsub!('.', '-').gsub("-ping-", ".ping.")
+                ping_ms = time_socket_open_close(ip, '22')
+
+                begin
+                    stat_hash = {"stats" => Hash.new, "delta" => Hash.new}
+                    stat_hash['stats'][ping_id] = ping_ms
+                    write_to_graphite(graphite_prefix, graphite_servers, logfiles_path, oo_cloud, oo_env, stat_hash, 'meghacache_ping_')
+                rescue => e
+                    puts "Fail to send data to Graphite." + e.message
+                end
+                begin
+                    level_name = 'meghacache_ping,level2=' + ip
+                    stat_hash = {"stats" => Hash.new, "delta" => Hash.new}
+                    stat_hash['stats']['ping_ms'] = ping_ms
+                    write_to_telegraph(logfiles_path, stat_hash, level_name)
+                rescue => e
+                    puts "Fail to send data to Telegraph." + e.message
+                end
+            end
+        else
+            puts 'No nodes found with thisNode == true'
+        end
+    rescue Exception => e
+        puts "ping_stats:exception: #{e}"
+    end
+end
 
 # OneOps variables
 oo_org = '<%= @oo_org %>'.gsub(/\./, '-')
@@ -17,11 +110,17 @@ logfiles_path = '<%= @graphite_logfiles_path %>'
 graphite_servers = JSON.parse('<%= @graphite_servers %>')
 current_cloud_id = '<%= @current_cloud_id %>'
 
+#Get current_host_ip
+current_host_ip = `hostname -i`.strip
+
+mc_config_data_hash = mcrouter_config_data_hash('/etc/mcrouter/mcrouter.json')
+#Get computes from config mcrouter pool
+server_ips = getServerIps(mc_config_data_hash, current_host_ip)
+
 # The list of "raw" stats we want
 memcached_stats = ['bytes', 'bytes_read', 'bytes_written', 'curr_connections', 'curr_items', 'limit_maxbytes']
 # The list of stats for which we want delta values (note--these don't have to match the stats list)
 memcached_delta_stats = ['cmd_get', 'cmd_set', 'evictions', 'get_hits', 'get_misses', 'bytes_read']
-
 
 ms = MemcacheStats.new('localhost', '<%= @memcached_port %>')
 ms.pstore_file = "graphite_memcached.pstore"
@@ -37,21 +136,9 @@ rescue MemcacheConnectionError
     stat_hash['stats']['proc_status'] = '0'
 end
 
-begin
-    tw = TelegrafWriter.new('memcached', logfiles_path)
-    tw.write_influx(stat_hash)
-rescue => e
-    puts e.message
-end
-
-begin
-    gw = GraphiteWriter.new(graphite_prefix, graphite_servers, oo_env, oo_cloud, logfiles_path, 'memcached_')
-    gw.open_tcp_sockets
-    gw.write_to_graphite(stat_hash)
-    gw.close_tcp_sockets
-rescue => e
-    puts e.message
-end
+write_to_telegraph(logfiles_path, stat_hash, 'memcached')
+write_to_graphite(graphite_prefix, graphite_servers, logfiles_path, oo_cloud, oo_env, stat_hash, 'memcached_')
+write_pings(current_host_ip, graphite_prefix, graphite_servers, logfiles_path, oo_cloud, oo_env, server_ips)
 
 # The list of "raw" stats we want
 mcrouter_stats = ['num_servers', 'num_servers_up', 'num_servers_down',
@@ -77,24 +164,9 @@ rescue MemcacheConnectionError
     stat_hash['stats']['proc_status'] = '0'
 end
 
-file = File.read('/etc/mcrouter/mcrouter.json')
-data_hash = JSON.parse(file)
-data_hash['pools'].select{ |k,v| k.start_with?('cloud-' + current_cloud_id)}.each_pair { |cloud_key, servers_hash|
+mc_config_data_hash['pools'].select{ |k,v| k.start_with?('cloud-' + current_cloud_id)}.each_pair { |cloud_key, servers_hash|
   servers_hash.each {|key, value| stat_hash['stats']['configured_pool_size'] = value.length }
 }
 
-begin
-    tw = TelegrafWriter.new('mcrouter', logfiles_path)
-    tw.write_influx(stat_hash)
-rescue => e
-    puts e.message
-end
-
-begin
-    gw = GraphiteWriter.new(graphite_prefix, graphite_servers, oo_env, oo_cloud, logfiles_path, 'mcrouter_')
-    gw.open_tcp_sockets
-    gw.write_to_graphite(stat_hash)
-    gw.close_tcp_sockets
-rescue => e
-    puts e.message
-end
+write_to_telegraph(logfiles_path, stat_hash, 'mcrouter')
+write_to_graphite(graphite_prefix, graphite_servers, logfiles_path, oo_cloud, oo_env, stat_hash, 'mcrouter_')
