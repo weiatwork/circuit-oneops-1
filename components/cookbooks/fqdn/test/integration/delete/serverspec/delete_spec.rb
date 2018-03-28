@@ -127,31 +127,12 @@ end
 entries.push({:name => dns_name, :values => values })
 deletable_entries = [{:name => dns_name, :values => values }]
 
-values.each do |ip|
-  context "FQDN mapping to IP" do
-    it "should exist" do
-      command_execute = "host "+dns_name
-      result = `#{command_execute}`
-      expect(result).to include("NXDOMAIN")
-    end
-  end
-end
-
 aliases.each do |a|
   next if a.empty?
   next if a == $node['workorder']['box']['ciName']
   alias_name = a + customer_domain
   entries.push({:name => alias_name, :values => dns_name })
   deletable_entries.push({:name => alias_name, :values => dns_name })
-
-  context "aliases" do
-    it "should exist" do
-      command_execute = "host "+alias_name
-      result = `#{command_execute}`
-      expect(result).to include("NXDOMAIN")
-    end
-  end
-
 end
 
 if ad_ci
@@ -177,15 +158,6 @@ if $node['workorder']['rfcCi']['ciAttributes'].has_key?("ptr_enabled") &&
     ptr = {:name => ip, :values => ptr_value.downcase}
     entries.push(ptr)
     deletable_entries.push(ptr)
-
-    context "PTR entry" do
-      it "should exist" do
-        command_execute = "host "+ip
-        result = `#{command_execute}`
-        ptr_val = ptr_value.downcase
-        expect(result).to include("NXDOMAIN")
-      end
-    end
   end
 end
 
@@ -213,17 +185,6 @@ end
 if $node['workorder']['cloud']['ciAttributes']['priority'] != "1"
   if !$node.has_key?("gslb_domain")
     entries.push({:name => primary_platform_dns_name, :values => [] })
-
-    value_array.each do |val|
-      context "GSLB on secondory cloud" do
-        it "should exist" do
-          command_execute = "host "+primary_platform_dns_name
-          result = `#{command_execute}`
-          expect(result).not_to include(val)
-        end
-      end
-    end
-
   end
 else
   if $node['dns_action'] != "delete" ||
@@ -232,19 +193,7 @@ else
 
     entries.push({:name => primary_platform_dns_name, :values => value_array })
     deletable_entries.push({:name => primary_platform_dns_name, :values => value_array })
-
-    value_array.each do |val|
-      context "GSLB on primary cloud" do
-        it "should exist" do
-          command_execute = "host "+primary_platform_dns_name
-          result = `#{command_execute}`
-          expect(result).to include("NXDOMAIN")
-        end
-      end
-    end
-
   end
-
 
   aliases.each do |a|
     next if a.empty?
@@ -261,14 +210,6 @@ else
 
     entries.push({:name => alias_platform_dns_name, :values => primary_platform_dns_name })
     deletable_entries.push({:name => alias_platform_dns_name, :values => primary_platform_dns_name })
-
-    context "alias_platform_dns_name mapping" do
-      it "should exist" do
-        command_execute = "host "+alias_platform_dns_name
-        result = `#{command_execute}`
-        expect(result).to include("NXDOMAIN")
-      end
-    end
   end
 
   if !full_aliases.nil?
@@ -282,15 +223,6 @@ else
 
       entries.push({:name => full, :values => full_value, :is_hijackable => $node['workorder']['rfcCi']['ciAttributes']['hijackable_full_aliases'] })
       deletable_entries.push({:name => full, :values => full_value})
-
-      context "is_hijackable" do
-        it "should exist" do
-          command_execute = "host "+full
-          result = `#{command_execute}`
-          expect(result).to include("NXDOMAIN")
-        end
-      end
-
     end
   end
 
@@ -349,6 +281,17 @@ if env.has_key?("global_dns") && env["global_dns"] == "true" && depends_on_lb &&
     it "should not exist" do
       status = resp_obj["message"]
       expect(status).to eq("The GSLB service does not exist")
+    end
+  end
+end
+
+entries.each do |entry|
+  dns_name = entry[:name]
+  dns_value = entry[:values]
+  flag = lib.check_record(dns_name, dns_value)
+  context "FQDN mapping" do
+    it "should be deleted" do
+      expect(flag).to eq(true)
     end
   end
 end
