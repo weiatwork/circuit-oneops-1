@@ -114,6 +114,24 @@ attribute 'zone',
               :order => 10
           }
 
+attribute 'instance_osdisk_id',
+          :description => "Instance OS  Disk Id",
+          :grouping => 'bom',
+          :format => {
+              :help => 'Unique Id of the OS Disk Id attached to Compute within the cloud provider',
+              :category => '1.Identity',
+              :order => 11
+          }
+
+attribute 'instance_nic_id',
+          :description => "Instance NIC Id",
+          :grouping => 'bom',
+          :format => {
+              :help => 'Unique Id of the NIC Id attached to Compute within the cloud provider',
+              :category => '1.Identity',
+              :order => 12
+          }
+
 # state
 
 attribute 'instance_state',
