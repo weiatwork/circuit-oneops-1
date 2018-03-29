@@ -197,7 +197,9 @@ resource "solrcloud",
         'up' => metric(:unit => '%', :description => 'Percent Up')
       },
       :thresholds => {
-        'SolrZKConnectionDown' => threshold('1m', 'avg', 'up', trigger('<=', 75, 2, 1), reset('>', 80, 2, 1))
+        # Trigger alarm if value goes below 75 for 8 times in a 10 minute window
+        # Reset alarm if value goes above 75 for 1 time in a 2 minute window
+        'SolrZKConnectionDown' => threshold('1m', 'avg', 'up', trigger('<=', 75, 10, 8), reset('>', 75, 2, 1))
       }
     },
     'MemoryStats' =>  {
@@ -656,7 +658,7 @@ resource "solr-collection",
         'pctgShardsUp' => metric( :unit => '%', :description => 'Percentage of Shards UP', :dstype => 'GAUGE')
       },
       :thresholds => {
-        'pctgShardsWithMinActiveReplicas' => threshold('1m','avg','pctgShardsWithMinActiveReplicas',trigger('<',100,2,1),reset('=',100,2,1))
+        'pctgShardsWithMinActiveReplicas' => threshold('1m','avg','pctgShardsWithMinActiveReplicas',trigger('<',100,5,4),reset('=',100,2,1))
       }
     },
     'ReplicaDistributionStatus' =>  {
