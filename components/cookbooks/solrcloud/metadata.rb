@@ -283,6 +283,17 @@ attribute 'solr_custom_component_version',
               :order => 33
           }
 
+# Solr Monitor Specific Attributes
+attribute 'solr_monitor_version',
+          :description => 'Solr Monitors Version',
+          :default => "1.0.1-SNAPSHOT",
+          :required => 'required',
+          :format => {
+              :help => 'Enter Version number example: 0.0.1, 0.0.1-SNAPSHOT',
+              :category => '2.SolrCloud Monitoring',
+              :order => 34
+          }
+
 # Attribute visible only in the Operations phase because of grouping-type bom
 # Value for the attribute is assigned by us in the recipes
 # This attribute helps to see the IP address in the Operations phase.
