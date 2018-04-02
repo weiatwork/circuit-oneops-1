@@ -57,7 +57,7 @@ end
 #           string hostname
 #
 def compare_dhclient_conf(data)
-  rgx = /supersede domain-search (\S+)	;
+  rgx = /supersede domain-search (\S+);
 send host-name "(\S+)";/
   match_regex(rgx, data)
 end
