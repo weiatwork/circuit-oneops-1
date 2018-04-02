@@ -21,7 +21,7 @@ attribute 'url',
   :required => "required",
   :default => '',
   :format => { 
-    :help => 'Kafka Broker URL (for e.g: kafka.kafka-cluster-telemetry.prod1-ndc.walmart.com:9092)',
+    :help => 'Kafka Broker URL (for e.g: metrics-kafka-cluster.abc.com:9092)',
     :category => '1.Repository',
     :order => 1
   }
