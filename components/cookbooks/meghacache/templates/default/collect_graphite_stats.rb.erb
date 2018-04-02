@@ -3,6 +3,7 @@
 require '/opt/memcached/lib/memcache_stats'
 require '/opt/meghacache/lib/graphite_writer'
 require '/opt/meghacache/lib/telegraf_writer'
+require '/opt/meghacache/lib/network_stats'
 require 'socket'
 require 'json'
 require 'timeout'
@@ -103,7 +104,7 @@ def write_pings(current_host_ip, graphite_prefix, graphite_servers, logfiles_pat
         else
             puts 'No nodes found with thisNode == true'
         end
-    rescue Exception => e
+    rescue => e
         puts "ping_stats:exception: #{e}"
     end
 end
@@ -126,7 +127,7 @@ def run_memcached_command( host, port, command, collect_output_regex, stop_on_ma
       end
     end
   end # timeout-do
-  rescue Exception => e
+  rescue => e
     puts "run_tcp_command(): " + e.to_s
   end
   sock.close() if sock
@@ -221,3 +222,13 @@ mcrouterConfig.parsedConfig['pools'].select{ |k,v| k.start_with?('cloud-' + curr
 
 write_to_telegraph(logfiles_path, stat_hash, 'mcrouter')
 write_to_graphite(graphite_prefix, graphite_servers, logfiles_path, oo_cloud, oo_env, stat_hash, 'mcrouter_')
+
+network_delta_stats = ['rx_bytes', 'tx_bytes', 'rx_packets', 'tx_packets', 'rx_dropped', 'tx_dropped', 'rx_errors', 'tx_errors']
+
+begin
+    stat_hash = NetworkStats.new().get_stats(network_delta_stats)
+    write_to_telegraph(logfiles_path, stat_hash, 'meghacache_net')
+    write_to_graphite(graphite_prefix, graphite_servers, logfiles_path, oo_cloud, oo_env, stat_hash, 'meghacache_net_')
+rescue => e
+    puts "network_stats:exception: #{e}"
+end
