@@ -152,7 +152,7 @@ module Utils
 
   def is_new_cloud(node)
     cloud_name = node['workorder']['cloud']['ciName']
-    cloud_name =~ /^azure-.*-wm-.*$/ ? true : false
+    cloud_name =~ /^(dev|prod|stg)-az-(\S*)-\d*$/ ? true : false
   end
 
   def get_nsg_rg_name(location)
