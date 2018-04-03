@@ -327,31 +327,21 @@ if (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? 
 
   Chef::Log.info( "solr_monitor_url - #{solr_monitor_url} and solr_monitor_version -  #{solr_monitor_version}")
 
-  if (solr_monitor_version.to_s =~ /SNAPSHOT/)
-    solr_monitor_version = solr_monitor_version.gsub('-SNAPSHOT', '')
-  end
+  # Getting rid of SNAPSHOT string from the version name as we will need to manage release and snapshot releases in the same way
+  # if (solr_monitor_version.to_s =~ /SNAPSHOT/)
+  #   solr_monitor_version = solr_monitor_version.gsub('-SNAPSHOT', '')
+  # end
 
   solr_monitor_jar = "solr-monitor-#{solr_monitor_version}.jar"
   solr_monitor_dir = "/opt"
   solr_monitor_custom_dir = "solr"
-
-  ["#{solr_monitor_dir}"].each { |dir|
-    Chef::Log.info("creating #{dir}")
-    directory dir do
-      owner node['solr']['user']
-      group node['solr']['user']
-      mode "0755"
-      recursive true
-      action :create
-    end
-  }
 
   # Fetch the solr monitor artifact and copy it to /opt
   remote_file "#{solr_monitor_dir}/#{solr_monitor_jar}" do
     user 'app'
     group 'app'
     source solr_monitor_url
-    only_if { ::File.directory?("#{solr_monitor_dir}") }
+    not_if { ::File.exists?("#{solr_monitor_dir}/#{solr_monitor_jar}") }
   end
 
 

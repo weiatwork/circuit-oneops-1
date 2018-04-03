@@ -285,7 +285,7 @@ attribute 'solr_custom_component_version',
 
 # Solr Monitor Specific Attributes
 attribute 'solr_monitor_version',
-          :description => 'Solr Monitors Version',
+          :description => 'Version of jar file with Solr Metrics',
           :default => "1.0.1-SNAPSHOT",
           :required => 'required',
           :format => {
