@@ -51,6 +51,13 @@ cookbook_file "/opt/meghacache/lib/telegraf_writer.rb" do
     mode '0755'
 end
 
+cookbook_file "/opt/meghacache/lib/network_stats.rb" do
+    source "network_stats.rb"
+    owner 'root'
+    group 'root'
+    mode '0755'
+end
+
 file '/opt/meghacache/log/telegraf/stats.log' do
   content "# Logfile created on #{Time.now.to_s} by #{__FILE__}\n"
   owner 'root'
