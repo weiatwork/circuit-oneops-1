@@ -202,11 +202,10 @@ end
 
 # Validatiion of Zookeeper "admin" user password for SASL
 if (node['kafka']['is_zk_secured'] == "true" && node['kafka']['zk_sasl_admin_password'].strip.empty?)
-  puts "***FAULT:FATAL=The password for SASL 'admin' user in External Zookeeper section can't be empty."
-  exception = Exception.new("no backtrace")
-  exception.set_backtrace("")
-  raise exception
-  exit 1
+  nozksasladminpass = "The password for SASL 'admin' user in External Zookeeper section can't be empty."
+  Chef::Log.error("FATAL: #{nozksasladminpass}")
+  puts "***FAULT:FATAL= #{nozksasladminpass}"
+  Chef::Application.fatal!(nozksasladminpass)
 end
 
 

@@ -9,11 +9,10 @@ end
 
 # Validation for Zookeeper "admin" user password
 if (node['zookeeper']['enable_zk_sasl_plain'] == "true" && node['zookeeper']['sasl_zk_admin_pwd'].strip.empty?)
-  puts "***FAULT:FATAL=The password for 'admin' user can't be empty in SASL/Plain Configuration section"
-  exception = Exception.new("no backtrace")
-  exception.set_backtrace("")
-  raise exception
-  exit 1
+  nozksasladminpass = "The password for 'admin' user can't be empty in SASL/Plain Configuration section."
+  Chef::Log.error("FATAL: #{nozksasladminpass}")
+  puts "***FAULT:FATAL= #{nozksasladminpass}"
+  Chef::Application.fatal!(nozksasladminpass)
 end
 
 
