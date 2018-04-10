@@ -64,7 +64,7 @@ class CloudProvider
     Chef::Log.info "cloud_id_to_name_map = #{cloud_id_to_name_map.to_json}"
 
     cloud_name_to_ip_map = Hash.new()
-    computes = get_computes_payload(node)
+    computes = self.class.get_computes_payload(node)
     computes.each do |compute|
       
       # compute[:ciName] == nil meaning compute has not provisioned yet
@@ -133,7 +133,7 @@ class CloudProvider
   def get_fault_domain_to_compute_ip_map(node)
     
     fault_domain_to_ip_map = Hash.new
-    computes = get_computes_payload(node)
+    computes = self.class.get_computes_payload(node)
 
     computes.each do |compute|
       next if compute[:ciAttributes][:private_ip].nil?
@@ -177,7 +177,7 @@ class CloudProvider
   end
 
   # get compute payload from workorder
-  def get_computes_payload(node)
+  def self.get_computes_payload(node)
     return node.workorder.payLoad.has_key?("RequiresComputes") ? node.workorder.payLoad.RequiresComputes : node.workorder.payLoad.computes
   end
   
