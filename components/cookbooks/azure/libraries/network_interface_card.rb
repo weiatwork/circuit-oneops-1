@@ -224,7 +224,7 @@ module AzureNetwork
       OOLog.info("Deleting NetworkInterfaceCard '#{nic_name}' from '#{resource_group_name}' ")
       start_time = Time.now.to_i
       begin
-        nic_exists = !@network_client.network_interfaces(resource_group: resource_group_name).select{|nic| (nic.name == nic_name)}.empty?
+        nic_exists = @network_client.network_interfaces.check_network_interface_exists(resource_group_name, nic_name)
         if !nic_exists
           OOLog.info("NetworkInterfaceCard '#{nic_name}' in ResourceGroup '#{resource_group_name}' was not found. Skipping deletion...")
           result = nil
