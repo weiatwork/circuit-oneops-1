@@ -357,11 +357,15 @@ if (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? 
   end
 
   # Make sure the solr /opt directories exist and have the right permissions
-  %w[ /opt/solr /opt/solr/log ].each do |app_dir|
+  %w[ /opt/solr /opt/solr/log /opt/solr/solrmonitor ].each do |app_dir|
     directory app_dir do
-      user 'app'
+      owner 'app'
       group 'app'
     end
+  end
+
+  execute "fix /opt/solr/solrmonitor owner and group" do
+    command "sudo chown app /opt/solr/solrmonitor/*; sudo chgrp app /opt/solr/solrmonitor/*"
   end
 
   template "/opt/solr/solrmonitor/metrics-tool.rb" do

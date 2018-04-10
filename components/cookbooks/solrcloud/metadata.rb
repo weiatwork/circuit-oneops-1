@@ -286,10 +286,10 @@ attribute 'solr_custom_component_version',
 # Solr Monitor Specific Attributes
 attribute 'solr_monitor_version',
           :description => 'Version of jar file with Solr Metrics',
-          :default => "1.0.1-SNAPSHOT",
+          :default => "1.0.1",
           :required => 'required',
           :format => {
-              :help => 'Enter Version number example: 0.0.1, 0.0.1-SNAPSHOT',
+              :help => 'Expects a version of a jar file whose artifact is com.walmart.strati.af.df.managed_solr.solrmonitor:solr-jmx-monitor. Example: 0.0.1, 1.0.2 etc',
               :category => '2.SolrCloud Monitoring',
               :order => 34
           }
