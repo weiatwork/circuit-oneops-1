@@ -10,22 +10,42 @@ grouping 'default',
          :packages => %w[base service.filestore mgmt.cloud.service cloud.service cloud.zone.service],
          :namespace => true
 
-attribute 'storage_account_name',
-          :description => 'Storage Account Name',
+attribute 'storage_account_id',
+          :description => 'Storage Account ID',
           :required => 'required',
           :format => {
             :help => 'Storage Account Name',
-            :category => '2.Authentication',
+            :category => '1.Authentication',
             :order => 1
           }
 
-attribute 'storage_account_access_key',
-          :description => 'Storage Account Access Key',
+attribute 'tenant_id',
+          :description => 'Tenant ID',
           :required => 'required',
-          :encrypted => true,
+          :default => 'Enter Tenant ID associated with Azure AD',
+          :format => {
+              :help => 'tenant id',
+              :category => '1.Authentication',
+              :order => 2
+}
+
+attribute 'client_id',
+          :description => 'Client ID',
+          :required => 'required',
           :default => '',
           :format => {
-            :help => 'Storage Account Access Key',
-            :category => '2.Authentication',
-            :order => 2
+              :help => 'client id',
+              :category => '1.Authentication',
+              :order => 3
+          }
+
+attribute 'client_secret',
+          :description => 'Client Secret',
+          :encrypted => true,
+          :required => 'required',
+          :default => '',
+          :format => {
+              :help => 'client secret azure',
+              :category => '1.Authentication',
+              :order => 4
           }

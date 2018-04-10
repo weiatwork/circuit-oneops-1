@@ -207,6 +207,34 @@ def download_directory_or_file(conn, options, argv)
   end
 end
 
+def get_storage_account_key(creds)
+  storage_account_name = creds['storage_account_id'].split('/')[8]
+  subscription_id = creds['storage_account_id'].split('/')[2]
+  conn = Fog::Storage::AzureRM.new(
+    subscription_id: subscription_id,
+    client_id: creds['client_id'],
+    client_secret: creds['client_secret'],
+    tenant_id: creds['tenant_id']
+  )
+  access_keys = nil
+  conn.storage_accounts.each do |storage_acc|
+    if storage_acc.name.eql?(storage_account_name)
+      access_keys = storage_acc.get_access_keys
+    end
+  end
+  access_keys[0].value
+end
+
+def save_key(key)
+  key_hash = {
+    'key' => key,
+    'expiry' => DateTime.now.next_day(10)
+  }
+  File.open(ENV['HOME'] + '/.key', 'w+') do |f|
+    f.write(key_hash.to_json)
+  end
+end
+
 # Pretty format size.
 # @param size size in bytes.
 def format_size(size)
@@ -245,6 +273,7 @@ end
 # Get creds from openrc s3, cloudfiles, etc will use
 creds = JSON.parse(File.read('/etc/objectstore_creds.json'))
 creds_sym = Hash[creds.map { |(k, v)| [k.to_sym, v] }]
+key_file_content = File.file?(ENV['HOME'] + '/.key') ? JSON.parse(File.read(ENV['HOME'] + '/.key')) : nil
 conn = nil
 provider = creds['provider']
 
@@ -255,8 +284,22 @@ when /OpenStack/
   conn = Fog::Storage.new(creds_sym)
 when /Azure/
   require 'fog/azurerm'
-  puts "Connecting to #{creds['azure_storage_account_name']}..."
-  conn = Fog::Storage::AzureRM.new(creds)
+  storage_account_name = creds['storage_account_id'].split('/')[8]
+  puts "Connecting to #{storage_account_name}..."
+  if key_file_content.nil?
+    key = get_storage_account_key(creds)
+    save_key(key)
+  else
+    if DateTime.parse(key_file_content['expiry']) < DateTime.now
+      key = get_storage_account_key(creds)
+      save_key(key)
+    end
+    key = key_file_content['key']
+  end
+  conn = Fog::Storage::AzureRM.new(
+    azure_storage_account_name: storage_account_name,
+    azure_storage_access_key: key
+  )
 else
   puts "Provider #{provider} not supported!"
   exit 1
@@ -264,28 +307,60 @@ end
 
 case action
 when 'list'
-  list_directories_or_files(conn, options, ARGV)
+  begin
+    list_directories_or_files(conn, options, ARGV)
+  rescue RuntimeError => ex
+    if ex.to_s.include?('Server failed to authenticate the request. Make sure the value of Authorization header is formed correctly including the signature')
+      puts 'Invalid key. Trying to get a new one. Please try again once the process is finished'
+      key = get_storage_account_key(creds)
+      save_key(key)
+    end
+  end
 
 when 'delete'
   if ARGV.size < 2
     puts 'Usage: objectstore delete <container>/<blob>'
     exit 1
   end
-  delete_directory_or_file(conn, ARGV)
+  begin
+    delete_directory_or_file(conn, ARGV)
+  rescue RuntimeError => ex
+    if ex.to_s.include?('Server failed to authenticate the request. Make sure the value of Authorization header is formed correctly including the signature')
+      puts 'Invalid key. Trying to get a new one. Please try again once the process is finished'
+      key = get_storage_account_key(creds)
+      save_key(key)
+    end
+  end
 
 when 'upload'
   if ARGV.size < 3
     puts 'Usage: upload <directory/file> <container>'
     exit 1
   end
-  upload_directory_or_file(conn, ARGV, provider)
+  begin
+    upload_directory_or_file(conn, ARGV, provider)
+  rescue RuntimeError => ex
+    if ex.to_s.include?('Server failed to authenticate the request. Make sure the value of Authorization header is formed correctly including the signature')
+      puts 'Invalid key. Trying to get a new one. Please try again once the process is finished'
+      key = get_storage_account_key(creds)
+      save_key(key)
+    end
+  end
 
 when 'download'
   if ARGV.size < 3
     puts 'Usage: objectstore download <container/blob> <local-path>'
     exit 1
   end
-  download_directory_or_file(conn, options, ARGV)
+  begin
+    download_directory_or_file(conn, options, ARGV)
+  rescue RuntimeError => ex
+    if ex.to_s.include?('Server failed to authenticate the request. Make sure the value of Authorization header is formed correctly including the signature')
+      puts 'Invalid key. Trying to get a new one. Please try again once the process is finished'
+      key = get_storage_account_key(creds)
+      save_key(key)
+    end
+  end
 else
   puts "Action #{action} not supported!"
   exit 1

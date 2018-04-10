@@ -3,8 +3,7 @@ cloud_type = node[:workorder][:services][:filestore][cloud_name][:ciClassName].s
 ciAttr = node[:workorder][:services][:filestore][cloud_name][:ciAttributes]
 
 domain = ciAttr.key('domain') ? ciAttr[:domain] : 'default'
-auth_url = ciAttr[:endpoint].include?('tokens') ? 
-  ciAttr[:endpoint] : "#{ciAttr[:endpoint]}/tokens"
+auth_url = ciAttr[:endpoint].include?('tokens') ? ciAttr[:endpoint] : "#{ciAttr[:endpoint]}/tokens"
 
 case cloud_type
 when /swift/
@@ -21,8 +20,10 @@ when /swift/
 when /azureobjectstore/
   creds = {
     :provider                   => 'Azure',
-    :azure_storage_account_name => ciAttr[:storage_account_name],
-    :azure_storage_access_key   => ciAttr[:storage_account_access_key]
+    :storage_account_id         => ciAttr[:storage_account_id],
+    :tenant_id                  => ciAttr[:tenant_id],
+    :client_id                  => ciAttr[:client_id],
+    :client_secret              => ciAttr[:client_secret]
   }
 end
 
