@@ -309,13 +309,13 @@ class ReplicaDistributor
 
     # Example1. Finally for 10 replicas & 3 fault_domain/cloud => [3,3,3]+[1,0,0]=[4,3,3]
     # Example2. Finally for 17 replicas & 3 fault_domain/cloud => [5,5,5]+[1,1,0]=[6,6,5]
-    #cloud_to_replica_count.each { |cloudid_index, replica_count| puts "{cloudid : replica_to_added} => {#{cloud_to_update_domain_ips_map_sorted.keys.fetch(cloudid_index)} : #{replica_count}}"}
+  
     cloud_to_replica_count.each { |cloudid, replica_count| puts "{cloudid : replica_to_added} => {#{cloudid} : #{replica_count}}"}
 
     shard_num_to_iplist_map = Hash.new
     for shard_num in 1..shards
       puts "Shard : #{shard_num} IPs to be skipped because of already added for previous shard: #{shard_num_to_iplist_map.values.flatten}"
-      #cloud_to_update_domain_ips_map = get_cloud_to_update_domain_ips_map(collection_ip_list, compute_ip_to_cloud_id_map,[])
+    
       cloud_to_update_domain_ips_map = get_cloud_to_update_domain_ips_map(collection_ip_list, compute_ip_to_cloud_id_map,shard_num_to_iplist_map.values.flatten)
       puts "Cloud/Domain to IP details - Initially : #{cloud_to_update_domain_ips_map.to_json}"
 
