@@ -1,6 +1,6 @@
 cloud_name = node[:workorder][:cloud][:ciName]
 cloud_type = node[:workorder][:services][:filestore][cloud_name][:ciClassName].split('.').last.downcase
-ciAttr = node[:workorder][:services][:filestore][cloud_name][:ciAttributes]
+ciAttr = node[:workorder][:rfcCi][:ciAttributes]
 
 domain = ciAttr.key('domain') ? ciAttr[:domain] : 'default'
 auth_url = ciAttr[:endpoint].include?('tokens') ? ciAttr[:endpoint] : "#{ciAttr[:endpoint]}/tokens"
