@@ -3,7 +3,7 @@ require 'net/http'
 
 # This class is used to implement cloud provider specific code.
 class ReplicaDistributor
-  
+
   # [["fd1", {"ud1"=>["ip8", "ip9", "ip10", "ip11"], "ud2"=>["ip12", "ip13", "ip14", "ip15"]}], ["fd0", {"ud2"=>["ip5", "ip6", "ip7"], "ud1"=>["ip1", "ip2", "ip3", "ip4"]}]]
   # converts above array to map as below
   # {"fd1"=>{"ud1"=>["ip8", "ip9", "ip10", "ip11"], "ud2"=>["ip12", "ip13", "ip14", "ip15"]}, "fd0"=>{"ud2"=>["ip5", "ip6", "ip7"], "ud1"=>["ip1", "ip2", "ip3", "ip4"]}}
@@ -61,7 +61,8 @@ class ReplicaDistributor
   #       }
   # }
   # Note : In Azure, cloudId is same as fault_domain
-  # Note : For Openstack, there is no concept of update domain and hence there will be only one (dummy) update domain "0"
+  # Note : For Openstack, there is no concept of update domain and hence compute index from ciName will be used as update domain.
+  # so there will always be unique update domain witn only one ip in the update domain for Openstack
   # In above example,
   # fauld_domain 'fd1' has to total 4 ips which are already used (3 (from ud1)+ 1 (from ud2))
   # fauld_domain 'fd2' has to total 3 ips which are already used (1 (from ud1)+ 2 (from ud2))
@@ -92,7 +93,7 @@ class ReplicaDistributor
     cloudId_to_ips_map = array_to_map(cloudId_to_ips_map)
     puts "Cloud/Domain map after sort - #{cloudId_to_ips_map.to_json}"
     print_cloud_ip_usage(cloudId_to_ips_map, used_ip_list)
-   return cloudId_to_ips_map
+    return cloudId_to_ips_map
   end
 
   def print_cloud_ip_usage(cloudId_to_ips_map, used_ip_list)
@@ -137,7 +138,8 @@ class ReplicaDistributor
         ciName = compute['ciName']
         # 'compute-34951930-1' => "34951930"
         fault_domain = ciName.split('-')[1]
-        update_domain = ciName.split('-', 2)[1]
+        # 'compute-34951930-1' => "1"
+        update_domain = ciName.split('-')[2]
       end
       cloudId = "#{fault_domain}___#{update_domain}"
       compute_ip_to_cloud_id_map[compute['ciAttributes']['private_ip']] = cloudId
@@ -250,7 +252,7 @@ class ReplicaDistributor
     return core_ip_list.flatten
   end
 
- # This method return a map of shard_num => list of ips to be assigned replicas to
+  # This method return a map of shard_num => list of ips to be assigned replicas to
   def get_shard_number_to_core_ips_map(shards, replicas, computes, cloud_provider, sharing_collections, existing_collections)
 
     compute_ip_to_cloud_id_map = get_compute_ip_to_cloud_id_map(computes, cloud_provider)
@@ -309,13 +311,13 @@ class ReplicaDistributor
 
     # Example1. Finally for 10 replicas & 3 fault_domain/cloud => [3,3,3]+[1,0,0]=[4,3,3]
     # Example2. Finally for 17 replicas & 3 fault_domain/cloud => [5,5,5]+[1,1,0]=[6,6,5]
-  
+
     cloud_to_replica_count.each { |cloudid, replica_count| puts "{cloudid : replica_to_added} => {#{cloudid} : #{replica_count}}"}
 
     shard_num_to_iplist_map = Hash.new
     for shard_num in 1..shards
       puts "Shard : #{shard_num} IPs to be skipped because of already added for previous shard: #{shard_num_to_iplist_map.values.flatten}"
-    
+
       cloud_to_update_domain_ips_map = get_cloud_to_update_domain_ips_map(collection_ip_list, compute_ip_to_cloud_id_map,shard_num_to_iplist_map.values.flatten)
       puts "Cloud/Domain to IP details - Initially : #{cloud_to_update_domain_ips_map.to_json}"
 
@@ -337,6 +339,4 @@ class ReplicaDistributor
     return shard_num_to_iplist_map
   end
 
- end
-
-  
+end
