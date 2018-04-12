@@ -24,7 +24,6 @@ ci = node[:workorder][:ci] || node[:workorder][:rfcCi]
 cloud_name = node[:workorder][:cloud][:ciName]
 provider = node[:workorder][:services][:compute][cloud_name][:ciClassName].downcase
 Chef::Log.info("provider :" + provider)
-Chef::Log.info("node :" + node.inspect)
 
 ip = nil
 if provider =~ /openstack|azure/
