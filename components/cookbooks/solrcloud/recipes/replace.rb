@@ -15,7 +15,7 @@ if ::File.exists?(solr_service_file)
   include_recipe 'solrcloud::post_solrcloud'
   return
 else
-  Chef::Log.info("#{solr_service_file} doesnot exists, hence will install the solr")
+  Chef::Log.info("#{solr_service_file} does not exists, hence solr be installed")
 end
 ci = node.workorder.rfcCi
 attrs = ci[:ciAttributes]
