@@ -57,16 +57,38 @@ else
   dnsrecordtype = "A"
 end
 Chef::Log.info ("dnsrecordtype: #{dnsrecordtype}")
-# create gslb_server and bind domain if platform is active
-n = netscaler_gslb_vserver node.gslb_vserver_name do
-  servicetype gslb_protocol
-  dnsrecordtype dnsrecordtype
-  lbmethod lbmethod
-  domain node.gslb_domain
-  connection node.ns_conn  
-  action :nothing  
+
+#unbind gslb_server and bind domain if entries are not active anymore
+gslb_config_delete = node.gslb_config_delete
+
+gslb_config_delete.each do |entry|
+  n = netscaler_gslb_vserver node.gslb_vserver_name do
+    servicetype gslb_protocol
+    dnsrecordtype dnsrecordtype
+    lbmethod lbmethod
+    domain entry
+    connection node.ns_conn
+    action :nothing
+  end
+  n.run_action(:clean)
 end
-n.run_action(:create)  
+
+
+# create gslb_server and bind domain if platform is active
+gslb_config_entry = node.gslb_config_entry
+
+# create gslb_server and bind domain if platform is active
+gslb_config_entry.each do |entry|
+  n = netscaler_gslb_vserver node.gslb_vserver_name do
+    servicetype gslb_protocol
+    dnsrecordtype dnsrecordtype
+    lbmethod lbmethod
+    domain entry
+    connection node.ns_conn
+    action :nothing
+  end
+  n.run_action(:create)
+end
 
 
 # remote sites
@@ -133,14 +155,18 @@ authoritative_servers.each do |dns_server|
     :ssl_verify_peer => false)
 
   # create gslb_vserver and binding
-  n = netscaler_gslb_vserver node.gslb_vserver_name do
-    servicetype gslb_protocol
-    dnsrecordtype dnsrecordtype
-    lbmethod lbmethod
-    domain node.gslb_domain
-    connection conn  
-    action :nothing  
+  gslb_config_entry = node.gslb_config_entry
+
+  gslb_config_entry.each do |entry|
+    n = netscaler_gslb_vserver node.gslb_vserver_name do
+      servicetype gslb_protocol
+      dnsrecordtype dnsrecordtype
+      lbmethod lbmethod
+      domain entry
+      connection node.ns_conn
+      action :nothing
+    end
+    n.run_action(:create)
   end
-  n.run_action(:create) 
-  
+
 end
