@@ -335,6 +335,41 @@ attribute 'min_computes_per_cloud',
   }
 
 
+
+attribute 'enable_zk_sasl_plain',
+  :description => 'Enable ZK SASL/Plain',
+  :default => 'false',
+  :format => {
+    :category => '4.SASL/Plain Configuration',
+    :help => 'Enable SASL/Plain to use username/password for Zookeeper connections',
+    :order => 1,
+    :form => {'field' => 'checkbox'}
+  }
+
+attribute 'sasl_zk_admin_pwd',
+  :description => 'Password for "admin" user for Zookeeper',
+  :encrypted => true,
+  :default => '',
+  :format => {
+    :help => 'Password of the sasl/plain "admin" user for Zookeeper',
+    :category => '4.SASL/Plain Configuration',
+    :order => 2,
+    :filter => {'all' => {'visible' => 'enable_zk_sasl_plain:eq:true'}}
+  }
+
+attribute 'sasl_zk_user_pwds',
+  :description => 'Username and password for sasl/plain clients',
+  :data_type => "hash",
+  :default => nil,
+  :format => {
+    :category => '4.SASL/Plain Configuration',
+    :help => 'First field for user; second field for password',
+    :order => 3,
+    :filter => {'all' => {'visible' => 'enable_zk_sasl_plain:eq:true'}}
+  }
+
+
+
 recipe "status", "Zookeeper Status"
 recipe "start", "Start Zookeeper"
 recipe "stop", "Stop Zookeeper"
