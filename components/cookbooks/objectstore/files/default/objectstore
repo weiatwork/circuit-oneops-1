@@ -271,7 +271,7 @@ end
 
 # Get creds from openrc s3, cloudfiles, etc will use
 config = JSON.parse(File.read('/etc/objectstore_config.json'))
-creds = JSON.parse(File.read('/secrets/objectstore_creds.json'))
+creds = JSON.parse(File.read('/secrets/objectstore_creds'))
 config_sym = Hash[config.map { |(k, v)| [k.to_sym, v] }]
 creds_sym = Hash[creds.map { |(k, v)| [k.to_sym, v] }]
 key_file_content = File.file?(ENV['HOME'] + '/.key') ? JSON.parse(File.read(ENV['HOME'] + '/.key')) : nil
