@@ -207,9 +207,9 @@ def download_directory_or_file(conn, options, argv)
   end
 end
 
-def get_storage_account_key(creds)
-  storage_account_name = creds['storage_account_id'].split('/')[8]
-  subscription_id = creds['storage_account_id'].split('/')[2]
+def get_storage_account_key(creds, storage_id)
+  storage_account_name = storage_id.split('/')[8]
+  subscription_id = storage_id.split('/')[2]
   conn = Fog::Storage::AzureRM.new(
     subscription_id: subscription_id,
     client_id: creds['client_id'],
@@ -227,8 +227,7 @@ end
 
 def save_key(key)
   key_hash = {
-    'key' => key,
-    'expiry' => DateTime.now.next_day(10)
+    'key' => key
   }
   File.open(ENV['HOME'] + '/.key', 'w+') do |f|
     f.write(key_hash.to_json)
@@ -271,29 +270,29 @@ if action.nil?
 end
 
 # Get creds from openrc s3, cloudfiles, etc will use
-creds = JSON.parse(File.read('/etc/objectstore_creds.json'))
+config = JSON.parse(File.read('/etc/objectstore_config.json'))
+creds = JSON.parse(File.read('/secrets/objectstore_creds.json'))
+config_sym = Hash[config.map { |(k, v)| [k.to_sym, v] }]
 creds_sym = Hash[creds.map { |(k, v)| [k.to_sym, v] }]
 key_file_content = File.file?(ENV['HOME'] + '/.key') ? JSON.parse(File.read(ENV['HOME'] + '/.key')) : nil
 conn = nil
-provider = creds['provider']
+provider = config['provider']
 
 case provider
 when /OpenStack/
   require 'fog'
   puts "Connecting to #{creds['openstack_auth_url']} as #{creds['openstack_username']}..."
+  creds_sym['openstack_region'] = config['openstack_region']
+  puts creds_sym.inspect 
   conn = Fog::Storage.new(creds_sym)
 when /Azure/
   require 'fog/azurerm'
-  storage_account_name = creds['storage_account_id'].split('/')[8]
+  storage_account_name = config['storage_account_id'].split('/')[8]
   puts "Connecting to #{storage_account_name}..."
   if key_file_content.nil?
-    key = get_storage_account_key(creds)
+    key = get_storage_account_key(creds, config['storage_account_id'])
     save_key(key)
   else
-    if DateTime.parse(key_file_content['expiry']) < DateTime.now
-      key = get_storage_account_key(creds)
-      save_key(key)
-    end
     key = key_file_content['key']
   end
   conn = Fog::Storage::AzureRM.new(
@@ -312,7 +311,7 @@ when 'list'
   rescue RuntimeError => ex
     if ex.to_s.include?('Server failed to authenticate the request. Make sure the value of Authorization header is formed correctly including the signature')
       puts 'Invalid key. Trying to get a new one. Please try again once the process is finished'
-      key = get_storage_account_key(creds)
+      key = get_storage_account_key(creds, config['storage_account_id'])
       save_key(key)
     end
   end
@@ -327,7 +326,7 @@ when 'delete'
   rescue RuntimeError => ex
     if ex.to_s.include?('Server failed to authenticate the request. Make sure the value of Authorization header is formed correctly including the signature')
       puts 'Invalid key. Trying to get a new one. Please try again once the process is finished'
-      key = get_storage_account_key(creds)
+      key = get_storage_account_key(creds, config['storage_account_id'])
       save_key(key)
     end
   end
@@ -342,7 +341,7 @@ when 'upload'
   rescue RuntimeError => ex
     if ex.to_s.include?('Server failed to authenticate the request. Make sure the value of Authorization header is formed correctly including the signature')
       puts 'Invalid key. Trying to get a new one. Please try again once the process is finished'
-      key = get_storage_account_key(creds)
+      key = get_storage_account_key(creds, config['storage_account_id'])
       save_key(key)
     end
   end
@@ -357,7 +356,7 @@ when 'download'
   rescue RuntimeError => ex
     if ex.to_s.include?('Server failed to authenticate the request. Make sure the value of Authorization header is formed correctly including the signature')
       puts 'Invalid key. Trying to get a new one. Please try again once the process is finished'
-      key = get_storage_account_key(creds)
+      key = get_storage_account_key(creds, config['storage_account_id'])
       save_key(key)
     end
   end

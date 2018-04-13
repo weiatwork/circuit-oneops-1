@@ -9,4 +9,3 @@ grouping 'default',
   :access => 'global',
   :packages => %w[base service.filestore mgmt.cloud.service cloud.service cloud.zone.service],
   :namespace => true
-  
