@@ -87,7 +87,3 @@ if env.has_key?("global_dns") && env["global_dns"] == "true" && depends_on_lb &&
     end
   end
 end
-
-
-
-

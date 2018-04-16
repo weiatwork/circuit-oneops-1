@@ -18,7 +18,7 @@ if base_domain.nil? || base_domain.empty?
     puts "***FAULT:FATAL=#{msg}"
     e = Exception.new("no backtrace")
     e.set_backtrace("")
-    raise e  
+    raise e
 end
 
 node.set["gslb_base_domain"] = base_domain
@@ -28,7 +28,7 @@ subdomain = node.workorder.payLoad.Environment[0]["ciAttributes"]["subdomain"]
 
 gslb_domain = [platform_name, subdomain, base_domain].join(".")
 if subdomain.empty?
-  gslb_domain = [platform_name, base_domain].join(".")
+    gslb_domain = [platform_name, base_domain].join(".")
 end
 node.set["gslb_domain"] = gslb_domain.downcase
 

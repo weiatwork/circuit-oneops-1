@@ -224,7 +224,7 @@ class Library
     end
 
     records = JSON.parse(conn.request(:method=>:get,
-                                                    :path=>"/wapi/#{api_version}/record:#{dns_type}", :body => JSON.dump(record) ).body)
+                                      :path=>"/wapi/#{api_version}/record:#{dns_type}", :body => JSON.dump(record) ).body)
 
     puts "Record : #{records}"
     if records.size == 0
@@ -463,21 +463,21 @@ class Library
       puts "no cloud_dns_id for dns cloud service"
     end
 
-# values using DependsOn's dns_record attr
+    # values using DependsOn's dns_record attr
     deps = $node['workorder']['payLoad']['DependsOn'].select { |d| d['ciAttributes'].has_key? 'dns_record' }
     values = get_dns_values(deps)
 
-# check if dependent component creation is a success or else fail the reciepe execution
+    # check if dependent component creation is a success or else fail the reciepe execution
     if values.nil? || values.empty?
       puts "Empty dns_record. Please check whether the compute/lb deployment step passed successfully"
     end
 
-# cloud-level add entry - will loop thru and cleanup & create them later
+    # cloud-level add entry - will loop thru and cleanup & create them later
     entries.push({'name' => dns_name, 'values' => values })
     deletable_entries = [{'name' => dns_name, 'values' => values }]
 
 
-# cloud-level short aliases
+    # cloud-level short aliases
     aliases.each do |a|
       next if a.empty?
       # skip if user has a short alias same as platform name
@@ -488,7 +488,7 @@ class Library
     end
 
 
-# platform-level remove cloud_dns_id for primary entry
+    # platform-level remove cloud_dns_id for primary entry
     if ad_ci
       primary_platform_dns_name = dns_name.split('.').first + get_customer_domain.split('.').select{|i| (i != service_attrs['cloud_dns_id'])}.join('.')
     else
@@ -516,7 +516,7 @@ class Library
     end
 
 
-# platform level
+    # platform level
     if $node['workorder']['cloud']['ciAttributes']['priority'] != "1"
 
       # clear platform if not primary and not gslb

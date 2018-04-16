@@ -29,10 +29,10 @@ gdns = node[:workorder][:services][:gdns][cloud_name][:ciAttributes]
 lbmethod = "ROUNDROBIN"
 if node.workorder.rfcCi.ciAttributes.has_key?("distribution")
   case node.workorder.rfcCi.ciAttributes.distribution
-  when "proximity"
-    lbmethod = "STATICPROXIMITY"
-  when "latency"
-    lbmethod = "RTT"
+    when "proximity"
+      lbmethod = "STATICPROXIMITY"
+    when "latency"
+      lbmethod = "RTT"
   end
 end
 
@@ -42,7 +42,7 @@ gslb_protocol = "HTTP"
 lb = node.workorder.payLoad.lb.first
 listeners = JSON.parse( lb[:ciAttributes][:listeners] )
 listeners.each do |l|
-  lb_attrs = l.split(" ") 
+  lb_attrs = l.split(" ")
   gslb_protocol = lb_attrs[0].upcase
   if gslb_protocol == "HTTPS" || gslb_protocol == "TERMINATED_HTTPS"
     gslb_protocol = "SSL"
@@ -94,8 +94,8 @@ end
 # remote sites
 remote_sites = Array.new
 node.workorder.payLoad.remotegdns.each do |service|
-  if service[:ciAttributes].has_key?("gslb_site") && 
-     service[:ciAttributes][:gslb_site] != local_cloud_service[:ciAttributes][:gslb_site]
+  if service[:ciAttributes].has_key?("gslb_site") &&
+      service[:ciAttributes][:gslb_site] != local_cloud_service[:ciAttributes][:gslb_site]
 
     remote_sites.push service
   end
@@ -108,26 +108,56 @@ remote_sites.each do |cloud_service|
   username = cloud_service[:ciAttributes][:username]
   password = cloud_service[:ciAttributes][:password]
   host = cloud_service[:ciAttributes][:host]
-  
+
   remote_sites_done.push(host)
 
   Chef::Log.info("connecting to netscaler: #{host}")
   encoded = Base64.encode64("#{username}:#{password}").gsub("\n","")
-  conn = Excon.new('https://'+host, 
-    :headers => {'Authorization' => "Basic #{encoded}", 'Content-Type' => 'application/x-www-form-urlencoded'},
-    :ssl_verify_peer => false)
+  conn = Excon.new('https://'+host,
+                   :headers => {'Authorization' => "Basic #{encoded}", 'Content-Type' => 'application/x-www-form-urlencoded'},
+                   :ssl_verify_peer => false)
 
- 
+
   # create gslb_vserver and binding
   n = netscaler_gslb_vserver node.gslb_vserver_name do
     servicetype gslb_protocol
     dnsrecordtype dnsrecordtype
     lbmethod lbmethod
     domain node.gslb_domain
-    connection conn  
-    action :nothing  
+    connection conn
+    action :nothing
   end
-  n.run_action(:create)   
+  n.run_action(:create)
+
+
+  gslb_config_delete = node.gslb_config_delete
+
+  gslb_config_delete.each do |entry|
+    n = netscaler_gslb_vserver node.gslb_vserver_name do
+      servicetype gslb_protocol
+      dnsrecordtype dnsrecordtype
+      lbmethod lbmethod
+      domain entry
+      connection conn
+      action :nothing
+    end
+    n.run_action(:clean)
+  end
+
+  # create gslb_vserver and binding
+  gslb_config_entry = node.gslb_config_entry
+
+  gslb_config_entry.each do |entry|
+    n = netscaler_gslb_vserver node.gslb_vserver_name do
+      servicetype gslb_protocol
+      dnsrecordtype dnsrecordtype
+      lbmethod lbmethod
+      domain entry
+      connection conn
+      action :nothing
+    end
+    n.run_action(:create)
+  end
 
 end
 
@@ -141,18 +171,32 @@ authoritative_servers.each do |dns_server|
     Chef::Log.info("skipping because already did: #{dns_server}")
     next
   end
-  
+
   Chef::Log.info("remote authoritative server: "+dns_server)
-  
+
   username = local_cloud_service[:ciAttributes][:username]
   password = local_cloud_service[:ciAttributes][:password]
   host = dns_server
 
   Chef::Log.debug("connecting to netscaler: #{host}")
   encoded = Base64.encode64("#{username}:#{password}").gsub("\n","")
-  conn = Excon.new('https://'+host, 
-    :headers => {'Authorization' => "Basic #{encoded}", 'Content-Type' => 'application/x-www-form-urlencoded'},
-    :ssl_verify_peer => false)
+  conn = Excon.new('https://'+host,
+                   :headers => {'Authorization' => "Basic #{encoded}", 'Content-Type' => 'application/x-www-form-urlencoded'},
+                   :ssl_verify_peer => false)
+
+  gslb_config_delete = node.gslb_config_delete
+
+  gslb_config_delete.each do |entry|
+    n = netscaler_gslb_vserver node.gslb_vserver_name do
+      servicetype gslb_protocol
+      dnsrecordtype dnsrecordtype
+      lbmethod lbmethod
+      domain entry
+      connection conn
+      action :nothing
+    end
+    n.run_action(:clean)
+  end
 
   # create gslb_vserver and binding
   gslb_config_entry = node.gslb_config_entry
@@ -163,7 +207,7 @@ authoritative_servers.each do |dns_server|
       dnsrecordtype dnsrecordtype
       lbmethod lbmethod
       domain entry
-      connection node.ns_conn
+      connection conn
       action :nothing
     end
     n.run_action(:create)
