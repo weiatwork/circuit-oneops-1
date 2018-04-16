@@ -234,6 +234,12 @@ def save_key(key)
   end
 end
 
+def get_new_key_in_case_of_exception(creds, storage_id)
+  puts 'Invalid key. Trying to get a new one. Please try again once the process is finished'
+  key = get_storage_account_key(creds, storage_id)
+  save_key(key)
+end
+
 # Pretty format size.
 # @param size size in bytes.
 def format_size(size)
@@ -272,9 +278,7 @@ end
 # Get creds from openrc s3, cloudfiles, etc will use
 config = JSON.parse(File.read('/etc/objectstore_config.json'))
 creds = JSON.parse(File.read('/secrets/objectstore_creds'))
-config_sym = Hash[config.map { |(k, v)| [k.to_sym, v] }]
 creds_sym = Hash[creds.map { |(k, v)| [k.to_sym, v] }]
-key_file_content = File.file?(ENV['HOME'] + '/.key') ? JSON.parse(File.read(ENV['HOME'] + '/.key')) : nil
 conn = nil
 provider = config['provider']
 
@@ -282,6 +286,7 @@ case provider
 when /OpenStack/
   require 'fog'
   puts "Connecting to #{creds['openstack_auth_url']} as #{creds['openstack_username']}..."
+  creds_sym['provider'] = config['provider']
   creds_sym['openstack_region'] = config['openstack_region']
   puts creds_sym.inspect 
   conn = Fog::Storage.new(creds_sym)
@@ -289,6 +294,7 @@ when /Azure/
   require 'fog/azurerm'
   storage_account_name = config['storage_account_id'].split('/')[8]
   puts "Connecting to #{storage_account_name}..."
+  key_file_content = File.file?(ENV['HOME'] + '/.key') ? JSON.parse(File.read(ENV['HOME'] + '/.key')) : nil
   if key_file_content.nil?
     key = get_storage_account_key(creds, config['storage_account_id'])
     save_key(key)
@@ -310,9 +316,7 @@ when 'list'
     list_directories_or_files(conn, options, ARGV)
   rescue RuntimeError => ex
     if ex.to_s.include?('Server failed to authenticate the request. Make sure the value of Authorization header is formed correctly including the signature')
-      puts 'Invalid key. Trying to get a new one. Please try again once the process is finished'
-      key = get_storage_account_key(creds, config['storage_account_id'])
-      save_key(key)
+      get_new_key_in_case_of_exception(creds, config['storage_account_id'])
     end
   end
 
@@ -325,9 +329,7 @@ when 'delete'
     delete_directory_or_file(conn, ARGV)
   rescue RuntimeError => ex
     if ex.to_s.include?('Server failed to authenticate the request. Make sure the value of Authorization header is formed correctly including the signature')
-      puts 'Invalid key. Trying to get a new one. Please try again once the process is finished'
-      key = get_storage_account_key(creds, config['storage_account_id'])
-      save_key(key)
+      get_new_key_in_case_of_exception(creds, config['storage_account_id'])
     end
   end
 
@@ -340,9 +342,7 @@ when 'upload'
     upload_directory_or_file(conn, ARGV, provider)
   rescue RuntimeError => ex
     if ex.to_s.include?('Server failed to authenticate the request. Make sure the value of Authorization header is formed correctly including the signature')
-      puts 'Invalid key. Trying to get a new one. Please try again once the process is finished'
-      key = get_storage_account_key(creds, config['storage_account_id'])
-      save_key(key)
+      get_new_key_in_case_of_exception(creds, config['storage_account_id'])
     end
   end
 
@@ -355,9 +355,7 @@ when 'download'
     download_directory_or_file(conn, options, ARGV)
   rescue RuntimeError => ex
     if ex.to_s.include?('Server failed to authenticate the request. Make sure the value of Authorization header is formed correctly including the signature')
-      puts 'Invalid key. Trying to get a new one. Please try again once the process is finished'
-      key = get_storage_account_key(creds, config['storage_account_id'])
-      save_key(key)
+      get_new_key_in_case_of_exception(creds, config['storage_account_id'])
     end
   end
 else
