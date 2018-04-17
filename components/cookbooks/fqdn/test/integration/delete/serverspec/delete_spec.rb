@@ -20,10 +20,17 @@ entries = lib.build_entry_list
 entries.each do |entry|
   dns_name = entry['name']
   dns_value = entry['values']
-  flag = lib.check_record(dns_name, dns_value)
-  context "FQDN mapping" do
-    it "should be deleted" do
-      expect(flag).to eq(true)
+
+  dns_val = dns_value.is_a?(String) ? [dns_value] : dns_value
+
+  if !dns_val.nil? && dns_val.size != 0
+    dns_val.each do |value|
+      flag = lib.check_record(dns_name, value)
+      context "FQDN mapping" do
+        it "should be deleted" do
+          expect(flag).to eq(true)
+        end
+      end
     end
   end
 end
