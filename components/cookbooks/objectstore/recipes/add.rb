@@ -4,9 +4,18 @@ ci_attr = node[:workorder][:rfcCi][:ciAttributes]
 
 case cloud_type
 when /swift/
+  ci_attr_cloud = node[:workorder][:services][:filestore][cloud_name][:ciAttributes]
+  domain = ci_attr_cloud.key('domain') ? ci_attr_cloud[:domain] : 'default'
+  auth_url = ci_attr_cloud[:endpoint].include?('tokens') ? ci_attr_cloud[:endpoint] : "#{ci_attr_cloud[:endpoint]}/tokens"
   config = {
     :provider           => 'OpenStack',
-    :openstack_region   => ci_attr_cloud[:storage]
+    :openstack_api_key  => ci_attr_cloud[:password],
+    :openstack_username => ci_attr_cloud[:username],
+    :openstack_tenant   => ci_attr_cloud[:tenant],
+    :openstack_auth_url => auth_url,
+    :openstack_region   => ci_attr[:storage],
+    :openstack_project_name => ci_attr_cloud[:tenant],
+    :openstack_domain_name => domain
   }
 when /azureobjectstore/
   config = {

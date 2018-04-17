@@ -9,3 +9,53 @@ grouping 'default',
   :access => 'global',
   :packages => %w[base service.filestore mgmt.cloud.service cloud.service cloud.zone.service],
   :namespace => true
+
+attribute 'endpoint',
+          :description => 'Auth Endpoint',
+          :required => 'required',
+          :default => '',
+          :format => {
+            :help => 'Auth Endpoint URL',
+            :category => '1.Authentication',
+            :order => 1
+          }
+
+attribute 'tenant',
+          :description => 'Tenant',
+          :required => 'required',
+          :default => '',
+          :format => {
+            :help => 'Tenant Name',
+            :category => '1.Authentication',
+            :order => 2
+          }
+
+attribute 'authstrategy',
+          :description => 'Auth Strategy',
+          :encrypted => false,
+          :required => 'optional',
+          :default => 'keystone',
+          :format => {
+            :help => 'Auth Strategy',
+            :category => '1.Authentication',
+            :order => 3
+          }
+
+attribute 'username',
+          :description => 'Username',
+          :required => 'required',
+          :format => {
+            :help => 'Username',
+            :category => '1.Authentication',
+            :order => 4
+          }
+
+attribute 'password',
+          :description => 'Password',
+          :required => 'required',
+          :encrypted => true,
+          :format => {
+            :help => 'Password',
+            :category => '1.Authentication',
+            :order => 5
+          }
