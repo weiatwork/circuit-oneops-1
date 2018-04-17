@@ -9,11 +9,11 @@ grouping 'default',
          :access => "global",
          :packages => ['base', 'mgmt.catalog', 'mgmt.manifest', 'catalog', 'manifest', 'bom']
 
-attribute 'storage',
-  :description => 'Storage',
-  :required => 'required',
+attribute 'storage_id',
+  :description => 'Storage ID',
+  :required => 'optional',
   :format => {
-      :help => 'Region Name for Openstack and Storage Account ID for Azure',
+      :help => 'Storage Account ID for Azure',
       :category => '1.Authentication',
       :order => 1
   }

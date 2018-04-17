@@ -29,6 +29,17 @@ attribute 'tenant',
             :category => '1.Authentication',
             :order => 2
           }
+          	 
+attribute 'regionname',	
+          :description => 'Region Name',	
+          :encrypted => false,	
+          :required => 'required',	
+          :default => '',	
+          :format => {	
+            :help => 'Region Name Attribute',	
+            :category => '1.Authentication',	
+            :order => 3	
+          }
 
 attribute 'authstrategy',
           :description => 'Auth Strategy',
@@ -38,7 +49,7 @@ attribute 'authstrategy',
           :format => {
             :help => 'Auth Strategy',
             :category => '1.Authentication',
-            :order => 3
+            :order => 4
           }
 
 attribute 'username',
@@ -47,7 +58,7 @@ attribute 'username',
           :format => {
             :help => 'Username',
             :category => '1.Authentication',
-            :order => 4
+            :order => 5
           }
 
 attribute 'password',
@@ -57,5 +68,5 @@ attribute 'password',
           :format => {
             :help => 'Password',
             :category => '1.Authentication',
-            :order => 5
+            :order => 6
           }

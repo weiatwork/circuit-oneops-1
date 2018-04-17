@@ -1,6 +1,5 @@
 cloud_name = node[:workorder][:cloud][:ciName]
 cloud_type = node[:workorder][:services][:filestore][cloud_name][:ciClassName].split('.').last.downcase
-ci_attr = node[:workorder][:rfcCi][:ciAttributes]
 
 case cloud_type
 when /swift/
@@ -13,14 +12,27 @@ when /swift/
     :openstack_username => ci_attr_cloud[:username],
     :openstack_tenant   => ci_attr_cloud[:tenant],
     :openstack_auth_url => auth_url,
-    :openstack_region   => ci_attr[:storage],
+    :openstack_region   => ci_attr_cloud[:regionname],
     :openstack_project_name => ci_attr_cloud[:tenant],
     :openstack_domain_name => domain
   }
 when /azureobjectstore/
+  status = false
+  depends_on = node[:workorder][:payLoad][:DependsOn]
+  depends_on.each do | dep_info |
+    if dep_info[:ciName].include?('secrets-client')
+      status = true
+      break
+    end
+  end
+  unless status do
+    Chef::Log.fatal('Exiting secrets-client component is missing from the design.') 
+    raise
+  end
+  ci_attr = node[:workorder][:rfcCi][:ciAttributes]
   config = {
     :provider                   => 'Azure',
-    :storage_account_id         => ci_attr[:storage]
+    :storage_account_id         => ci_attr[:storage_id]
   }
 end
   
