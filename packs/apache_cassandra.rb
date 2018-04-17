@@ -598,7 +598,7 @@ procedure "nodetool_repair",
                     "relationName": "base.RealizedAs",
                     "execStrategy": "one-by-one",
                     "direction": "from",
-                    "targetClassName": "bom.walmartlabs.Apache_cassandra",
+                    "targetClassName": "bom.oneops.1.Apache_cassandra",
                     "actions": [
                         {
                             "actionName": "nodetool_repair",
