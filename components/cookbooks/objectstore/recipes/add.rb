@@ -19,14 +19,14 @@ when /swift/
 when /azureobjectstore/
   status = false
   depends_on = node[:workorder][:payLoad][:DependsOn]
-  depends_on.each do | dep_info |
+  depends_on.each do |dep_info|
     if dep_info[:ciName].include?('secrets-client')
       status = true
       break
     end
   end
-  unless status do
-    Chef::Log.fatal('Exiting secrets-client component is missing from the design.') 
+  unless status
+    Chef::Log.fatal('Exiting secrets-client component is missing from the design.')
     raise
   end
   ci_attr = node[:workorder][:rfcCi][:ciAttributes]
@@ -35,7 +35,7 @@ when /azureobjectstore/
     :storage_account_id         => ci_attr[:storage_id]
   }
 end
-  
+
 require 'json'
 file '/etc/objectstore_config.json' do
   content config.to_json

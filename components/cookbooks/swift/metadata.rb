@@ -29,16 +29,16 @@ attribute 'tenant',
             :category => '1.Authentication',
             :order => 2
           }
-          	 
-attribute 'regionname',	
-          :description => 'Region Name',	
-          :encrypted => false,	
-          :required => 'required',	
-          :default => '',	
-          :format => {	
-            :help => 'Region Name Attribute',	
+
+attribute 'regionname',
+          :description => 'Region Name',
+          :encrypted => false,
+          :required => 'required',
+          :default => '',
+          :format => {
+            :help => 'Region Name Attribute',
             :category => '1.Authentication',	
-            :order => 3	
+            :order => 3
           }
 
 attribute 'authstrategy',
