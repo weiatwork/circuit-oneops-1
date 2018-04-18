@@ -4,8 +4,8 @@ module NetworkHelper
                    "| grep nameserver | awk '{print $2}'".freeze
 
   def get_nameservers
-    Mixlib::ShellOut.new(NAMESERVER_CMD).run_command
-                    .stdout.split("\n").join(';')
+    Mixlib::ShellOut.new(NAMESERVER_CMD).run_command.
+    stdout.split("\n").join(';')
   end
 
   def authoritative_dns(zone_domain)
