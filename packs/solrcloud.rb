@@ -169,7 +169,8 @@ resource "solrcloud",
     'skip_solrcloud_comp_execution' => 'false',
     'enable_cinder' => 'true',
     'solr_custom_component_version' => '0.0.3',
-    'solr_api_timeout_sec' => '300'
+    'solr_api_timeout_sec' => '300',
+    'solr_monitor_version' => '1.0.2'
   },
 
   :monitors => {
