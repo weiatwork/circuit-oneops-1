@@ -52,7 +52,12 @@ module AzureNetwork
     end
 
     def delete_security_group(resource_group_name, net_sec_group_name)
-      @network_service.network_security_groups.get(resource_group_name, net_sec_group_name).destroy
+      nsg_exists = @network_service.network_security_groups.check_net_sec_group_exists(resource_group_name, net_sec_group_name)
+      if !nsg_exists
+        OOLog.info("The NSG #{net_sec_group_name} does not exist. Moving on...")
+      else
+        @network_service.network_security_groups.get(resource_group_name, net_sec_group_name).destroy
+      end
     rescue MsRestAzure::AzureOperationError => e
       OOLog.info("AzureOperationError Error deleting NSG #{net_sec_group_name}")
       OOLog.info("Error response: #{e.body}") unless e.body.nil?
