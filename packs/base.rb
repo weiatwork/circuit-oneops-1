@@ -999,6 +999,7 @@ end
   { :from => 'secrets-client',  :to => 'user'},
   { :from => 'secrets-client',  :to => 'certificate'},
   { :from => 'secrets-client',  :to => 'volume'},
+  { :from => 'objectstore',  :to => 'secrets-client'},
   { :from => 'objectstore',  :to => 'user'},
   { :from => 'service-mesh', :to => 'os'},
   { :from => 'service-mesh', :to => 'volume'  }
