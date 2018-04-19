@@ -171,7 +171,7 @@ describe "File #{file_dhclient}" do
   customer_domains.split(',').each do |cd|
     describe cd do
       it 'is a valid domain' do
-        expect(cd + '.').to match(/(\S+\.)\1*/)
+        expect(cd + '.').to match(/"(\S+\.)\1*\S+"/)
       end
     end
   end

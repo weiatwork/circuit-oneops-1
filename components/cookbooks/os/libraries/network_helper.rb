@@ -50,7 +50,7 @@ module NetworkHelper
     end
     domains_arr.push(trim_customer_domain(node))
 
-    [domains_arr.join(',').downcase,
+    [domains_arr.map{|i| '"' + i + '"'}.join(',').downcase,
      domains_arr.map { |i| i + '.' }.join(' ').downcase]
   end
 end
