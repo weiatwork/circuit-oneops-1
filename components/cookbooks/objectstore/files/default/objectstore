@@ -207,6 +207,40 @@ def download_directory_or_file(conn, options, argv)
   end
 end
 
+def get_storage_account_key(config)
+  client_secret = JSON.parse(File.read('/secrets/objectstore_creds'))
+  storage_account_name = config['storage_account_id'].split('/')[8]
+  subscription_id = config['storage_account_id'].split('/')[2]
+  conn = Fog::Storage::AzureRM.new(
+    subscription_id: subscription_id,
+    client_id: config['client_id'],
+    client_secret: client_secret['client_secret'],
+    tenant_id: config['tenant_id']
+  )
+  access_keys = nil
+  conn.storage_accounts.each do |storage_acc|
+    if storage_acc.name.eql?(storage_account_name)
+      access_keys = storage_acc.get_access_keys
+    end
+  end
+  access_keys[0].value
+end
+
+def save_key(key)
+  key_hash = {
+    'key' => key
+  }
+  File.open(ENV['HOME'] + '/.key', 'w+') do |f|
+    f.write(key_hash.to_json)
+  end
+end
+
+def get_new_key_in_case_of_exception(config)
+  puts 'Invalid key. Trying to get a new one. Please try again once the process is finished'
+  key = get_storage_account_key(config)
+  save_key(key)
+end
+
 # Pretty format size.
 # @param size size in bytes.
 def format_size(size)
@@ -243,49 +277,94 @@ if action.nil?
 end
 
 # Get creds from openrc s3, cloudfiles, etc will use
-creds = JSON.parse(File.read('/etc/objectstore_creds.json'))
-creds_sym = Hash[creds.map { |(k, v)| [k.to_sym, v] }]
+config = JSON.parse(File.read('/etc/objectstore_config.json'))
+config_sym = Hash[config.map { |(k, v)| [k.to_sym, v] }]
 conn = nil
-provider = creds['provider']
-
-case provider
-when /OpenStack/
-  require 'fog'
-  puts "Connecting to #{creds['openstack_auth_url']} as #{creds['openstack_username']}..."
-  conn = Fog::Storage.new(creds_sym)
-when /Azure/
-  require 'fog/azurerm'
-  puts "Connecting to #{creds['azure_storage_account_name']}..."
-  conn = Fog::Storage::AzureRM.new(creds)
-else
-  puts "Provider #{provider} not supported!"
-  exit 1
+provider = config['provider']
+begin
+  case provider
+  when /OpenStack/
+    require 'fog'
+    puts "Connecting to #{config['openstack_auth_url']} as #{config['openstack_username']}..."
+    conn = Fog::Storage.new(config_sym)
+  when /Azure/
+    require 'fog/azurerm'
+    storage_account_name = config['storage_account_id'].split('/')[8]
+    puts "Connecting to #{storage_account_name}..."
+    key_file_content = File.file?(ENV['HOME'] + '/.key') ? JSON.parse(File.read(ENV['HOME'] + '/.key')) : nil
+    if key_file_content.nil?
+      key = get_storage_account_key(config)
+      save_key(key)
+    else
+      key = key_file_content['key']
+    end
+    conn = Fog::Storage::AzureRM.new(
+      azure_storage_account_name: storage_account_name,
+      azure_storage_access_key: key
+    )
+  else
+    puts "Provider #{provider} not supported!"
+    exit 1
+  end
+rescue
 end
 
 case action
 when 'list'
-  list_directories_or_files(conn, options, ARGV)
+  begin
+    list_directories_or_files(conn, options, ARGV)
+  rescue RuntimeError => ex
+    if ex.to_s.include?('Server failed to authenticate the request. Make sure the value of Authorization header is formed correctly including the signature')
+      get_new_key_in_case_of_exception(config)
+    end
+  rescue
+    puts 'The key has been tampered or the credentials are expired, Objectstore will not work.'
+  end
 
 when 'delete'
   if ARGV.size < 2
     puts 'Usage: objectstore delete <container>/<blob>'
     exit 1
   end
-  delete_directory_or_file(conn, ARGV)
+  begin
+    delete_directory_or_file(conn, ARGV)
+  rescue RuntimeError => ex
+    if ex.to_s.include?('Server failed to authenticate the request. Make sure the value of Authorization header is formed correctly including the signature')
+      get_new_key_in_case_of_exception(config)
+    end
+  rescue
+    puts 'The key has been tampered or the credentials are expired, Objectstore will not work.'
+  end
 
 when 'upload'
   if ARGV.size < 3
     puts 'Usage: upload <directory/file> <container>'
     exit 1
   end
-  upload_directory_or_file(conn, ARGV, provider)
+  begin
+    upload_directory_or_file(conn, ARGV, provider)
+  rescue RuntimeError => ex
+    if ex.to_s.include?('Server failed to authenticate the request. Make sure the value of Authorization header is formed correctly including the signature')
+      get_new_key_in_case_of_exception(config)
+    end
+  rescue
+    puts 'The key has been tampered or the credentials are expired, Objectstore will not work.'
+  end
 
 when 'download'
   if ARGV.size < 3
     puts 'Usage: objectstore download <container/blob> <local-path>'
     exit 1
   end
-  download_directory_or_file(conn, options, ARGV)
+  begin
+    download_directory_or_file(conn, options, ARGV)
+  rescue RuntimeError => ex
+    if ex.to_s.include?('Server failed to authenticate the request. Make sure the value of Authorization header is formed correctly including the signature')
+      get_new_key_in_case_of_exception(config)
+    end
+  rescue
+    puts 'The key has been tampered or the credentials are expired, Objectstore will not work.'
+  end
 else
   puts "Action #{action} not supported!"
   exit 1
