@@ -9,3 +9,12 @@ grouping 'default',
          :access => 'global',
          :packages => %w[base service.filestore mgmt.cloud.service cloud.service cloud.zone.service],
          :namespace => true
+
+attribute 'tenant_id',
+  :description => 'Tenant ID',
+  :required => 'required',
+  :format => {
+    :help => 'Tenant ID for Azure',
+    :category => '1.Authentication',
+    :order => 1
+  }

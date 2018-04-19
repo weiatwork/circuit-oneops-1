@@ -1,9 +1,9 @@
 cloud_name = node[:workorder][:cloud][:ciName]
 cloud_type = node[:workorder][:services][:filestore][cloud_name][:ciClassName].split('.').last.downcase
+ci_attr_cloud = node[:workorder][:services][:filestore][cloud_name][:ciAttributes]
 
 case cloud_type
 when /swift/
-  ci_attr_cloud = node[:workorder][:services][:filestore][cloud_name][:ciAttributes]
   domain = ci_attr_cloud.key('domain') ? ci_attr_cloud[:domain] : 'default'
   auth_url = ci_attr_cloud[:endpoint].include?('tokens') ? ci_attr_cloud[:endpoint] : "#{ci_attr_cloud[:endpoint]}/tokens"
   config = {
@@ -32,7 +32,9 @@ when /azureobjectstore/
   ci_attr = node[:workorder][:rfcCi][:ciAttributes]
   config = {
     :provider                   => 'Azure',
-    :storage_account_id         => ci_attr[:storage_id]
+    :storage_account_id         => ci_attr[:storage_id],
+    :client_id                  => ci_attr[:client_id],
+    :tenant_id                  => ci_attr_cloud[:tenant_id]
   }
 end
 

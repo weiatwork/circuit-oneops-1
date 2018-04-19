@@ -207,14 +207,15 @@ def download_directory_or_file(conn, options, argv)
   end
 end
 
-def get_storage_account_key(az_creds, storage_id)
-  storage_account_name = storage_id.split('/')[8]
-  subscription_id = storage_id.split('/')[2]
+def get_storage_account_key(config)
+  client_secret = JSON.parse(File.read('/etc/objectstore_creds'))
+  storage_account_name = config['storage_account_id'].split('/')[8]
+  subscription_id = config['storage_account_id'].split('/')[2]
   conn = Fog::Storage::AzureRM.new(
     subscription_id: subscription_id,
-    client_id: az_creds['client_id'],
-    client_secret: az_creds['client_secret'],
-    tenant_id: az_creds['tenant_id']
+    client_id: config['client_id'],
+    client_secret: client_secret['client_secret'],
+    tenant_id: config['tenant_id']
   )
   access_keys = nil
   conn.storage_accounts.each do |storage_acc|
@@ -234,9 +235,9 @@ def save_key(key)
   end
 end
 
-def get_new_key_in_case_of_exception(az_creds, storage_id)
+def get_new_key_in_case_of_exception(config)
   puts 'Invalid key. Trying to get a new one. Please try again once the process is finished'
-  key = get_storage_account_key(az_creds, storage_id)
+  key = get_storage_account_key(config)
   save_key(key)
 end
 
@@ -279,33 +280,33 @@ end
 config = JSON.parse(File.read('/etc/objectstore_config.json'))
 config_sym = Hash[config.map { |(k, v)| [k.to_sym, v] }]
 conn = nil
-az_creds = nil
 provider = config['provider']
-
-case provider
-when /OpenStack/
-  require 'fog'
-  puts "Connecting to #{config['openstack_auth_url']} as #{config['openstack_username']}..."
-  conn = Fog::Storage.new(config_sym)
-when /Azure/
-  require 'fog/azurerm'
-  az_creds = JSON.parse(File.read('/secrets/objectstore_creds'))
-  storage_account_name = config['storage_account_id'].split('/')[8]
-  puts "Connecting to #{storage_account_name}..."
-  key_file_content = File.file?(ENV['HOME'] + '/.key') ? JSON.parse(File.read(ENV['HOME'] + '/.key')) : nil
-  if key_file_content.nil?
-    key = get_storage_account_key(az_creds, config['storage_account_id'])
-    save_key(key)
+begin
+  case provider
+  when /OpenStack/
+    require 'fog'
+    puts "Connecting to #{config['openstack_auth_url']} as #{config['openstack_username']}..."
+    conn = Fog::Storage.new(config_sym)
+  when /Azure/
+    require 'fog/azurerm'
+    storage_account_name = config['storage_account_id'].split('/')[8]
+    puts "Connecting to #{storage_account_name}..."
+    key_file_content = File.file?(ENV['HOME'] + '/.key') ? JSON.parse(File.read(ENV['HOME'] + '/.key')) : nil
+    if key_file_content.nil?
+      key = get_storage_account_key(config)
+      save_key(key)
+    else
+      key = key_file_content['key']
+    end
+    conn = Fog::Storage::AzureRM.new(
+      azure_storage_account_name: storage_account_name,
+      azure_storage_access_key: key
+    )
   else
-    key = key_file_content['key']
+    puts "Provider #{provider} not supported!"
+    exit 1
   end
-  conn = Fog::Storage::AzureRM.new(
-    azure_storage_account_name: storage_account_name,
-    azure_storage_access_key: key
-  )
-else
-  puts "Provider #{provider} not supported!"
-  exit 1
+rescue
 end
 
 case action
@@ -314,8 +315,10 @@ when 'list'
     list_directories_or_files(conn, options, ARGV)
   rescue RuntimeError => ex
     if ex.to_s.include?('Server failed to authenticate the request. Make sure the value of Authorization header is formed correctly including the signature')
-      get_new_key_in_case_of_exception(az_creds, config['storage_account_id'])
+      get_new_key_in_case_of_exception(config)
     end
+  rescue
+    puts 'The key has been tampered, Objectstore will not work. Please revert the key.'
   end
 
 when 'delete'
@@ -327,8 +330,10 @@ when 'delete'
     delete_directory_or_file(conn, ARGV)
   rescue RuntimeError => ex
     if ex.to_s.include?('Server failed to authenticate the request. Make sure the value of Authorization header is formed correctly including the signature')
-      get_new_key_in_case_of_exception(az_creds, config['storage_account_id'])
+      get_new_key_in_case_of_exception(config)
     end
+  rescue
+    puts 'The key has been tampered, Objectstore will not work. Please revert the key.'
   end
 
 when 'upload'
@@ -340,8 +345,10 @@ when 'upload'
     upload_directory_or_file(conn, ARGV, provider)
   rescue RuntimeError => ex
     if ex.to_s.include?('Server failed to authenticate the request. Make sure the value of Authorization header is formed correctly including the signature')
-      get_new_key_in_case_of_exception(az_creds, config['storage_account_id'])
+      get_new_key_in_case_of_exception(config)
     end
+  rescue
+    puts 'The key has been tampered, Objectstore will not work. Please revert the key.'
   end
 
 when 'download'
@@ -353,8 +360,10 @@ when 'download'
     download_directory_or_file(conn, options, ARGV)
   rescue RuntimeError => ex
     if ex.to_s.include?('Server failed to authenticate the request. Make sure the value of Authorization header is formed correctly including the signature')
-      get_new_key_in_case_of_exception(az_creds, config['storage_account_id'])
+      get_new_key_in_case_of_exception(config)
     end
+  rescue
+    puts 'The key has been tampered, Objectstore will not work. Please revert the key.'
   end
 else
   puts "Action #{action} not supported!"
