@@ -37,7 +37,7 @@ attribute 'regionname',
           :default => '',
           :format => {
             :help => 'Region Name Attribute',
-            :category => '1.Authentication',	
+            :category => '1.Authentication',
             :order => 3
           }
 
