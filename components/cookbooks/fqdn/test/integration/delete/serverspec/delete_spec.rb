@@ -16,217 +16,26 @@ rescue Exception =>e
 end
 
 lib = Library.new
+entries = lib.build_entry_list
+entries.each do |entry|
+  dns_name = entry['name']
+  dns_value = entry['values']
+
+  dns_val = dns_value.is_a?(String) ? [dns_value] : dns_value
+
+  if !dns_val.nil? && dns_val.size != 0
+    dns_val.each do |value|
+      flag = lib.check_record(dns_name, value)
+      context "FQDN mapping" do
+        it "should be deleted" do
+          expect(flag).to eq(true)
+        end
+      end
+    end
+  end
+end
 
 cloud_name = $node['workorder']['cloud']['ciName']
-service_attrs = lib.get_dns_service
-
-customer_domain = lib.get_customer_domain
-
-entries = Array.new
-
-is_hostname_entry = false
-
-describe "DependsOn entry" do
-  context "DependsOn entry" do
-    it "should exist" do
-      expect($node['workorder']['payLoad']['DependsOn']).not_to be_nil
-    end
-  end
-end
-
-
-lbs = $node['workorder']['payLoad']['DependsOn'].select { |d| d['ciClassName'] =~ /Lb/ }
-os = $node['workorder']['payLoad']['DependsOn'].select { |d| d['ciClassName'] =~ /Os/ }
-cluster = $node['workorder']['payLoad']['DependsOn'].select { |d| d['ciClassName'] =~ /Cluster/ }
-
-ad_ci = nil
-if lib.is_windows && os.size == 1
-  ad_ci = os
-  ad_object_name = 'hostname'
-elsif lib.is_windows && cluster.size == 1
-  ad_ci = cluster
-  ad_object_name = 'cluster_name'
-end
-
-if ad_ci
-  dns_name = (ad_ci[0]['ciAttributes'][ad_object_name] + '.' + get_windows_domain).downcase
-  is_hostname_entry = true if os.size == 1
-
-elsif $node['workorder']['payLoad'].has_key?("Entrypoint")
-  ci = $node['workorder']['payLoad']['Entrypoint'][0]
-  dns_name = (ci['ciName'] +customer_domain).downcase
-
-elsif lbs.size > 0
-  ci = lbs.first
-  ci_name_parts = ci['ciName'].split('-')
-  ci_name_parts.pop
-  ci_name_parts.pop
-  ci_name = ci_name_parts.join('-')
-  dns_name = (ci_name + customer_domain).downcase
-
-else
-
-  if os.size == 0
-
-    ci_name = $node['workorder']['payLoad']['RealizedAs'].first['ciName']
-    dns_name = (ci_name + "." + $node['workorder']['box']['ciName'] + customer_domain).downcase
-
-  else
-
-    context "multiple os for same fqdn" do
-      it "should not exist" do
-        exists = (os.size > 1)
-        expect(exists).to eq(false)
-      end
-    end
-
-
-    is_hostname_entry = true
-    ci = os.first
-
-    provider_service = $node['workorder']['services']['dns'][cloud_name]['ciClassName'].split(".").last.downcase
-    if provider_service =~ /azuredns/
-      dns_name = (ci['ciAttributes']['hostname']).downcase
-    else
-      dns_name = (ci['ciAttributes']['hostname'] + customer_domain).downcase
-    end
-  end
-end
-
-
-aliases = Array.new
-if $node['workorder']['rfcCi']['ciAttributes'].has_key?("aliases") && !is_hostname_entry
-  begin
-    aliases = JSON.parse($node['workorder']['rfcCi']['ciAttributes']['aliases'])
-  rescue Exception =>e
-    puts "could not parse aliases json"
-  end
-end
-
-
-full_aliases = Array.new
-if $node['workorder']['rfcCi']['ciAttributes'].has_key?("full_aliases") && !is_hostname_entry
-  begin
-    full_aliases = JSON.parse($node['workorder']['rfcCi']['ciAttributes']['full_aliases'])
-  rescue Exception =>e
-    puts "could not parse full_aliases json"
-  end
-end
-
-
-deps = $node['workorder']['payLoad']['DependsOn'].select { |d| d['ciAttributes'].has_key? "dns_record" }
-values = lib.get_dns_values(deps)
-
-context "cloud_dns_id" do
-  it "should exist" do
-    exists = service_attrs['cloud_dns_id'].nil? || service_attrs['cloud_dns_id'].empty?
-    expect(exists).to eq(false)
-  end
-end
-
-entries.push({:name => dns_name, :values => values })
-deletable_entries = [{:name => dns_name, :values => values }]
-
-aliases.each do |a|
-  next if a.empty?
-  next if a == $node['workorder']['box']['ciName']
-  alias_name = a + customer_domain
-  entries.push({:name => alias_name, :values => dns_name })
-  deletable_entries.push({:name => alias_name, :values => dns_name })
-end
-
-if ad_ci
-  primary_platform_dns_name = dns_name.split('.').first + get_customer_domain.split('.').select{|i| (i != service_attrs['cloud_dns_id'])}.join('.')
-else
-  primary_platform_dns_name = dns_name.split('.').select{|i| (i != service_attrs['cloud_dns_id'])}.join('.')
-end
-
-if $node['workorder']['rfcCi']['ciAttributes'].has_key?("ptr_enabled") &&
-    $node['workorder']['rfcCi']['ciAttributes']['ptr_enabled'] == "true"
-
-  ptr_value = dns_name
-  if $node['workorder']['rfcCi']['ciAttributes']['ptr_source'] == "platform"
-    ptr_value = primary_platform_dns_name
-    if is_hostname_entry
-      ptr_value = $node['workorder']['box']['ciName']
-      ptr_value += customer_domain.gsub("\."+service_attrs['cloud_dns_id']+"\."+service_attrs['zone'],"."+service_attrs['zone'])
-    end
-  end
-
-  values.each do |ip|
-    next unless ip =~ /^\d+\.\d+\.\d+\.\d+$/ || ip =~ Resolv::IPv6::Regex
-    ptr = {:name => ip, :values => ptr_value.downcase}
-    entries.push(ptr)
-    deletable_entries.push(ptr)
-  end
-end
-
-#artistic liberty
-
-if $node.has_key?("gslb_domain") && !$node['gslb_domain'].nil?
-  value_array = [ $node['gslb_domain'] ]
-else
-  value_array = []
-  if values.class.to_s == "String"
-    value_array.push(values)
-  else
-    value_array += values
-  end
-
-end
-
-is_a_record = false
-value_array.each do |val|
-  if val =~ /^\d+\.\d+\.\d+\.\d+$/ || val =~ Resolv::IPv6::Regex
-    is_a_record = true
-  end
-end
-
-if $node['workorder']['cloud']['ciAttributes']['priority'] != "1"
-  if !$node.has_key?("gslb_domain")
-    entries.push({:name => primary_platform_dns_name, :values => [] })
-  end
-else
-  if $node['dns_action'] != "delete" ||
-      ($node['dns_action']  == "delete" && $node['is_last_active_cloud']) ||
-      ($node['dns_action']  == "delete" && is_a_record)
-
-    entries.push({:name => primary_platform_dns_name, :values => value_array })
-    deletable_entries.push({:name => primary_platform_dns_name, :values => value_array })
-  end
-
-  aliases.each do |a|
-    next if a.empty?
-    next if $node['dns_action'] == "delete" && !$node['is_last_active_cloud']
-    # skip if user has a short alias same as platform name
-    next if a == $node['workorder']['box']['ciName']
-
-    alias_name = a  + customer_domain
-    alias_platform_dns_name = alias_name.gsub("\."+service_attrs['cloud_dns_id']+"\."+service_attrs['zone'],"."+service_attrs['zone']).downcase
-
-    if $node.has_key?("gslb_domain") && !$node['gslb_domain'].nil?
-      primary_platform_dns_name = $node['gslb_domain']
-    end
-
-    entries.push({:name => alias_platform_dns_name, :values => primary_platform_dns_name })
-    deletable_entries.push({:name => alias_platform_dns_name, :values => primary_platform_dns_name })
-  end
-
-  if !full_aliases.nil?
-    full_aliases.each do |full|
-      next if $node['dns_action'] == "delete" && !$node['is_last_active_cloud']
-
-      full_value = primary_platform_dns_name
-      if $node.has_key?("gslb_domain") && !$node['gslb_domain'].nil?
-        full_value = $node['gslb_domain']
-      end
-
-      entries.push({:name => full, :values => full_value, :is_hijackable => $node['workorder']['rfcCi']['ciAttributes']['hijackable_full_aliases'] })
-      deletable_entries.push({:name => full, :values => full_value})
-    end
-  end
-
-end
 
 depends_on_lb = false
 $node['workorder']['payLoad']['DependsOn'].each do |dep|
@@ -281,17 +90,6 @@ if env.has_key?("global_dns") && env["global_dns"] == "true" && depends_on_lb &&
     it "should not exist" do
       status = resp_obj["message"]
       expect(status).to eq("The GSLB service does not exist")
-    end
-  end
-end
-
-entries.each do |entry|
-  dns_name = entry[:name]
-  dns_value = entry[:values]
-  flag = lib.check_record(dns_name, dns_value)
-  context "FQDN mapping" do
-    it "should be deleted" do
-      expect(flag).to eq(true)
     end
   end
 end

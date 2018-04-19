@@ -50,4 +50,10 @@ autopurge.snapRetainCount=<%=@zookeeper[:autopurge_snapretaincount] %>
 # Set to "0" to disable auto purge feature
 autopurge.purgeInterval=<%=@zookeeper[:autopurge_purgeinterval] %>
 
+<% if @zookeeper[:enable_zk_sasl_plain].eql?('true') -%>
 
+authProvider.1=org.apache.zookeeper.server.auth.SASLAuthenticationProvider
+requireClientAuthScheme=sasl
+jaasLoginRenew=3600000
+
+<% end -%>
