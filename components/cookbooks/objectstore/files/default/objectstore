@@ -318,7 +318,7 @@ when 'list'
       get_new_key_in_case_of_exception(config)
     end
   rescue
-    puts 'The key has been tampered, Objectstore will not work. Please revert the key.'
+    puts 'The key has been tampered or the credentials are expired, Objectstore will not work.'
   end
 
 when 'delete'
@@ -333,7 +333,7 @@ when 'delete'
       get_new_key_in_case_of_exception(config)
     end
   rescue
-    puts 'The key has been tampered, Objectstore will not work. Please revert the key.'
+    puts 'The key has been tampered or the credentials are expired, Objectstore will not work.'
   end
 
 when 'upload'
@@ -348,7 +348,7 @@ when 'upload'
       get_new_key_in_case_of_exception(config)
     end
   rescue
-    puts 'The key has been tampered, Objectstore will not work. Please revert the key.'
+    puts 'The key has been tampered or the credentials are expired, Objectstore will not work.'
   end
 
 when 'download'
@@ -363,7 +363,7 @@ when 'download'
       get_new_key_in_case_of_exception(config)
     end
   rescue
-    puts 'The key has been tampered, Objectstore will not work. Please revert the key.'
+    puts 'The key has been tampered or the credentials are expired, Objectstore will not work.'
   end
 else
   puts "Action #{action} not supported!"
