@@ -208,7 +208,7 @@ def download_directory_or_file(conn, options, argv)
 end
 
 def get_storage_account_key(config)
-  client_secret = JSON.parse(File.read('/etc/objectstore_creds'))
+  client_secret = JSON.parse(File.read('/secrets/objectstore_creds'))
   storage_account_name = config['storage_account_id'].split('/')[8]
   subscription_id = config['storage_account_id'].split('/')[2]
   conn = Fog::Storage::AzureRM.new(
