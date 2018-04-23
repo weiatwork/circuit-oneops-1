@@ -147,8 +147,12 @@ ruby_block 'set flavor/image/availability_zone' do
 
       (node[:workorder][:payLoad].has_key?("os")) ? (os = node[:workorder][:payLoad][:os].first) : (os = nil)
 
-      fast_image    = nil
-      default_image = conn.images.get node.image_id
+      fast_image = nil
+      if node.has_key?('image_id') && !node[:image_id].nil? && !node[:image_id].empty?
+        default_image = conn.images.get node.image_id
+      else
+        default_image = nil
+      end
       image_list    = conn.images
       custom_id     = (!os.nil? && os[:ciAttributes].has_key?("image_id") && !os[:ciAttributes][:image_id].empty?)
 
