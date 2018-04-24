@@ -1,5 +1,3 @@
-require "#{$circuit_path}/circuit-oneops-1/components/spec_helper.rb"
-
 describe user('cassandra') do
     it { should exist }
 end
