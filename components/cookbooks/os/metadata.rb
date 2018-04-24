@@ -46,7 +46,7 @@ attribute 'tags',
 attribute 'ostype',
   :description => "OS Type",
   :required => "required",
-  :default => "centos-7.3",
+  :default => "centos-7.4",
   :format => {
     :important => true,
     :help => 'OS types are mapped to the correct cloud provider OS images - see cloud ostype when this value is default-cloud',
