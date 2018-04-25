@@ -7,7 +7,11 @@ require 'json'
 # Segment limit and buffer size for Openstack file upload
 SEGMENT_LIMIT = 5 * 1024 * 1024 * 1024 - 1       # 5GB -1
 BUFFER_SIZE = 1024 * 1024                        # 1MB
-KEY_EXPIRE_ERROR_MESSAGE = 'Server failed to authenticate the request. Make sure the value of Authorization header is formed correctly including the signature'
+KEY_EXPIRE_ERROR_MESSAGE = 'Server failed to authenticate the request. Make sure the value of Authorization header is formed correctly including the signature'.freeze
+STATUS_CODES = {
+  success: [200, 201, 202, 203, 204],
+  failure: [400, 401, 402, 403, 404, 500, 501, 502, 503]
+}
 
 def list_directories_or_files(conn, options, argv)
   # check if need to list files or directories
@@ -208,35 +212,44 @@ def download_directory_or_file(conn, options, argv)
   end
 end
 
+def get_status(response)
+  status_code = response.env.status
+  STATUS_CODES[:success].include? status_code
+end
+
 def get_storage_account_key(config)
   require 'faraday'
   client_secret = JSON.parse(File.read('/secrets/objectstore_creds'))
-  azure_base_management_uri = "https://management.azure.com/"
+  azure_base_management_uri = 'https://management.azure.com/'
   app_id = config['client_id']
   app_id_secret = client_secret['client_secret']
   tenant_id = config['tenant_id']
   login_url = "https://login.microsoftonline.com/#{tenant_id}/oauth2/token"
 
-  postdata = {
-  client_id: app_id,
-  client_secret: app_id_secret,
-  resource: azure_base_management_uri,
-  grant_type: 'client_credentials'
+  post_data = {
+    client_id: app_id,
+    client_secret: app_id_secret,
+    resource: azure_base_management_uri,
+    grant_type: 'client_credentials'
   }
 
   connection = Faraday.new
-  response = connection.send('post', login_url) do |request|  
-  request.headers['Content-type'] = 'application/x-www-form-urlencoded'
-  request.body = postdata.nil? ? '{}' : postdata
+  response = connection.send('post', login_url) do |request|
+    request.headers['Content-type'] = 'application/x-www-form-urlencoded'
+    request.body = post_data.nil? ? '{}' : post_data
   end
 
+  response_status = get_status(response)
+  raise 'Unable to fetch access token. Please retry' unless response_status
   token = JSON.parse(response.body)['access_token']
   storage_account_uri = "#{azure_base_management_uri}#{config['storage_account_id']}/listKeys?api-version=2017-06-01"
   connection = Faraday.new
-  response = connection.send('post', storage_account_uri) do |request|  
-  request.headers['Content-type'] = 'application/json'
-  request.headers['Authorization'] = "Bearer #{token}"
+  response = connection.send('post', storage_account_uri) do |request|
+    request.headers['Content-type'] = 'application/json'
+    request.headers['Authorization'] = "Bearer #{token}"
   end
+  response_status = get_status(response)
+  raise 'Unable to get storage account access key' unless response_status
   JSON.parse(response.body)['keys'][0]['value']
 end
 
@@ -323,10 +336,10 @@ begin
 rescue => ex
   if ex.to_s.include? 'invalid base64'
     puts 'The key has been tampered. The objectstore will not work.'
+    exit 1
   else
-    puts ex
+    raise ex
   end
-  exit 1
 end
 
 case action
