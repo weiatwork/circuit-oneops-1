@@ -267,16 +267,16 @@ def execute_and_verify(shards, replicas, computes, cloud_provider, sharing_colle
 end
 
 test_id_expected_shard_map = Hash.new()
-test_id_expected_shard_map["TEST_AZURE_NO_SHARING_NO_EXISTING_COLLECYIONS",] = {1=>["34951920-1_11", "34951920-2_12", "34951921-1_21"], 2=>["34951920-3_13", "34951920-4_11", "34951921-2_22"]}
+test_id_expected_shard_map["TEST_AZURE_NO_SHARING_NO_EXISTING_COLLECTIONS",] = {1=>["34951920-1_11", "34951920-2_12", "34951921-1_21"], 2=>["34951920-3_13", "34951920-4_11", "34951921-2_22"]}
 test_id_expected_shard_map["TEST_AZURE_NO_SHARING",] = {1=>["34951920-3_13", "34951920-5_12", "34951921-3_23"], 2=>["34951920-2_12", "34951920-1_11", "34951921-4_21"]}
 test_id_expected_shard_map["TEST_AZURE_SHARING",] = {1=>["34951920-3_13", "34951920-2_12", "34951921-1_21"], 2=>["34951920-1_11", "34951920-4_11", "34951921-2_22"]}
-test_id_expected_shard_map["TEST_OPENSTACK_NO_SHARING_NO_EXISTING_COLLECYIONS",] = {1=>["34951920-1_11", "34951920-2_12", "34951921-1_21"], 2=>["34951920-3_13", "34951920-4_11", "34951921-2_22"]}
+test_id_expected_shard_map["TEST_OPENSTACK_NO_SHARING_NO_EXISTING_COLLECTIONS",] = {1=>["34951920-1_11", "34951920-2_12", "34951921-1_21"], 2=>["34951920-3_13", "34951920-4_11", "34951921-2_22"]}
 test_id_expected_shard_map["TEST_OPENSTACK_NO_SHARING",] = {1=>["34951920-5_12", "34951920-3_13", "34951921-4_21"], 2=>["34951920-1_11", "34951920-2_12", "34951921-3_23"]}
 test_id_expected_shard_map["TEST_OPENSTACK_SHARING",] = {1=>["34951920-1_11", "34951920-2_12", "34951921-1_21"], 2=>["34951920-3_13", "34951920-4_11", "34951921-2_22"]}
 
-execute_and_verify(2, 3, computes, 'azure', [], {}, test_id_expected_shard_map, "TEST_AZURE_NO_SHARING_NO_EXISTING_COLLECYIONS")
+execute_and_verify(2, 3, computes, 'azure', [], {}, test_id_expected_shard_map, "TEST_AZURE_NO_SHARING_NO_EXISTING_COLLECTIONS")
 execute_and_verify(2, 3, computes, 'azure', [], collections_payload, test_id_expected_shard_map, "TEST_AZURE_NO_SHARING")
 execute_and_verify(2, 3, computes, 'azure', ['collection1'], collections_payload, test_id_expected_shard_map, "TEST_AZURE_SHARING")
-execute_and_verify(2, 3, computes, 'openstack', [], {}, test_id_expected_shard_map, "TEST_OPENSTACK_NO_SHARING_NO_EXISTING_COLLECYIONS")
+execute_and_verify(2, 3, computes, 'openstack', [], {}, test_id_expected_shard_map, "TEST_OPENSTACK_NO_SHARING_NO_EXISTING_COLLECTIONS")
 execute_and_verify(2, 3, computes, 'openstack', [], collections_payload, test_id_expected_shard_map, "TEST_OPENSTACK_NO_SHARING")
 execute_and_verify(2, 3, computes, 'openstack', ['collection1'], collections_payload, test_id_expected_shard_map, "TEST_OPENSTACK_SHARING")
