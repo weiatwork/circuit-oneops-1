@@ -80,12 +80,12 @@ rfc_action    = rfcCi[:rfcAction]
 platform_name = node[:workorder][:box][:ciName]
 token_class   = node[:provider_class]
 
-Chef::Log.info("-------------------------------------------------------------")
+Chef::Log.info("------------------------------------------------------------")
 Chef::Log.info("Volume Size      : #{size}")
 Chef::Log.info("RFC Action       : #{rfc_action}")
 Chef::Log.info("Storage Provider : #{node[:storage_provider_class]}")
 Chef::Log.info("Storage          : #{storage.inspect.gsub("\n",' ')}")
-Chef::Log.info("-------------------------------------------------------------")
+Chef::Log.info("------------------------------------------------------------")
 
 # need ruby block so package resource above run first
 ruby_block 'create-iscsi-volume-ruby-block' do
