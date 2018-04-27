@@ -21,6 +21,7 @@ powershell_script "Allow Port #{binding_port}" do
 end
 
 website_physical_path = physical_path
+heartbeat_path = "#{physical_path}/heartbeat.html"
 
 certs = node.workorder.payLoad.DependsOn.select { |d| d[:ciClassName] =~ /Certificate/ }
 ssl_certificate_exists = false
@@ -49,6 +50,8 @@ end
   end
 end
 
+
+
 dotnetcore = node.workorder.rfcCi.ciAttributes
 
 if dotnetcore.has_key?("install_dotnetcore")
@@ -73,6 +76,13 @@ iis_web_site platform_name do
   certificate_hash thumbprint if ssl_certificate_exists
   action [:create, :update]
 end
+
+template heartbeat_path do
+  source 'heartbeat.erb'
+  cookbook 'iis-website'
+  mode '0755'
+end
+
 
 iis_windows_authentication 'enabling windows authentication' do
   site_name platform_name
