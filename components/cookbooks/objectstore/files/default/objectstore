@@ -7,6 +7,11 @@ require 'json'
 # Segment limit and buffer size for Openstack file upload
 SEGMENT_LIMIT = 5 * 1024 * 1024 * 1024 - 1       # 5GB -1
 BUFFER_SIZE = 1024 * 1024                        # 1MB
+KEY_EXPIRE_ERROR_MESSAGE = 'Server failed to authenticate the request. Make sure the value of Authorization header is formed correctly including the signature'.freeze
+STATUS_CODES = {
+  success: [200, 201, 202, 203, 204],
+  failure: [400, 401, 402, 403, 404, 500, 501, 502, 503]
+}
 
 def list_directories_or_files(conn, options, argv)
   # check if need to list files or directories
@@ -207,23 +212,45 @@ def download_directory_or_file(conn, options, argv)
   end
 end
 
+def get_status(response)
+  status_code = response.env.status
+  STATUS_CODES[:success].include? status_code
+end
+
 def get_storage_account_key(config)
+  require 'faraday'
   client_secret = JSON.parse(File.read('/secrets/objectstore_creds'))
-  storage_account_name = config['storage_account_id'].split('/')[8]
-  subscription_id = config['storage_account_id'].split('/')[2]
-  conn = Fog::Storage::AzureRM.new(
-    subscription_id: subscription_id,
-    client_id: config['client_id'],
-    client_secret: client_secret['client_secret'],
-    tenant_id: config['tenant_id']
-  )
-  access_keys = nil
-  conn.storage_accounts.each do |storage_acc|
-    if storage_acc.name.eql?(storage_account_name)
-      access_keys = storage_acc.get_access_keys
-    end
+  azure_base_management_uri = 'https://management.azure.com/'
+  app_id = config['client_id']
+  app_id_secret = client_secret['client_secret']
+  tenant_id = config['tenant_id']
+  login_url = "https://login.microsoftonline.com/#{tenant_id}/oauth2/token"
+
+  post_data = {
+    client_id: app_id,
+    client_secret: app_id_secret,
+    resource: azure_base_management_uri,
+    grant_type: 'client_credentials'
+  }
+
+  connection = Faraday.new
+  response = connection.send('post', login_url) do |request|
+    request.headers['Content-type'] = 'application/x-www-form-urlencoded'
+    request.body = post_data.nil? ? '{}' : post_data
   end
-  access_keys[0].value
+
+  response_status = get_status(response)
+  raise 'Unable to fetch access token. Please retry' unless response_status
+  token = JSON.parse(response.body)['access_token']
+  storage_account_uri = "#{azure_base_management_uri}#{config['storage_account_id']}/listKeys?api-version=2017-06-01"
+  connection = Faraday.new
+  response = connection.send('post', storage_account_uri) do |request|
+    request.headers['Content-type'] = 'application/json'
+    request.headers['Authorization'] = "Bearer #{token}"
+  end
+  response_status = get_status(response)
+  raise 'Unable to get storage account access key' unless response_status
+  JSON.parse(response.body)['keys'][0]['value']
 end
 
 def save_key(key)
@@ -306,7 +333,13 @@ begin
     puts "Provider #{provider} not supported!"
     exit 1
   end
-rescue
+rescue => ex
+  if ex.to_s.include? 'invalid base64'
+    puts 'The key has been tampered. The objectstore will not work.'
+    exit 1
+  else
+    raise ex
+  end
 end
 
 case action
@@ -314,11 +347,9 @@ when 'list'
   begin
     list_directories_or_files(conn, options, ARGV)
   rescue RuntimeError => ex
-    if ex.to_s.include?('Server failed to authenticate the request. Make sure the value of Authorization header is formed correctly including the signature')
+    if ex.to_s.include?(KEY_EXPIRE_ERROR_MESSAGE) && provider.eql?('Azure')
       get_new_key_in_case_of_exception(config)
     end
-  rescue
-    puts 'The key has been tampered or the credentials are expired, Objectstore will not work.'
   end
 
 when 'delete'
@@ -329,11 +360,9 @@ when 'delete'
   begin
     delete_directory_or_file(conn, ARGV)
   rescue RuntimeError => ex
-    if ex.to_s.include?('Server failed to authenticate the request. Make sure the value of Authorization header is formed correctly including the signature')
+    if ex.to_s.include?(KEY_EXPIRE_ERROR_MESSAGE) && provider.eql?('Azure')
       get_new_key_in_case_of_exception(config)
     end
-  rescue
-    puts 'The key has been tampered or the credentials are expired, Objectstore will not work.'
   end
 
 when 'upload'
@@ -344,11 +373,9 @@ when 'upload'
   begin
     upload_directory_or_file(conn, ARGV, provider)
   rescue RuntimeError => ex
-    if ex.to_s.include?('Server failed to authenticate the request. Make sure the value of Authorization header is formed correctly including the signature')
+    if ex.to_s.include?(KEY_EXPIRE_ERROR_MESSAGE) && provider.eql?('Azure')
       get_new_key_in_case_of_exception(config)
     end
-  rescue
-    puts 'The key has been tampered or the credentials are expired, Objectstore will not work.'
   end
 
 when 'download'
@@ -359,11 +386,9 @@ when 'download'
   begin
     download_directory_or_file(conn, options, ARGV)
   rescue RuntimeError => ex
-    if ex.to_s.include?('Server failed to authenticate the request. Make sure the value of Authorization header is formed correctly including the signature')
+    if ex.to_s.include?(KEY_EXPIRE_ERROR_MESSAGE) && provider.eql?('Azure')
       get_new_key_in_case_of_exception(config)
     end
-  rescue
-    puts 'The key has been tampered or the credentials are expired, Objectstore will not work.'
   end
 else
   puts "Action #{action} not supported!"
