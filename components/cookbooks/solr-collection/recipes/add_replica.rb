@@ -1,5 +1,5 @@
 extend SolrCollection::Util
-require_relative 'replica_distributor'
+require "#{File.dirname(__FILE__)}/replica_distributor"
 require 'json'
 
 # For the given shard, add a replica to the given IP
@@ -25,7 +25,7 @@ Chef::Log.info("*** Placing replicas for #{node['collection_name']} ***")
 
 collections_for_node_sharing = JSON.parse(node['collections_for_node_sharing'])
 collections_for_node_sharing.collect! {|collection_name| collection_name.strip }
-collections_for_node_sharing = collections_for_node_sharing.reject {|coll| coll == node['collection_name']}
+collections_for_node_sharing = collections_for_node_sharing.reject {|coll| coll == node['collection_name'] || coll == 'NO_OP_BY_DEFAULT'}
 ipaddress = node['ipaddress']
 port_num = node['port_num'].to_i
 
