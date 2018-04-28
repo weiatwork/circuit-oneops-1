@@ -17,7 +17,7 @@ directory solr_pack_dir do
   mode '0755'
   action :create
 end
-# create /opt/oneops/deployment_status.txt to track the deployment progress
+# create /opt/solr/deployment_status.txt to track the deployment progress
 file "/opt/solr/deployment_status.txt" do
   content deployment_status_file_contents
   action :create

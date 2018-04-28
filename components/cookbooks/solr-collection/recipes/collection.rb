@@ -100,7 +100,7 @@ ruby_block 'create_collection' do
                     }
                     collection_api(node['ipaddress'], port_num, params, config_name)
                 end
-                run_context.include_recipe 'solr-collection::assign_replicas'
+                run_context.include_recipe 'solr-collection::add_replica'
             end
         else
             coll_max_shards_per_node = collection_state_obj["maxShardsPerNode"]
