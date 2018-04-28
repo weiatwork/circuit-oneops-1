@@ -91,17 +91,11 @@ if provider =~ /openstack/i
   describe 'Fast Image' do
     image_used   = conn.images.get (server.image)['id']
     pattern      = /[a-zA-Z]{1,20}-#{ostype.gsub(/\./, "")}-\d{4}-v\d{8}-\d{4}/i
+    images_list = conn.images
+    pattern_snap = /snapshot/i
 
-    if image_used.name =~ pattern
-      images_list = conn.images
-      pattern_snap = /snapshot/i
-      context 'When fast image' do
-        it 'Should have config in node' do
-          expect($node[:workorder].has_key?('config')).to be true
-        end
-        it 'Should have fast image flag set' do
-          expect(($node[:workorder][:config].has_key?('FAST_IMAGE') && $node[:workorder][:config][:FAST_IMAGE].to_s.downcase == "true")).to be true
-        end
+    if $node[:workorder].has_key?('config')
+      if $node[:workorder][:config].has_key?('FAST_IMAGE') && $node[:workorder][:config][:FAST_IMAGE].to_s.downcase == "true"
 
         if image_used.name =~ pattern_snap
           pattern_snap = nil
@@ -111,9 +105,12 @@ if provider =~ /openstack/i
             end
           end
         end
-        it 'Should be lastest' do
-          latest = find_latest_fast_image(images_list, pattern, pattern_snap)
-          expect(latest.name).to eql(image_used.name)
+
+        latest = find_latest_fast_image(images_list, pattern, pattern_snap)
+        if !latest.nil?
+          it 'Should be lastest fast image' do
+            expect(latest.name).to eql(image_used.name)
+          end
         end
       end
     end
