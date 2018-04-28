@@ -85,7 +85,9 @@ class ReplicaDistributor
       update_domains = update_domains.sort_by { |update_domain, ip_list| (get_core_count(update_domain, ip_list, used_ip_list))}
 
       # for each update domain, sort ips so that ip with less existing replicas is more eligible than ip with more replica
-      update_domains = update_domains.each {|update_domain| update_domain[1].sort_by! {|x, y| used_ip_list.count(x) }}
+      update_domains.each do |update_domain|
+        update_domain[1] = update_domain[1].sort_by {|x, y| used_ip_list.count(x) }
+      end
 
       cloudId_to_ips_map[cloudId] = update_domains
     end
@@ -188,7 +190,7 @@ class ReplicaDistributor
       ip_list.flatten!
 
       #sort by used ips, in ascending order of less used to more
-      ip_list.sort_by! {|x, y| selected_ip_list.count(x) }
+      ip_list = ip_list.sort_by {|x, y| selected_ip_list.count(x) }
 
       # Always select the 0th ip as it has least no. of cores hosted.
       # If this ip was already selected in prev. iteration then it should have removed from the list
@@ -271,7 +273,7 @@ class ReplicaDistributor
 
     # Fail if not enough ips to assign replicas
     if (shards * replicas) > collection_ip_list.size
-      raise "No enough computes to assign replicas. Computes availalable #{collection_ip_list.keys.size} & cores to be created #{shards * replicas}"
+      raise "No enough computes to assign replicas. Computes availalable #{collection_ip_list.size} & cores to be created #{shards * replicas}"
     end
 
     cloud_to_update_domain_ips_map = get_cloud_to_update_domain_ips_map(collection_ip_list, compute_ip_to_cloud_id_map,skip_ip_list = [])
