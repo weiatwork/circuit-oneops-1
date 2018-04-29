@@ -20,7 +20,7 @@ def execute_command(cmd)
   puts "executing command #{cmd}"
   result = `#{cmd}`
   if $? != 0
-    raise "Error while executing command #{cmd}"
+    raise "Error while executing command #{cmd} => #{result}"
   end
   puts "command output = #{result}"
   return result.split("\n")
@@ -31,9 +31,10 @@ end
 def get_file_path(regex_path, multiple_allowed=false)
   files = execute_command("find #{regex_path}")
   if files.size == 0
-    raise "No solr service found"
+    raise "No file found matching pattern #{regex_path}"
   elsif !multiple_allowed && files.size > 1
-    raise "Multiple solr service files found"
+    raise "Expected a single file but #{files.size} files found matching pattern #{regex_path}"
+    raise "#{files.size} files found matching pattern #{regex_path} but we expected only one. Files found = #{files.to_json}"
   end
   return multiple_allowed ? files : files[0]
 end
@@ -49,24 +50,27 @@ def validate_monitor_status(monitor_path, args, expected_status)
     end
   end 
   if actual_status != expected_status
-    raise "#{monitor_path} monitor status #{actual_status} does not match with expected status #{expected_status}"
+    raise "For command #{cmd} actual status #{actual_status} does not match with expected status #{expected_status}"
   end
 end
 
 # Validate propery file
+# For each line from the file, split the line by '=' to verify that it has property name and property value
+# Property value can be null or empty but property name must be valid string
 def validate_property_file(file_path)
   result = File.read(file_path).split("\n")
   result.each do |prop_string|
     prop_string.strip!
-    next if prop_string.empty?
-    if (prop_string[0] != ?# and prop_string[0] != ?=)
-      prop = prop_string.split("=")
-      if prop.size != 2
-        raise "Invalid property #{prop_string} in file #{file_path}"
-      end
+    next if prop_string.empty? || prop_string.start_with?("#")
+    prop = prop_string.split("=")
+    if prop.size == 0 || prop.size > 2
+      raise "Invalid property #{prop_string} in file #{file_path}"
+    elsif prop[0] == nil || prop[0].strip.empty?
+      raise "Invalid property name for #{prop_string} in file #{file_path}"
     end
   end
 end
+
 port = $node['solrcloud']['port_no']
 jolokia_port = $node['solrcloud']['jolokia_port']
 
