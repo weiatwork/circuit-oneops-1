@@ -1,5 +1,5 @@
 * [What is Kitchen Verify? ](#what-is-kitchen-verify)
-* [Implementing Kitchen Verify](Implementing Kitchen-verify)
+* [Implementing Kitchen Verify](#implementing-kitchen-verify)
 * [Accessing node attributes inside Kitchen Verify](accessing-node-attributes-inside-kitchen-verify)
 * [Solrcloud Tests Using Kitchen Verify](solrcloud-tests-using-kitchen-verify)
  * [Executing command](executing-command)
