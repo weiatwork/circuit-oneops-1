@@ -2,11 +2,11 @@
 * [Implementing Kitchen Verify](#implementing-kitchen-verify)
 * [Accessing node attributes inside Kitchen Verify](accessing-node-attributes-inside-kitchen-verify)
 * [Solrcloud Tests Using Kitchen Verify](solrcloud-tests-using-kitchen-verify)
- * [Executing command](executing-command)
- * [Verifying if file exists](verifying-if-file-exists)
- * [Validating monitor scripts](validating-monitor-scripts)
- * [Validating property files](Validating-property-files)
- * [Validating xml files](Validating-xml-files)
+ * [Executing command](#executing-command)
+ * [Verifying if file exists](#verifying-if-file-exists)
+ * [Validating monitor scripts](#validating-monitor-scripts)
+ * [Validating property files](#validating-property-files)
+ * [Validating xml files](#validating-xml-files)
 
 ### What is Kitchen Verify
 Being able to manually verify the Chef run is great but it would be even better if we had an executable test that would fail if our assumptions were ever proven to be false. For further details please visit https://kitchen.ci/docs/getting-started 
