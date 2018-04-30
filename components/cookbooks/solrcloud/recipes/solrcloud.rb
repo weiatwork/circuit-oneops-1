@@ -185,7 +185,11 @@ if (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? 
   install_command = "sudo #{solr_download_path}/#{solr_file_woext}/bin/install_solr_service.sh #{solr_download_path}/#{solr_file_name} -i #{node['installation_dir_path']} -d #{node['data_dir_path']} -u #{node['solr']['user']} -p #{node['port_no']} -s solr#{node['solrmajorversion']} -n"
   Chef::Log.info("install_command = #{install_command}")
 
-  if node['action_name'] != "update"
+  # Install solr only if-
+  # Add compute
+  # Replace compute in openstack
+  # Replace compute in azure if no storage. (In case of storage, binaries are already installed on disk)
+  if node['action_name'] == "add" || (node['action_name'] == "replace" && node['azure_on_storage'] == 'false')
 
     # Extracts solr package.
     # solr_download_path = /tmp
@@ -230,10 +234,12 @@ if (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? 
   if !node['url_max_requests_per_sec_map'].empty?
     dest_path = "/app/solr-jetty-servlets.jar"
     jetty_lib_path = "/app/solr#{node['solrmajorversion']}/server/lib"
-    shared_download_http jetty_filter_url do
-      path dest_path
-      mode "0644"
-      action :create
+    if !File.exists?(dest_path)
+      shared_download_http jetty_filter_url do
+        path dest_path
+        mode "0644"
+        action :create
+      end
     end
     execute "move file to jetty lib" do
       command "cp #{dest_path} #{jetty_lib_path}"

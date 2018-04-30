@@ -71,8 +71,13 @@ module AzureBase
     end
 
     def delete
-      avset = @compute_client.availability_sets.get(@rg_name, @as_name)
-      avset.destroy
+      avset_exists = @compute_client.availability_sets.check_availability_set_exists(@rg_name, @as_name)
+      if !avset_exists
+        OOLog.info("Availability Set #{@as_name} does nto exist. Moving on...")
+      else
+        avset = @compute_client.availability_sets.get(@rg_name, @as_name)
+        avset.destroy
+      end
     end
 
   end
