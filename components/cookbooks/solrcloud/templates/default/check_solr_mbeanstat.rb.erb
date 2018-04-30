@@ -47,9 +47,10 @@ if monitor == "MemoryStats"
 
   perf = nil
 
-  if !coll_list.empty?
-    parsed_coll_list = JSON.parse(coll_list)
-    collections =  parsed_coll_list["collections"]
+  parsed_coll_list = JSON.parse(coll_list)
+  collections =  parsed_coll_list["collections"]
+
+  if !collections.empty?
 
     if (auth_enabled?)
         system_stats = `curl --user  #{username}:#{password}  -s "http://127.0.0.1:#{port_no}/solr/#{collections[0]}/admin/system?stats=true&wt=json"`
