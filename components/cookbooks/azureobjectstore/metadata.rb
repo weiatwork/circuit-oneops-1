@@ -18,3 +18,12 @@ attribute 'tenant_id',
     :category => '1.Authentication',
     :order => 1
   }
+
+attribute 'proxy',
+  :description => 'API Proxy',
+  :required => 'optional',
+  :format => {
+    :help => 'API proxy is used to address timeout issues when making direct API calls to Azure',
+    :category => '1.Authentication',
+    :order => 2
+  }
