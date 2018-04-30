@@ -367,11 +367,12 @@ if (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? 
     directory app_dir do
       owner 'app'
       group 'app'
+      mode '0777'
     end
   end
 
   execute "fix /opt/solr/solrmonitor owner and group" do
-    command "sudo chown app /opt/solr/solrmonitor/*; sudo chgrp app /opt/solr/solrmonitor/*"
+    command "sudo chown app /opt/solr/solrmonitor/*; sudo chgrp app /opt/solr/solrmonitor/*; sudo chmod 0777 /opt/solr/solrmonitor/*"
   end
 
   template "/opt/solr/solrmonitor/metrics-tool.rb" do
