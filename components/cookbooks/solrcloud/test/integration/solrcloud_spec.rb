@@ -1,1 +1,1 @@
-require "#{File.dirname(__FILE__)}/validate_files"
+# require "#{File.dirname(__FILE__)}/validate_files"
