@@ -536,8 +536,8 @@ module SolrCloud
         if directoryExists?("META-INF")
           begin
             FileUtils.rm_rf("META-INF")
-          rescue
-            Chef::Log.error("Error while deleting the directory META-INF recursively.")
+          rescue Exception => msg
+            Chef::Log.error("Error while deleting the directory META-INF recursively : #{msg}")
           end
         end
 
