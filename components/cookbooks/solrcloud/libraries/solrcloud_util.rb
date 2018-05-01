@@ -534,7 +534,11 @@ module SolrCloud
         end
         # Deleting META-INF folder locally on the compute to avoid uploading to ZK while uploading solr config
         if directoryExists?("META-INF")
-          FileUtils.rm_rf("META-INF")
+          begin
+            FileUtils.rm_rf("META-INF")
+          rescue
+            Chef::Log.error("Error while deleting the directory META-INF recursively.")
+          end
         end
 
         # if Dir.glob(File.join("META-INF")).empty?
