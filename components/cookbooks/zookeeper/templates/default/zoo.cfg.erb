@@ -26,6 +26,7 @@ syncLimit=<%=@zookeeper[:sync_timeout_ticks] %>
 leaderServes=<%=@leader_is_also_server %> 
 
 # maximum simultaneous connections to allow. 
+# Limit incoming connections to the ZooKeeper instance from a single host.
 maxClientCnxns=<%=@zookeeper[:max_client_connections] %>
 
 maxSessionTimeout=<%=@zookeeper[:max_session_timeout] %>
