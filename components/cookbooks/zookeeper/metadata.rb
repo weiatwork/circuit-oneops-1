@@ -220,7 +220,6 @@ attribute 'journal_dir',
 attribute 'max_client_connections',
   :description          => 'Max. Client Connections',
   :required => 'required',
-  :default               => '1000',
   :format => {
     :category => '2.Configuration Parameters',
     :help => 'Limits the number of concurrent connections (at the socket level) that a single client, identified by IP address, may make to a single member of the ZooKeeper ensemble. This is used to prevent certain classes of DoS attacks, including file descriptor exhaustion. The zookeeper default is 60; this file bumps that to 1000 and should be good for most users. Setting of 0 entirely removes the limit on concurrent connections',
