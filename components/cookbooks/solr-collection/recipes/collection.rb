@@ -217,14 +217,12 @@ end # override_collection_config
 
 
 
-ruby_block 'verify_recommended_processors' do
-  block do
-    if node['validation_enabled'] == 'true' && !has_recommended_processors?
-      error = "IgnoreCommitOptimizeUpdateProcessorFactory or LogDeleteUpdateProcessorFactory is not found in one of the UpdateRequestProcessorChains.This processor is very highly recommended so that no one can issue commits or optimize calls very frequently and destabilize the cluster. If you still believe you do not need this validation-failure, please disable the validation flag from collection component. The other processor logs all the delete queries."
-      puts "***FAULT:FATAL=#{error}"
-      raise error
-    end
-  end
-end
-
-
+# ruby_block 'verify_recommended_processors' do
+#   block do
+#     if node['validation_enabled'] == 'true' && !has_recommended_processors?
+#       error = "IgnoreCommitOptimizeUpdateProcessorFactory or LogDeleteUpdateProcessorFactory is not found in one of the UpdateRequestProcessorChains.This processor is very highly recommended so that no one can issue commits or optimize calls very frequently and destabilize the cluster. If you still believe you do not need this validation-failure, please disable the validation flag from collection component. The other processor logs all the delete queries."
+#       puts "***FAULT:FATAL=#{error}"
+#       raise error
+#     end
+#   end
+# end
