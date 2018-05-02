@@ -109,7 +109,7 @@ resource "os",
   :cookbook => "oneops.1.os",
   :design => true,
   :requires => { "constraint" => "1..1", "services" => "compute,dns,*mirror,*ntp,*windows-domain" },
-  :attributes => { "ostype"  => "centos-7.2",
+  :attributes => { "ostype"  => "centos-7.3",
                    "dhclient"  => 'true'
                  },
   :monitors => {
@@ -240,7 +240,7 @@ resource 'logstash',
 resource "fqdn",
   :cookbook => "oneops.1.fqdn",
   :design => true,
-  :requires => { "constraint" => "1..1", "services" => "compute,dns,*gdns" },
+  :requires => { "constraint" => "1..1", "services" => "compute,dns,*gdns,*torbit" },
   :attributes => { "aliases" => '[]' },
   :payloads => {
 'environment' => {
@@ -603,7 +603,7 @@ resource "fqdn",
            ]
       }'
     },
-    'clouds' => {
+    'fqdnclouds' => {
       'description' => 'all clouds',
       'definition' => '{
          "returnObject": false,
@@ -999,6 +999,7 @@ end
   { :from => 'secrets-client',  :to => 'user'},
   { :from => 'secrets-client',  :to => 'certificate'},
   { :from => 'secrets-client',  :to => 'volume'},
+  { :from => 'objectstore',  :to => 'secrets-client'},
   { :from => 'objectstore',  :to => 'user'},
   { :from => 'service-mesh', :to => 'os'},
   { :from => 'service-mesh', :to => 'volume'  }

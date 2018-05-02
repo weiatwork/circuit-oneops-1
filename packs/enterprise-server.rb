@@ -69,7 +69,7 @@ resource "keystore",
          :design => true,
          :requires => {"constraint" => "0..1"},
          :attributes => {
-             "keystore_filename" => "/app/certs/keystore.jks"
+             "keystore_filename" => "/opt/certs/keystore.jks"
          }
 
 resource "user-app",
@@ -94,8 +94,8 @@ resource "rapidssl-keystore",
              :source =>"",
              :basic_auth_user => "",
              :basic_auth_password => "",
-             :path => '/app/.certs/rapidssl.jks',
-             :post_download_exec_cmd => 'chown -R app:app /app/.certs/'
+             :path => '/opt/.certs/rapidssl.jks',
+             :post_download_exec_cmd => 'chown -R tomee:tomee /opt/.certs/'
          }
 
 resource "enterprise_server",
@@ -103,12 +103,12 @@ resource "enterprise_server",
          :design => true,
          :requires => {"constraint" => "1..1", :services => "mirror"},
          :attributes => {
-             'install_dir' => '/app',
+             'install_root_dir' => '/opt',
              'install_version_major' => '2',
-             'install_version_minor' => '6.0',
-             'server_user' => 'app',
-             'server_group' => 'app',
-             'java_jvm_args' => '-Xms64m -Xmx1024m',
+             'install_version_minor' => '6.1',
+             'server_user' => 'tomee',
+             'server_group' => 'tomee',
+             'java_jvm_args' => '-Xms64mXmx1024m',
              'java_startup_params' => '[
                     "+UseCompressedOops",
                     "SurvivorRatio=10",
@@ -117,7 +117,7 @@ resource "enterprise_server",
              'access_log_dir' =>'/log/enterprise-server',
              'access_log_pattern'=>'%h %{NSC-Client-IP}i %l %u %t &quot;%r&quot; %s %b %D %F'
          },
-         :monitors => {
+	 :monitors => {
              'JvmInfo' => {:description => 'JvmInfo',
                            :source => '',
                            :chart => {'min' => 0, 'unit' => ''},
@@ -220,15 +220,15 @@ resource "artifact-app",
              :location => '$OO_LOCAL{groupId}:$OO_LOCAL{artifactId}:$OO_LOCAL{extension}',
              :version => '$OO_LOCAL{appVersion}',
              :checksum => '$OO_LOCAL{shaVersion}',
-             :install_dir => '/app/$OO_LOCAL{artifactId}',
-             :as_user => 'app',
-             :as_group => 'app',
+             :install_dir => '/opt/$OO_LOCAL{artifactId}',
+             :as_user => 'tomee',
+             :as_group => 'tomee',
              :environment => '{}',
              :persist => '[]',
              :should_expand => 'true',
-             :configure => "directory \"/log/enterprise-server\" do \n  owner \'app\' \n  group \'app\' \n  not_if { File.exists?(\"/log/enterprise-server\") } \n  action :create \nend \n\n directory \"/log/logmon\" do \n  owner \'app\' \n  group \'app\' \n  action :create \nend",
+             :configure => "directory \"/log/enterprise-server\" do \n  owner \'tomee\' \n  group \'tomee\' \n  not_if { File.exists?(\"/log/enterprise-server\") } \n  action :create \nend \n\n directory \"/log/logmon\" do \n  owner \'tomee\' \n  group \'tomee\' \n  action :create \nend",
              :migrate => '',
-             :restart => "execute \"rm -fr /app/enterprise-server/webapps/$OO_LOCAL{deployContext}\" \n\nlink \"/app/enterprise-server/webapps/$OO_LOCAL{deployContext}\" do \n  to \"/app/$OO_LOCAL{artifactId}/current\" \nend \n\nservice \"enterprise-server\" do \n  action :restart \nend\n\n"
+             :restart => "execute \"rm -fr /opt/enterprise-server/webapps/$OO_LOCAL{deployContext}\" \n\nlink \"/opt/enterprise-server/webapps/$OO_LOCAL{deployContext}\" do \n  to \"/opt/$OO_LOCAL{artifactId}/current\" \nend \n\nservice \"enterprise-server\" do \n  action :restart \nend\n\n"
          },
          :monitors => {
            'URL' => {:description => 'URL',

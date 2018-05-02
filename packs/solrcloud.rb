@@ -32,7 +32,6 @@ variable "solr_jmx_port",
 resource "lb",
   :except => [ 'single' ],
   :cookbook => "oneops.1.lb",
-  :design => false,
   :attributes => {
     "listeners" => "[\"tcp 8983 tcp 8983\"]"
   }
@@ -117,8 +116,8 @@ resource 'volume-app',
 # 'vm.max_map_count' : The maximum number of mmap files that a process can perform
 ##############################################################################################
 
-resource "compute",
-   :cookbook => "oneops.1.compute",
+resource "os",
+   :cookbook => "oneops.1.os",
    :attributes => {
       'limits' => '{ "nofile" : "200000", "nproc"  : "32768", "memlock" : "unlimited", "as" : "unlimited" }',
       'sysctl' => '{"vm.max_map_count":"131072", "net.ipv4.tcp_mem":"1529280 2039040 3058560", "net.ipv4.udp_mem":"1529280 2039040 3058560", "fs.file-max":"1611021"}'
@@ -150,7 +149,7 @@ resource "compute",
 resource "solrcloud",
   :cookbook => "oneops.1.solrcloud",
   :design => true,
-  :requires => { "constraint" => "1..1","services" => "maven,mirror,solr-service"},
+  :requires => { "constraint" => "1..1","services" => "maven,mirror,solr-service,compute"},
   :attributes => {
     'jmx_port' => '$OO_LOCAL{solr_jmx_port}',
     'jolokia_port' => '$OO_LOCAL{jolokia_port}',
@@ -169,8 +168,9 @@ resource "solrcloud",
     'solr_opts_params' => '["solr.autoSoftCommit.maxTime=15000", "solr.autoCommit.maxTime=60000", "solr.directoryFactory=solr.MMapDirectoryFactory", "socketTimeout=30000", "connTimeout=30000", "maxConnectionsPerHost=100", "distribUpdateSoTimeout=60000", "distribUpdateConnTimeout=40000", "solr.jetty.threads.max=3000"]',
     'skip_solrcloud_comp_execution' => 'false',
     'enable_cinder' => 'true',
-    'solr_custom_component_version' => '0.0.2',
-    'solr_api_timeout_sec' => '300'
+    'solr_custom_component_version' => '0.0.3',
+    'solr_api_timeout_sec' => '300',
+    'solr_monitor_version' => '1.0.3'
   },
 
   :monitors => {
@@ -198,7 +198,9 @@ resource "solrcloud",
         'up' => metric(:unit => '%', :description => 'Percent Up')
       },
       :thresholds => {
-        'SolrZKConnectionDown' => threshold('1m', 'avg', 'up', trigger('<=', 75, 2, 1), reset('>', 80, 2, 1))
+        # Trigger alarm if value goes below 75 for 8 times in a 10 minute window
+        # Reset alarm if value goes above 75 for 1 time in a 2 minute window
+        'SolrZKConnectionDown' => threshold('1m', 'avg', 'up', trigger('<=', 75, 10, 8), reset('>', 75, 2, 1))
       }
     },
     'MemoryStats' =>  {
@@ -479,7 +481,8 @@ resource "jolokia_proxy",
     :services => "mirror"
   },
   :attributes => {
-    :bind_port => '$OO_LOCAL{jolokia_port}'
+    :bind_port => '$OO_LOCAL{jolokia_port}',
+    :jvm_parameters => '-Xms512m -Xmx1g'
   },
   :monitors => {
     'JolokiaProxyProcess' => {
@@ -531,7 +534,7 @@ resource "solr-collection",
   :cookbook => "oneops.1.solr-collection",
   :design => true,
   :requires => { "constraint" => "0..*",
-                  "services" => "solr-service"
+                  "services" => "solr-service,compute"
                },
   :attributes => {
      'date_safety_check_for_config_update' => '1900-01-01',
@@ -657,7 +660,20 @@ resource "solr-collection",
         'pctgShardsUp' => metric( :unit => '%', :description => 'Percentage of Shards UP', :dstype => 'GAUGE')
       },
       :thresholds => {
-        'pctgShardsWithMinActiveReplicas' => threshold('1m','avg','pctgShardsWithMinActiveReplicas',trigger('<',100,2,1),reset('=',100,2,1))
+        'pctgShardsWithMinActiveReplicas' => threshold('1m','avg','pctgShardsWithMinActiveReplicas',trigger('<',100,5,4),reset('=',100,2,1))
+      }
+    },
+    'ReplicaDistributionStatus' =>  {
+      :description => 'ReplicaDistributionStatus',
+      :source => '',
+      :chart => {'min'=>0, 'unit'=>''},
+      :cmd => 'replica_distribution_validation.rb!:::node.workorder.rfcCi.ciAttributes.collection_name:::!:::node.workorder.rfcCi.ciAttributes.replication_factor:::',
+      :cmd_line => '/opt/nagios/libexec/replica_distribution_validation.rb $ARG1$ $ARG2$',
+      :metrics =>  {
+        'replicaCountToMove' => metric( :unit => '%', :description => 'No. of Replicas To Move', :dstype => 'GAUGE')
+      },
+      :thresholds => {
+        'replicaCountToMove' => threshold('5m','avg','replicaCountToMove',trigger('>',0,15,2),reset('<=',0,15,1))
       }
     }
   }
@@ -721,6 +737,7 @@ resource "volume-blockstorage",
   {:from => 'hostname', :to => 'os'},
   {:from => 'jolokia_proxy', :to => 'solrcloud'},
   {:from => 'user-app', :to => 'volume-blockstorage'},
+  {:from => 'solrcloud', :to => 'volume-app'}, # solrcloud need access to mount point from volume-app
   {:from => 'solrcloud', :to => 'volume-blockstorage'},
   {:from => 'volume-blockstorage', :to => 'storage'},
   {:from => 'storage', :to => 'compute'},

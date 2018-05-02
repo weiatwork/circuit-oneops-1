@@ -2,20 +2,13 @@ packages:
   - sudo
   - file
   - make
-  - gcc
-  - gcc-c++
-  - glibc-devel
   - libgcc
   - ruby
   - ruby-libs
-  - ruby-devel
-  - libxml2-devel
-  - libxslt-devel
   - rubygems
   - perl
   - perl-Digest-MD5
   - nagios
-  - nagios-devel
   - nagios-plugins
   - iptables-services
   - ntp
@@ -27,8 +20,8 @@ packages:
   - sysstat
   - autoconf
   - automake
-  - libtool
   - bison
+  - nmap-ncat
 gems:
   - fog
   - fog-core
@@ -45,29 +38,17 @@ gems:
   - mime-types
   - rack
 files:
-  - name: /home/oneops/shared
-    type: d
-    mode: 755
-    owner: oneops
-    group: oneops
-# --------------------------------------- item break to make it easier to read.
   - name: /etc/nagios/conf.d
     type: d
     mode: 750
     owner: nagios
     group: nagios
-# ---------------------------------------
-  - name: /home/oneops/circuit-oneops-1
-    type: d
-    mode: 755
-    owner: oneops
-    group: oneops
-# ---------------------------------------
-  - name: /opt/oneops/workorder
-    type: d
-    mode: 755
-    owner: oneops
-    group: oneops
+# --------------------------------------- item break to make it easier to read.
+#  - name: /opt/oneops/workorder
+#    type: d
+#    mode: 755
+#    owner: oneops
+#    group: oneops
 # ---------------------------------------
   - name: /etc/logrotate.d/oneops
     type: f

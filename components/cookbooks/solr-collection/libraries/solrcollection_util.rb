@@ -36,6 +36,42 @@ module SolrCollection
     end
 
 
+    # wrapper over get requests that throws a more informative exception
+    def http_request_get(host_name, port_no, path)
+      begin
+        Chef::Log.info("host_name = " + host_name + ", port_no = " + port_no + ", path = " + path)
+        http = Net::HTTP.new(host_name, port_no)
+        request = Net::HTTP::Get.new(path)
+
+        SolrAuth::AuthUtils.add_credentials_if_required(request)
+        response = http.request(request)
+        return response
+      rescue Exception => exception
+        Chef::Log.error("Failed in http-request (host_name=#{host_name}, port_no = #{port_no}, path=#{path}) with exception = #{exception.message}")
+        raise exception
+      end
+    end
+
+
+    # wrapper over post requests that throws a more informative exception
+    def http_request_post(host_name, port_no, path, req_body)
+      begin
+        Chef::Log.info("host_name = " + host_name + ", port_no = " + port_no + ", path = " + path)
+        http = Net::HTTP.new(host_name, port_no)
+        request = Net::HTTP::Post.new(path, 'Content-Type' => 'application/json')
+        request.body = req_body
+
+        SolrAuth::AuthUtils.add_credentials_if_required(request)
+        Chef::Log.info(req_body)
+        response = http.request(request)
+        return response
+      rescue Exception => exception
+        Chef::Log.error("Failed in http-request (host_name=#{host_name}, port_no = #{port_no}, path=#{path}) with exception = #{exception.message}")
+        raise exception
+      end
+    end
+
+
     # This API is to send [CREATE, MODIFY, DELETE, ADDREPLICA, DELETEREPLICA] collection api requests.
     def collection_api(host_name, port_no, params, config_name=nil, path="/solr/admin/collections")
       if not config_name.nil?
@@ -43,13 +79,8 @@ module SolrCollection
       else
         path = "#{path}?".concat(params.collect { |k,v| "#{k}=#{CGI::escape(v.to_s)}" }.join('&'))+"&wt=json"
       end
-      Chef::Log.info(" host_name = " + host_name + ", port_no = " + port_no + ", path = " + path)
-      http = Net::HTTP.new(host_name, port_no)
-      request = Net::HTTP::Get.new(path)
 
-      SolrAuth::AuthUtils.add_credentials_if_required(request)
-
-      response = http.request(request)
+      response = http_request_get(host_name, port_no, path)
       obj = JSON.parse(response.body())
       if response.code == '200'
         if obj != nil
@@ -108,6 +139,7 @@ module SolrCollection
         Chef::Log.info("Valid JSON Object")
         return json_object
       rescue Exception => exception
+        Chef::Log.error("Exception = \"#{exception.message}\" occurred while parsing JSON for string #{json_payload}")
         raise exception
       end
     end
@@ -128,29 +160,24 @@ module SolrCollection
     # This API is to set/un-set properties in solr-config.xml configuration file.
     def solr_config_api(host_name, port_no, collection_name, property_type, property_name, property_value, path="/solr")
       path = "#{path}/#{collection_name}/config"
-      Chef::Log.info(" host_name = " + host_name + ", Port = " + port_no + ", Path = " + path)
-      http = Net::HTTP.new(host_name, port_no)
-      req = Net::HTTP::Post.new(path, 'Content-Type' => 'application/json')
 
       if (property_type == "common-property")
         if (!property_value.empty?)
-          req.body = "{set-property:{#{property_name}:#{property_value}}}"
+          req_body = "{set-property:{#{property_name}:#{property_value}}}"
         else
-          req.body = "{unset-property:#{property_name}}"
+          req_body = "{unset-property:#{property_name}}"
         end
       end
 
       if (property_type == "user-defined-property")
         if (!property_value.empty?)
-          req.body = "{set-user-property:{#{property_name}:#{property_value}}}"
+          req_body = "{set-user-property:{#{property_name}:#{property_value}}}"
         else
-          req.body = "{unset-user-property:#{property_name}}"
+          req_body = "{unset-user-property:#{property_name}}"
         end
       end
 
-      SolrAuth::AuthUtils.add_credentials_if_required(req)
-
-      response = http.request(req)
+      response = http_request_post(host_name, port_no, path, req_body)
 
       if response != nil then
         if(response.code == '200')
@@ -165,15 +192,9 @@ module SolrCollection
     # This API is to add/modify/delete fields/field-types etc., elements in managed-schema configuration file.
     def manage_schema_api(host_name, port_no, collection_name, schema_action, json_payload, update_timeout_secs=nil, path="/solr")
       path = "#{path}/#{collection_name}/schema?update_timeout_secs=#{update_timeout_secs}"
-      Chef::Log.info(" host_name = " + host_name + ", port_no = " + port_no + ", path = " + path)
-      http = Net::HTTP.new(host_name, port_no)
-      req = Net::HTTP::Post.new(path, 'Content-Type' => 'application/json')
 
-      SolrAuth::AuthUtils.add_credentials_if_required(req)
-
-      req.body = "{#{schema_action}:"+json_payload+"}"
-      Chef::Log.info(req.body)
-      response = http.request(req)
+      req_body = "{#{schema_action}:"+json_payload+"}"
+      response = http_request_post(host_name, port_no, path, req_body)
 
       result = JSON.parse(response.body)
       errors = result['errors']
@@ -241,13 +262,8 @@ module SolrCollection
 
     def core_api(host_name, port_no, params, path="/solr/admin/cores")
       path = "#{path}?".concat(params.collect { |k,v| "#{k}=#{CGI::escape(v.to_s)}" }.join('&'))+"&wt=json"
-      Chef::Log.info(" HostName = " + host_name + ", Port = " + port_no + ", Path = " + path)
-      http = Net::HTTP.new(host_name, port_no)
-      req = Net::HTTP::Get.new(path)
 
-      SolrAuth::AuthUtils.add_credentials_if_required(req)
-
-      response = http.request(req)
+      response = http_request_get(host_name, port_no, path)
       obj = JSON.parse(response.body())
       if response.code == '200'
         if obj != nil
@@ -278,13 +294,8 @@ module SolrCollection
     # This method checks if field name already exists. If exists with different type, then throws error
     def field_type_exists(host_name, port_no, collection_name, field, field_type)
         path = "/solr/#{collection_name}/schema/fields/#{field}"
-        Chef::Log.info(" host_name = " + host_name + ", port_no = " + port_no + ", path = " + path)
-        http = Net::HTTP.new(host_name, port_no)
-        req = Net::HTTP::Get.new(path)
 
-        SolrAuth::AuthUtils.add_credentials_if_required(req)
-
-        response = http.request(req)
+        response = http_request_get(host_name, port_no, path)
         resp_body = JSON.parse(response.body)
         code = response.code
         Chef::Log.info("response code = #{code}")
@@ -448,17 +459,11 @@ module SolrCollection
 
     # The method calls the Solr Config REST API, passing in the provided params object as POST data
     # It returns the response object
-    def override_solrconfig_api(host_name,port, collection_name, params)
-      uri = URI("http://#{host_name}:#{port}/solr/#{collection_name}/config")
-      http = Net::HTTP.new(uri.host, uri.port)
-      req = Net::HTTP::Post.new(uri.path, 'Content-Type' => 'application/json')
-      req.body = params.to_json
+    def override_solrconfig_api(host_name, port_no, collection_name, params)
+      path = "http://#{host_name}:#{port_no}/solr/#{collection_name}/config"
+      req_body = params.to_json
 
-      SolrAuth::AuthUtils.add_credentials_if_required(req)
-
-      puts params.to_json
-
-      response = http.request(req)
+      response = http_request_post(host_name, port_no, path, req_body)
       obj = JSON.parse(response.body())
 
       if response.code == '200'
@@ -466,12 +471,12 @@ module SolrCollection
         if obj != nil
           return obj
         else
-          puts "URL - #{uri}"
+          puts "URL - #{path}"
           puts "Response : #{response}"
           raise response.msg
         end
       else
-        print_and_raise_bad_response(response, uri.path)
+        print_and_raise_bad_response(response, path)
       end
     end
 
@@ -507,15 +512,11 @@ module SolrCollection
 
     # This method gets the list of configuration properties which have been overridden and exists in the configoverlay.json file
     # on the zookeeper
-    def get_props_from_configoverlay_json(host_name, port, collection_name)
+    def get_props_from_configoverlay_json(host_name, port_no, collection_name)
 
-      uri = URI("http://#{host_name}:#{port}/solr/#{collection_name}/config/overlay?omitHeader=true")
-      http = Net::HTTP.new(uri.host, uri.port)
-      req = Net::HTTP::Get.new(uri.path)
+      path = "http://#{host_name}:#{port_no}/solr/#{collection_name}/config/overlay?omitHeader=true"
 
-      SolrAuth::AuthUtils.add_credentials_if_required(req)
-
-      response = http.request(req)
+      response = http_request_get(host_name, port_no, path)
 
       props_overridden = Hash.new
 
@@ -566,12 +567,12 @@ module SolrCollection
           end
           return props_overridden
         else
-          puts "URL - #{uri}"
+          puts "URL - #{path}"
           puts "Response : #{response}"
           raise response.msg
         end
       else
-        print_and_raise_bad_response(response, uri.path)
+        print_and_raise_bad_response(response, path)
       end
     end
 
@@ -1416,5 +1417,67 @@ module SolrCollection
     end
     return backup_names
   end
+
+    # This method returns true if schemaless mode feature is enabled.
+    def schemaless_mode_enabled
+      # Get the solr config response object through the config API.
+      solr_config_response = collection_api(node['ipaddress'],node['port_num'], {}, nil, "/solr/"+node['collection_name']+"/config")
+
+      if solr_config_response['config']['updateRequestProcessorChain'].empty?
+        Chef::Log.error("No UpdateRequestProcessorChain found")
+        return false
+      end
+
+      # Verify if any updateRequestProcessorChains in solrconfig.xml has processor with class 'solr.AddSchemaFieldsUpdateProcessorFactory'
+      # Example:
+      # <updateProcessor class="solr.processor.SignatureUpdateProcessorFactory" name="signature">
+      #  <bool name="enabled">true</bool>
+      #  <str name="signatureField">id</str>
+      # </updateProcessor>
+      # <updateProcessor class="solr.RemoveBlankFieldUpdateProcessorFactory" name="remove_blanks"/>
+
+      # <updateProcessorChain name="add-unknown-fields-to-the-schema" processor="remove_blanks,signature">
+      # <processor class="solr.AddSchemaFieldsUpdateProcessorFactory">
+      #  <str name="defaultFieldType">strings</str>
+      #  <lst name="typeMapping">
+      #    <str name="valueClass">java.lang.Boolean</str>
+      #    <str name="fieldType">booleans</str>
+      #  </lst>
+      #  <lst name="typeMapping">
+      #    <str name="valueClass">java.util.Date</str>
+      #    <str name="fieldType">tdates</str>
+      #  </lst>
+      # </processor>
+      # <processor class="solr.LogUpdateProcessorFactory"/>
+      # <processor class="solr.DistributedUpdateProcessorFactory"/>
+      # <processor class="solr.RunUpdateProcessorFactory" />
+      # </updateProcessorChain>
+
+      # Get updateRequestProcessorChain object from config response object.
+      update_req_proc_chain_obj = solr_config_response['config']['updateRequestProcessorChain']
+      update_req_proc_chain_obj.each do |processor_chain|
+        processor_chain.each do |key, value|
+          if key == "processor"
+            update_processors = value.split(',')
+            update_processor_obj = solr_config_response['config']['updateProcessor']
+            update_processor_names = update_processor_obj != nil ? update_processor_obj.keys : []
+            update_processor_names.each do |update_processor|
+              if update_processors.include?(update_processor) && update_processor_obj[update_processor]["class"] == "solr.AddSchemaFieldsUpdateProcessorFactory"
+                return true
+              end
+            end
+          end
+          if value.kind_of?(Array)
+            value.each do |update_processor|
+              if update_processor['class'] == 'solr.AddSchemaFieldsUpdateProcessorFactory'
+                return true
+              end
+            end
+          end
+        end
+      end
+      return false
+    end
+
   end
 end

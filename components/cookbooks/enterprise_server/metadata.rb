@@ -13,7 +13,7 @@ grouping 'default',
 attribute 'install_root_dir',
   :description => "Installation Root Directory",
   :required => "required",
-  :default => "/app",
+  :default => "/opt",
   :format => {
       :category => '1.Global',
       :help => 'Installation root directory',
@@ -43,7 +43,7 @@ attribute 'install_version_minor',
 # Runtime Attributes
 attribute 'server_user',
   :description => "User",
-  :default => 'app',
+  :default => 'tomee',
   :format => {
       :category => '1.Global',
       :help => 'Specify the userid that the Enterprise Server will run under.',
@@ -52,7 +52,7 @@ attribute 'server_user',
 
 attribute 'server_group',
   :description => "Group",
-  :default => 'app',
+  :default => 'tomee',
   :format => {
       :category => '1.Global',
       :help => 'Specify the groupid that the Enterprise Server will run under.',

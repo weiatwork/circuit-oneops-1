@@ -18,6 +18,7 @@ if "#{solr_version}".start_with? "4."
     	raise "Zookeeper connection string is missing. Provide the zookeeper details based on the selected option"
     end
 	service "tomcat#{node['tomcatversion']}" do
+    	provider Chef::Provider::Service::Init # for centos 7, provider should use system.d if required
     	supports :status => true, :restart => true, :start => true
     	action :restart
 	end
@@ -28,6 +29,7 @@ if ("#{solr_version}".start_with? "5.") || ("#{solr_version}".start_with? "6.") 
     	raise "Zookeeper connection string is missing. Provide the zookeeper details based on the selected option"
     end
 	service "solr#{solrmajorversion}" do
+    	provider Chef::Provider::Service::Init # for centos 7, provider should use system.d if required
     	supports :status => true, :restart => true, :start => true
     	action :restart
 	end

@@ -4,6 +4,8 @@
 #
 # The recipe extracts the solr distribution, copies the WEB-INF/lib/ jars to solr-war-lib folder and sets up the solrcloud
 #
+#
+
 
 extend SolrCloud::Util
 
@@ -180,25 +182,51 @@ if (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? 
   end
 
   #install_solr_service using -n option to install without starting service
-  install_command = "sudo ./install_solr_service.sh #{solr_download_path}/#{solr_file_name} -i #{node['installation_dir_path']} -d #{node['data_dir_path']} -u #{node['solr']['user']} -p #{node['port_no']} -s solr#{node['solrmajorversion']} -n"
+  install_command = "sudo #{solr_download_path}/#{solr_file_woext}/bin/install_solr_service.sh #{solr_download_path}/#{solr_file_name} -i #{node['installation_dir_path']} -d #{node['data_dir_path']} -u #{node['solr']['user']} -p #{node['port_no']} -s solr#{node['solrmajorversion']} -n"
   Chef::Log.info("install_command = #{install_command}")
-  # Extracts solr tgz package and execute installation script
-  # Copy the lib/ext and WEB-INF/lib jars to /app/solr-war-lib directory
-  bash "install_solr_and_copy_jars" do
-    code <<-EOH
-      cd #{solr_download_path}
-      tar -xf #{solr_file_name}
-      cd #{solr_file_woext}/bin
-      chmod 777 install_solr_service.sh
-      #{install_command}
-      rm -rf /etc/default/solr#{node['solrmajorversion']}.in.sh
-      rm -rf #{node['data_dir_path']}/log4j.properties
-      cd #{node['installation_dir_path']}/solr#{node['solrmajorversion']}/server/
-      cp lib/ext/* #{node['user']['dir']}/solr-war-lib#{node['solrmajorversion']}
-      cp solr-webapp/webapp/WEB-INF/lib/* #{node['user']['dir']}/solr-war-lib#{node['solrmajorversion']}
-      echo #{node['solr_version']} > #{node['user']['dir']}/solr-#{node['solr_version']}.txt
-    EOH
-    not_if { ::File.exists?(node['user']['dir']+"/solr-"+node['solr_version']+".txt") }
+
+  # Install solr only if-
+  # Add compute
+  # Replace compute in openstack
+  # Replace compute in azure if no storage. (In case of storage, binaries are already installed on disk)
+  if node['action_name'] == "add" || (node['action_name'] == "replace" && node['azure_on_storage'] == 'false')
+
+    # Extracts solr package.
+    # solr_download_path = /tmp
+    # solr_file_name = solr-7.x.x.tgz or solr-6.x.x.tgz
+    execute "extract_solr_package" do
+      Chef::Log.info(solr_download_path)
+      Chef::Log.info(solr_file_name)
+      cmd =  "#{solr_download_path}/#{solr_file_name}"
+      Chef::Log.info("Extracting Solr archive with command: #{cmd}")
+      command "tar -xf #{solr_download_path}/#{solr_file_name} -C #{solr_download_path}"
+    end
+
+    # Modify the permissions to the installation script(install_solr_service.sh).
+    # solr_file_woext = solr-6.x.x or solr-7.x.x
+    execute "modify_perm_install_script" do
+      Chef::Log.info(solr_file_woext)
+      command "sudo chmod 777 #{solr_download_path}/#{solr_file_woext}/bin/install_solr_service.sh"
+    end
+
+    # Remove solr service file from /etc/init.d directory if exists
+    # Execute installation script (install_solr_service.sh) and install solr
+    bash "install_solr" do
+      code <<-EOH
+        unlink #{node['installation_dir_path']}/solr#{node['solrmajorversion']}
+        [ -e /etc/init.d/solr#{node['solrmajorversion']} ] && rm -- /etc/init.d/solr#{node['solrmajorversion']}
+        #{install_command}
+      EOH
+    end
+
+    # Copy jars from lib/ext and WEB-INF/lib directories to /app/solr-war-lib6 or /app/solr-war-lib7 directory.
+    bash "copy_jars" do
+      code <<-EOH
+        sudo cp #{node['installation_dir_path']}/solr#{node['solrmajorversion']}/server/lib/ext/* #{node['user']['dir']}/solr-war-lib#{node['solrmajorversion']}
+        sudo cp #{node['installation_dir_path']}/solr#{node['solrmajorversion']}/server/solr-webapp/webapp/WEB-INF/lib/* #{node['user']['dir']}/solr-war-lib#{node['solrmajorversion']}
+      EOH
+    end
+
   end
 
   # maxRequestsPerSec is provided then download and copy the custom filter to server/lib
@@ -206,10 +234,12 @@ if (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? 
   if !node['url_max_requests_per_sec_map'].empty?
     dest_path = "/app/solr-jetty-servlets.jar"
     jetty_lib_path = "/app/solr#{node['solrmajorversion']}/server/lib"
-    shared_download_http jetty_filter_url do
-      path dest_path
-      mode "0644"
-      action :create
+    if !File.exists?(dest_path)
+      shared_download_http jetty_filter_url do
+        path dest_path
+        mode "0644"
+        action :create
+      end
     end
     execute "move file to jetty lib" do
       command "cp #{dest_path} #{jetty_lib_path}"
@@ -254,6 +284,16 @@ if (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? 
     notifies :run, "ruby_block[solr_restart_warning]", :delayed
   end
 
+  # Create or Update zkcli.sh file under the below path
+  template "#{node['installation_dir_path']}/solr#{node['solrmajorversion']}/server/scripts/cloud-scripts/zkcli.sh" do
+    source 'zkcli.sh.erb'
+    owner node['solr']['user']
+    group node['solr']['user']
+    mode '0755'
+  end
+
+
+
   # Create or Update /etc/init.d/solr#{node['solrmajorversion']} service
   template "/etc/init.d/solr#{node['solrmajorversion']}" do
     source 'solr.erb'
@@ -277,14 +317,43 @@ if (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? 
   # If really required, it should be uploaded to zookeeper from the command line
   # uploadDefaultConfig(node['solr_version'],node['zk_host_fqdns'],node['default_data_driven_config'])
 
-  remote_directory '/opt/solr/solrmonitor'  do
-    source "solrmonitor"
-    owner 'app'
-    group 'app'
-    mode '0777'
-    files_mode '777'
-    action :create
+  # Copy the solrmonitor script from the jar to the location /opt/solr
+
+  solr_monitor_version = node['solr_monitor_version']
+
+  artifact_descriptor = "#{node['solr_custom_params']['solr_monitor_artifact']}:#{solr_monitor_version}:jar"
+
+  if (solr_monitor_version =~ /SNAPSHOT/)
+    artifact_urlbase = node['solr_custom_params']['snapshot_urlbase']
+  else
+    artifact_urlbase = node['solr_custom_params']['release_urlbase']
   end
+
+  solr_monitor_url, solr_monitor_version = SolrCustomComponentArtifact::get_artifact_url(artifact_descriptor, artifact_urlbase)
+
+  Chef::Log.info( "solr_monitor_url - #{solr_monitor_url} and solr_monitor_version -  #{solr_monitor_version}")
+
+  # Getting rid of SNAPSHOT string from the version name as we will need to manage release and snapshot releases in the same way
+  # if (solr_monitor_version.to_s =~ /SNAPSHOT/)
+  #   solr_monitor_version = solr_monitor_version.gsub('-SNAPSHOT', '')
+  # end
+
+  solr_monitor_jar = "solr-monitor-#{solr_monitor_version}.jar"
+  solr_monitor_dir = "/opt"
+  solr_monitor_custom_dir = "solr"
+
+  # Fetch the solr monitor artifact and copy it to /opt
+  remote_file "#{solr_monitor_dir}/#{solr_monitor_jar}" do
+    user 'app'
+    group 'app'
+    source solr_monitor_url
+    not_if { ::File.exists?("#{solr_monitor_dir}/#{solr_monitor_jar}") }
+  end
+
+
+  # Extract the jar contents and put it in /opt/solr.
+  # The extracted contents will have solrmonitor directory under which we have the scripts and the metrics directory. Metrics directory has the metrics list in yaml file
+  extractCustomConfig(solr_monitor_dir, solr_monitor_jar, solr_monitor_url, solr_monitor_custom_dir)
 
   directory '/opt/solr/solrmonitor/spiked-metrics' do
     owner 'app'
@@ -294,11 +363,16 @@ if (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? 
   end
 
   # Make sure the solr /opt directories exist and have the right permissions
-  %w[ /opt/solr /opt/solr/log ].each do |app_dir|
+  %w[ /opt/solr /opt/solr/log /opt/solr/solrmonitor ].each do |app_dir|
     directory app_dir do
-      user 'app'
+      owner 'app'
       group 'app'
+      mode '0777'
     end
+  end
+
+  execute "fix /opt/solr/solrmonitor owner and group" do
+    command "sudo chown app /opt/solr/solrmonitor/*; sudo chgrp app /opt/solr/solrmonitor/*; sudo chmod 0777 /opt/solr/solrmonitor/*"
   end
 
   template "/opt/solr/solrmonitor/metrics-tool.rb" do
@@ -412,7 +486,17 @@ if (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? 
   end
   # Note: No restart on update. User should manually restart (rolling restart) from action on update
   if node['action_name'] =~ /add|replace/
+
+    #stop solr if already running. for ex. during add/replace, node started but failed after and retry
+    #will fail on start as the node is already running, hence we must stop the node before start again
+    execute "stop_solr" do
+      command "service solr#{node['solrmajorversion']} stop"
+      returns [0,1]
+    end
+
     service "solr#{node['solrmajorversion']}" do
+      provider Chef::Provider::Service::Init # for centos 7, provider should use system.d if required
+      supports  :restart => true, :status => true, :stop => true, :start => true
       action :start
     end
   elsif node['action_name'] == "update" && update_found(node)

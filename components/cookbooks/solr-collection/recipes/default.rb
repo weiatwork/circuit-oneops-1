@@ -70,6 +70,8 @@ node.set['request_select_defaults_timeallowed'] = ci['request_select_defaults_ti
 # node.set['documentcache_size'] = ci['documentcache_size']
 # node.set['queryresultmaxdoccached'] = ci['queryresultmaxdoccached']
 
+node.set['min_rf'] = ci['min_rf']
+
 node.set['skip_collection_comp_execution'] = ci['skip_collection_comp_execution']
 node.set['validation_enabled'] = ci['validation_enabled'] || "true"
 node.set['collections_for_node_sharing'] = ci['collections_for_node_sharing']
@@ -103,6 +105,7 @@ if node.workorder.payLoad.has_key?("SolrCloudPayload") && !node.workorder.payLoa
   node.set['solrmajorversion'] = "#{node['solr_version']}"[0,1]
   node.set['user']['dir'] = "/app"
   node.set['solr']['user'] = "app"
+  node.set['installation_dir_path'] = solrcloud_ci['installation_dir_path']
 else
 	error = "SolrCloudPayload payload not found, please pull the design"
 	puts "***FAULT:FATAL= #{error}"
