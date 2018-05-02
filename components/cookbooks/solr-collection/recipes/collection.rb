@@ -78,7 +78,7 @@ ruby_block 'create_collection' do
                 # Warn against multiple replicas of same shard on a single node. For example:
                 # Consider an 8 node cluster and a collection request for shards = 2,
                 # replication factor = 12 and maxShardsPerNode = 3
-                #
+                # 
                 # For the above case, 12 replicas need to be placed on 8 nodes.
                 # And we will end up placing multiple replicas of the same shard on a single
                 # node. This placement does not seem very useful and it is good to warn
