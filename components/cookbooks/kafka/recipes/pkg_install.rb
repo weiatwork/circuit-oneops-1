@@ -14,9 +14,11 @@ Chef::Log.info("install patch")
 #`yum -y install redhat-lsb-core`
 
 Chef::Log.info("install zookeeper gem")
-`sudo gem install zookeeper --no-rdoc --no-ri`
-`sleep 20`
-
+chef_gem 'zookeeper' do
+  options ('--no-ri  --no-rdoc')
+  action :install
+  timeout 20
+end
 Chef::Log.info("finished installing zookeeper gem")
 
 
