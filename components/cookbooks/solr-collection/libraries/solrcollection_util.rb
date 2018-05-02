@@ -341,7 +341,7 @@ module SolrCollection
           cd #{solr_config}
 
           # We skip the configoverlay.json and the solrconfig.xml from this diff operation. The configoverlay.json file is expected to be only in the config downloaded
-          # from zookeeper. Since the solrconfig.xml file is programmatically updated using the DOM api, the order of the attributes and order of elements is unpredictable.
+          # from zookeeper. Since the solrconfig.xml file is programmatically updated using the DOM api, the order of the attributes and order of elements is unpredictable. 
           # We cannot rely on a plain diff for solrconfig.xml file
 
           diff -r --brief -x configoverlay.json -x solrconfig.xml #{solr_config}/#{config_name} #{solr_config}/#{extracted_config_dir} | sudo tee /tmp/diff_jar_directories_output.txt
@@ -1390,13 +1390,13 @@ module SolrCollection
       if error_on_diff == true
         raise "#{msg} Please make sure zookeeper config is same as the one present in the backup location #{file1}"
       else
-        Chef::Log.info(msg)
+        Chef::Log.info(msg) 
       end
     else
       Chef::Log.info("No differences found in config between the backup #{file1} and current zookeeper.")
     end
   end
-  
+
   # get list of dir names starting with prefix and ends with backup_timestamp+-10 min
   def get_backup_dirs(prefix, backup_location, backup_timestamp)
     input_time = DateTime.strptime(backup_timestamp,"%Y_%m_%d_%H_%M_%S" )
