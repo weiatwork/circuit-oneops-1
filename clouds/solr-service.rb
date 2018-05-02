@@ -24,6 +24,7 @@ service 'solr-service',
               "jetty_filter_url": "",
               "config_url_v5": "",
               "config_url_v6": "",
-              "config_url_v7": ""
+              "config_url_v7": "",
+              "solr_monitor_artifact": ""
             }'
         }

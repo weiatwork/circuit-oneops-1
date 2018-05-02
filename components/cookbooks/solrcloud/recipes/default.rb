@@ -96,6 +96,7 @@ node.set["graphite_prefix"] = ci['graphite_prefix']
 node.set["graphite_logfiles_path"] = ci['graphite_logfiles_path']
 
 node.set['solr_custom_component_version'] = ci['solr_custom_component_version']
+node.set['solr_monitor_version'] = ci['solr_monitor_version']
 node.set['solr_base_url'] = mirrors['solr_base_url'] #Example: http://apache.mirrors.hoobly.com/lucene/solr/6.6.0
 # Environment should be picked up using the environment profile.
 node.set['oo_environment'] = node[:workorder][:payLoad][:Environment][0][:ciAttributes][:profile].downcase

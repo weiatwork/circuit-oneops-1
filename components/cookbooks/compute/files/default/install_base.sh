@@ -27,8 +27,74 @@ set_env()
         misc_proxy=${ARG/misc:/}
         echo "exporting misc_proxy=$misc_proxy"
         export misc_proxy=$misc_proxy
+      elif [[ $ARG == ruby_binary_path:* ]] ; then
+        echo "setting ruby_binary_path to $ARG"
+        ruby_binary_path=${ARG/ruby_binary_path:/}
+      elif [[ $ARG == ruby_binary_version:* ]] ; then
+        echo "setting ruby_binary_version to $ARG"
+        ruby_binary_version=${ARG/ruby_binary_version:/}
       fi
     done
+}
+
+install_base_centos()
+{
+  yum -d0 -e0 -y install sudo file make gcc gcc-c++ glibc-devel libgcc libxml2-devel libxslt-devel perl libyaml perl-Digest-MD5 nagios nagios-devel nagios-plugins
+  if [ "$major" -lt 7 ] ; then
+    yum -d0 -e0 -y install parted
+  fi
+}
+
+install_ruby_centos()
+{
+  if [ "$cloud_provider" == "azure" ] && [ "$major" -lt 7 ] && [ ! -n "$ruby_binary_path" ]; then
+    echo "Centos 6.x VMs on Azure clouds require Ruby 2.0.0"
+    echo "Please add ruby_binary_path env variable in compute cloud service"
+    exit 1
+  fi
+
+  # installing ruby 2.0.0 from a binary for CentOs 6.x if env variable is there
+  if [ "$major" -lt 7 ] && [ -n "$ruby_binary_path" ] ; then
+    install_ruby_binary_if_not_installed
+  else
+    yum -d0 -e0 -y install ruby ruby-libs ruby-devel ruby-rdoc rubygems
+  fi
+}
+
+install_ruby_binary_if_not_installed()
+{
+  if ! is_ruby_exists; then
+    install_ruby_binary
+  else
+    ver=`get_ruby_version`
+    if [ "$ver" != "$ruby_binary_version" ] ; then
+      yum remove -y ruby
+      install_ruby_binary
+    fi
+  fi
+}
+
+is_ruby_exists()
+{
+  ruby -v > /dev/null 2>&1
+  if [ "$?" == "0" ]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+get_ruby_version()
+{
+  #this assumes ruby is already installed and returns the currently installed ruby version
+  echo `ruby -e 'print "#{RUBY_VERSION}"'`
+}
+
+install_ruby_binary()
+{
+    wget -q -O ruby-binary.tar.gz $ruby_binary_path
+    tar zxf ruby-binary.tar.gz --strip-components 1 -C /usr
+    rm -f ruby-binary.tar.gz
 }
 
 set_gem_source()
@@ -59,7 +125,7 @@ downgrade_rubygems()
   rubygems_ver=$((echo "1.8.26" && gem -v) | sort -V | head -n 1)
   if [ $rubygems_ver == "1.8.26" ]; then
     echo "Downgrading rubygems..."
-    gem update --system 1.8.25 --no-ri --no-rdoc
+    gem update --system 1.8.25 --no-ri --no-rdoc --quiet
   fi
 }
 
@@ -89,8 +155,10 @@ if [ -e /etc/SuSE-release ] ; then
 
 # redhat / centos
 elif [ -e /etc/redhat-release ] ; then
-  echo "installing ruby, libs, headers and gcc"
-  yum -d0 -e0 -y install sudo file make gcc gcc-c++ glibc-devel libgcc ruby ruby-libs ruby-devel libxml2-devel libxslt-devel ruby-rdoc rubygems perl perl-Digest-MD5 nagios nagios-devel nagios-plugins
+  release=$(cat /etc/redhat-release | grep -o '[0-9]\.[0-9]')
+  major=${release%.*}
+  install_base_centos
+  install_ruby_centos
 
   # disable selinux
   if [ -e /selinux/enforce ]; then
@@ -156,9 +224,9 @@ if [ $bundler_installed != "true" ]; then
   echo "Installing bundler..."
   ver=$((echo "1.8.25" && gem -v) | sort -V | head -n 1)
   if [ $ver != '1.8.25' ]; then
-    gem install bundler -v 1.15.4 --bindir /usr/bin --no-ri --no-rdoc
+    gem install bundler -v 1.15.4 --bindir /usr/bin --no-ri --no-rdoc --quiet
   else
-    gem install bundler --bindir /usr/bin --no-ri --no-rdoc
+    gem install bundler --bindir /usr/bin --no-ri --no-rdoc --quiet
   fi
 fi
 
@@ -240,5 +308,5 @@ if [ "$owner" == "root" ] ; then
   chown -R oneops:oneops /home/oneops /opt/oneops
   chown -R nagios:nagios /etc/nagios /var/log/nagios /etc/nagios/conf.d
 else
-  chown -R oneops:oneops /home/oneops/circuit-oneops-1 /home/oneops/shared /home/oneops/.ssh /opt/oneops/workorder /opt/oneops/rubygems_proxy
+  chown -R oneops:oneops /home/oneops/.ssh /opt/oneops/workorder /opt/oneops/rubygems_proxy
 fi
