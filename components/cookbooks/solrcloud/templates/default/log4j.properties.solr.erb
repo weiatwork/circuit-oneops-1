@@ -42,11 +42,6 @@ log4j.appender.slow-query.File=${solr.log}/slow-query.log
 log4j.appender.slow-query.layout=org.apache.log4j.PatternLayout
 log4j.appender.slow-query.layout.ConversionPattern=%-5p - %d{yyyy-MM-dd HH:mm:ss.SSS}; %C; %m\n
 
-#Log the delete queries
-<% if node['solr_custom_params']['delete_query_logger'] != nil && !node['solr_custom_params']['delete_query_logger'].empty? %>
-  <%= node['solr_custom_params']['delete_query_logger'] %>=INFO, delete-query, CONSOLE
-<% end %>
-
 # Delete Query Logging
 log4j.logger.DeleteQueryLogger=INFO, delete-query, CONSOLE
 

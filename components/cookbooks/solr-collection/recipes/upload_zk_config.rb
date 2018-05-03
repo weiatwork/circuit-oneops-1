@@ -130,7 +130,7 @@ else
       block do
         FileUtils.cp("#{custom_dir_full_path}/solrconfig.xml", "#{custom_dir_full_path}/solrconfig.xml.tmp")
         props_map = get_prop_metadata_for_solrconfig_update()
-        update_solrconfig_and_override_properties("#{custom_dir_full_path}/solrconfig.xml.tmp", props_map, solrconfig_contains_update_processor_chain)
+        solrconfig_contains_update_processor_chain = update_solrconfig_and_override_properties("#{custom_dir_full_path}/solrconfig.xml.tmp", props_map, solrconfig_contains_update_processor_chain)
       end
     end
 
