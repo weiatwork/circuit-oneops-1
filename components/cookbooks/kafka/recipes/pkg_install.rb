@@ -17,7 +17,6 @@ Chef::Log.info("install zookeeper gem")
 chef_gem 'zookeeper' do
   options ('--no-ri  --no-rdoc')
   action :install
-  timeout 20
 end
 Chef::Log.info("finished installing zookeeper gem")
 
