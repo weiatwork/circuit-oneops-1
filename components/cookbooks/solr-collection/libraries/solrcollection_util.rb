@@ -82,7 +82,7 @@ module SolrCollection
 
       response = http_request_get(host_name, port_no, path)
       obj = JSON.parse(response.body())
-      if response.code == '200'        
+      if response.code == '200'
         if obj != nil
           return JSON.parse(response.body())
         else
@@ -341,7 +341,7 @@ module SolrCollection
           cd #{solr_config}
 
           # We skip the configoverlay.json and the solrconfig.xml from this diff operation. The configoverlay.json file is expected to be only in the config downloaded
-          # from zookeeper. Since the solrconfig.xml file is programmatically updated using the DOM api, the order of the attributes and order of elements is unpredictable. 
+          # from zookeeper. Since the solrconfig.xml file is programmatically updated using the DOM api, the order of the attributes and order of elements is unpredictable.
           # We cannot rely on a plain diff for solrconfig.xml file
 
           diff -r --brief -x configoverlay.json -x solrconfig.xml #{solr_config}/#{config_name} #{solr_config}/#{extracted_config_dir} | sudo tee /tmp/diff_jar_directories_output.txt
@@ -842,7 +842,6 @@ module SolrCollection
       return elem
     end
 
-
     # The configoverlay feature of Solr which allows you to overlay the configuration changes on top of the solrconfig.xml file
     # is not supported for all the configurations. In order to support changing unsupported configuration options we modify the
     # solrconfig.xml file directly.
@@ -1008,11 +1007,11 @@ module SolrCollection
                   "elem_val_select" => "block-expensive-queries"
               }
           }
-  
+
           props_map.merge!(block_expensive_query_props)
         end
       end
-      if node["enable_slow_query_logger"] == "true" 
+      if node["enable_slow_query_logger"] == "true"
         slow_query_logger_class = solr_custom_params['slow_query_logger_class']
         if slow_query_logger_class == nil || slow_query_logger_class.empty?
           Chef::Log.error("Option enable_slow_query_logger is selected but slow_query_logger_class is not provided. To enable enable_slow_query_logger make sure slow_query_logger_class, custome artifact & url is provided to solr cloud service.")
@@ -1089,7 +1088,7 @@ module SolrCollection
                   "elem_value" => "query-source-tracker"
               }
           }
-  
+
           props_map.merge!(query_source_tracker)
         end
 
@@ -1312,7 +1311,7 @@ module SolrCollection
     restorestatus = JSON.parse(res.body)
     return restorestatus['restorestatus']['status']
   end
-  
+
   # This method restore given collection core with the given backup_name
   def restore(host,port, collection_name, core_name, backup_location, backup_name)
     uri = URI("http://#{host}:#{port}/solr/#{core_name}/replication?command=restore&location=#{backup_location}&name=#{backup_name}")
@@ -1324,7 +1323,7 @@ module SolrCollection
       Chef::Log.info("restore response : #{res.body}")
     end
   end
-  
+
   # This method returns list of collections
   def get_collections(host,port)
     params = {
@@ -1333,7 +1332,7 @@ module SolrCollection
     clusterstatus_resp_obj = collection_api(host, port, params)
     return clusterstatus_resp_obj["cluster"]["collections"]
   end
-  
+
   # This method returns list of shards for given collection
   def get_shards_by_collection(host,port,collection_name)
     collections = get_collections(host,port)
@@ -1342,7 +1341,7 @@ module SolrCollection
     end
     return collections[collection_name]['shards']
   end
-  
+
   # This map of [node_ip=>core_name] for given collection & shard
   # ex. {"private_ip1"=>"core_node69"}
   def get_shard_core_ip_to_name_map(host, port, collection_name, shard_name)
@@ -1357,7 +1356,7 @@ module SolrCollection
     end
     return node_ip_to_core_name_map
   end
-  
+
   # This method return the map of leader ip & replica_name
   # ex. {"private_ip1":"sams_list1_shard1_replica0","private_ip2":"sams_list1_shard2_replica0"}
   def get_shard_leader_ip_to_name_map(host, port, collection_name, shard_name)
@@ -1373,7 +1372,7 @@ module SolrCollection
     end
     return node_ip_to_replica_name_map
   end
-  
+
   # compares two xml files. If diff is found and error_on_diff = true, then throw error
   def xml_diff(file1, file2, error_on_diff)
     diff_command = "#{node['user']['dir']}/solr_pack/xmldiffs.py  #{file1} #{file2}"
@@ -1390,7 +1389,7 @@ module SolrCollection
       if error_on_diff == true
         raise "#{msg} Please make sure zookeeper config is same as the one present in the backup location #{file1}"
       else
-        Chef::Log.info(msg) 
+        Chef::Log.info(msg)
       end
     else
       Chef::Log.info("No differences found in config between the backup #{file1} and current zookeeper.")
