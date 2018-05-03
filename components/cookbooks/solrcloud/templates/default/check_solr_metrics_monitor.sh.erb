@@ -58,11 +58,29 @@ if [[ $jolokia_process =~ "-Djetty.base=" ]] ; then
   jmx_metrics_number=$(wc -l $jmx_log_file | cut -d ' ' -f 1)
 
   # If there is atleast one collection, the minimum number of node status metrics would be 7.
+  # The node-status metric file always populates the following 7 metrics for each collection:
+  # total.cores.down=0
+  # r2d2 total.cores.active=12
+  # r2d2 total.cores.recovering=0
+  # r2d2 total.active.shards.count=4
+  # r2d2 total.active.replicas.count=12
+  # r2d2 total.cores.recovery.failed=0
+  # solr_cluster_summary total.nodes.live=15
+  # Hence even if one collection is present, we expect a minimum of 7 metrics
   if [ ${node_status_metrics_number} -lt 7 ] ; then
     echo $solrmonitor_down
   fi
 
   # If there is atleast one collection, the minimum number of JMX metrics that we are exposing would be 40 on 6.4 version of solr.
+  # The jmx metric file always populates the following minimum 40 metrics for each collection: (depends on solr version we added more metrics)
+  # r2d2 get.requestTimes.OneMinuteRate=0.0
+  # r2d2 get.requestTimes.Count=0
+  # r2d2 get.requestTimes.FifteenMinuteRate=0.0
+  # r2d2 get.requestTimes.FiveMinuteRate=0.0
+  # ...
+  # r2d2 update.requestTimes.95thPercentile=0.0
+  # r2d2 update.requestTimes.99thPercentile=0.0
+  # Hence even if one collection is present, we expect a minimum of 40 metrics
   if [ ${jmx_metrics_number} -lt 40 ] ; then
     echo $solrmonitor_down
   fi
