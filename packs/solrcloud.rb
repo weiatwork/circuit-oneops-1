@@ -188,6 +188,21 @@ resource "solrcloud",
         'SolrProcessDown' => threshold('1m', 'avg', 'up', trigger('<=', 98, 10, 5), reset('>', 95, 2, 1), 'unhealthy')
       }
     },
+    'SolrMetricsMonitorCheck' => {
+        :description => 'SolrMetricsMonitoring',
+        :source => '',
+        :chart => {'min' => '0', 'max' => '100', 'unit' => 'Percent'},
+        :cmd => 'check_solr_metrics_monitor',
+        :cmd_line => '/opt/nagios/libexec/check_solr_metrics_monitor.sh',
+        :metrics => {
+            'up' => metric(:unit => '%', :description => 'Percent Up')
+        },
+        :thresholds => {
+            # Trigger alarm if value goes below 75 for 8 times in a 10 minute window
+            # # Reset alarm if value goes above 75 for 1 time in a 2 minute window
+            'SolrMetricsMonitoringDown' => threshold('1m', 'avg', 'up', trigger('<=', 75, 10, 8), reset('>', 75, 2, 1))
+        }
+    },
     'SolrZKConnectionCheck' => {
       :description => 'SolrZKConnection',
       :source => '',
