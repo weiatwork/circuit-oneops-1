@@ -161,7 +161,7 @@ else
     # if solrconfig_contains_update_processor_chain
     #   check_default_chain_is_set()
     # end
-
+    
   end
 
   bash 'remove_config_dir' do
