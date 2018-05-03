@@ -329,7 +329,7 @@ module SolrCollection
 
       ruby_block 'update_solrconfig' do
         block do
-          update_solrconfig_and_override_properties("#{solr_config}/#{extracted_config_dir}/solrconfig.xml", props_map)
+          update_solrconfig_and_override_properties("#{solr_config}/#{extracted_config_dir}/solrconfig.xml", props_map, true)
         end
       end
 
