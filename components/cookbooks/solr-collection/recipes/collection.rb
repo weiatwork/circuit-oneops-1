@@ -217,15 +217,15 @@ end # override_collection_config
 
 
 
-ruby_block 'ignore_commit_optimize_requests_enabled' do
-  block do
-    if node['validation_enabled'] == 'true' && !ignore_commit_optimize_requests_enabled?
-      error = "IgnoreCommitOptimizeUpdateProcessorFactory is not found in one of the UpdateRequestProcessorChains.This processor is very highly recommended so that no one can issue commits or optimize calls very frequently and destabilize the cluster. If you still believe you do not need this validation-failure, please disable the validation flag from collection component."
-      puts "***FAULT:FATAL=#{error}"
-      raise error
-    end
-  end
-end
+# ruby_block 'ignore_commit_optimize_requests_enabled' do
+#   block do
+#     if node['validation_enabled'] == 'true' && !ignore_commit_optimize_requests_enabled?
+#       error = "IgnoreCommitOptimizeUpdateProcessorFactory is not found in one of the UpdateRequestProcessorChains.This processor is very highly recommended so that no one can issue commits or optimize calls very frequently and destabilize the cluster. If you still believe you do not need this validation-failure, please disable the validation flag from collection component."
+#       puts "***FAULT:FATAL=#{error}"
+#       raise error
+#     end
+#   end
+# end
 
 # Verify if schemaless mode is disabled in order to avoid users to rapidly construct effective schema without manually modifying the schema.
 ruby_block 'disallow_schemaless_mode' do
@@ -240,4 +240,3 @@ ruby_block 'disallow_schemaless_mode' do
     end
   end
 end
-

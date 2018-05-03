@@ -596,73 +596,17 @@ module SolrCollection
     # with a specific attribute. Please take a look at the get_prop_metadata method to understand the structure of the prop_metadata
     # object
 
-    def update_solrconfig_and_override_properties(config_file, props_map)
+    def update_solrconfig_and_override_properties(config_file, props_map, solrconfig_contains_update_processor_chain)
       file = File.new(config_file )
       doc = REXML::Document.new file
 
+      # start processing the props map
       props_map.each do |prop_name, prop_metadata|
-        
-        parent_elem = doc.elements[prop_metadata["parent_elem_path"]]
-
-        if parent_elem.nil?
-          # Create the parent_elem if it does not already exist
-          # For e.g mergepolicyfactory does not exists in default solrconfig.xml file, it is commented out
-
-          parent_elem_path = prop_metadata["parent_elem_path"]
-          index = parent_elem_path.rindex("/")
-          if index != -1
-            parent_parent_elem_path = parent_elem_path.slice(0, index)
-            parent_elem_name = parent_elem_path.slice(index + 1, parent_elem_path.length)
-            # remove any attribute value provided  using '@' from xpath so that we consider only the path
-            # for ex. in path "config/updateRequestProcessorChain[@name='ignore-commit-from-client']"
-            # we want to create node with actual path 'config/updateRequestProcessorChain' as we need only path,
-            # otherwise a node will be added as below
-            # <updateRequestProcessorChain[@name='ignore-commit-from-client']></updateRequestProcessorChain[@name='ignore-commit-from-client']>
-            # we want node to be created as <updateRequestProcessorChain></updateRequestProcessorChain>
-            parent_elem_name = parent_elem_name.split('[@')[0]
-            parent_parent_elem = doc.elements[parent_parent_elem_path]
-            Chef::Log.info("Creating the element #{parent_elem_name}")
-            parent_elem = parent_parent_elem.add_element(parent_elem_name)
-            #Add the attributes Also to the new created element
-            prop_metadata["parent_elem_attrs"].each do |attr_name, attr_value|
-              parent_elem.add_attribute(attr_name, attr_value)
-            end
-          else
-            Chef.log.warn("Unable to create the missing element, Invalid XPATH #{parent_elem_path} provided")
-          end
-        end
-
-
-        # if not prop_metadata["attr_name"].nil?
-        attr_name = prop_metadata["attr_name"]
-        Chef::Log.info("elem_name:  #{prop_metadata["elem_name"]}, attr_name : #{attr_name}, attr_value:  #{prop_metadata["attr_value"]}, elem_value_select : #{prop_metadata["elem_value_select"]}, elem_value = #{prop_metadata["elem_value"]}")
-        new_elem = get_elem_by_name_attr(parent_elem, prop_metadata["elem_name"], attr_name, prop_metadata["attr_value"], prop_metadata["elem_val_select"], prop_metadata["edit_attr_val"])
-        if new_elem.nil?
-          # Add the element if it does not exists
-          # If there are any elements then element_name should not be ""
-          if prop_metadata["elem_name"] != ""
-            if not attr_name.nil?
-              Chef::Log.info("Creating the element #{prop_metadata['elem_name']} with attribute #{attr_name}")
-              new_elem = parent_elem.add_element(prop_metadata["elem_name"], {attr_name => prop_metadata["attr_value"]})
-            else
-              Chef::Log.info("Creating the element #{prop_metadata['elem_name']}")
-              new_elem = parent_elem.add_element(prop_metadata["elem_name"])
-            end
-            new_elem.text = prop_metadata["elem_value"]
-          end
-        else
-          if not prop_metadata["elem_value"].nil?
-            # Change the element value
-            new_elem.text = prop_metadata["elem_value"]
-          else
-            attr_value = new_elem.attributes.get_attribute([prop_metadata["attr_name"]])
-            Chef::Log.info("exisitng attr val = #{attr_value}")
-            new_elem.attributes[prop_metadata["attr_name"]] = prop_metadata["attr_value"]
-          end
-        end
-
+        # get the parent element; parent element can contain multiple elements
+        parent_elem_array, solrconfig_contains_update_processor_chain = get_parent_element(doc, prop_metadata["parent_elem_path"], prop_metadata["parent_elem_attrs"], prop_metadata["parent_mandatory_children"], solrconfig_contains_update_processor_chain)
+        # add the element to parent elements
+        add_element(parent_elem_array, prop_metadata["parent_elem_path"], prop_metadata["elem_name"], prop_metadata["elem_val_select"], prop_metadata["attr_name"], prop_metadata["attr_value"], prop_metadata["elem_children"], prop_metadata["add_after_attr_name"], prop_metadata["add_after_attr_value"], prop_metadata["edit_attr_val"], prop_metadata["elem_value"])
       end
-
 
       # Write the updated DOM object back to the provided xml file
       config_tmpfile = "#{config_file}.tmp"
@@ -675,49 +619,229 @@ module SolrCollection
       # Move the newly created temp config file to solrconfig.xml file
       File.rename "#{config_tmpfile}",  "#{config_file}"
 
+      # create initParams, and add the processor chain created earlier into it, if solrconfig_contains_update_processor_chain is false
+      if not solrconfig_contains_update_processor_chain
+        props_map_for_init_params = get_props_map_for_init_params()
+        update_solrconfig_and_override_properties(config_file, props_map_for_init_params, true)
+      end
+
+      return solrconfig_contains_update_processor_chain
     end
 
-    #  This method returns the child XML element with the name elem_name and which has an attribute value equal to the attr_value
-    #  If such an element is not found it will return nil
-    def get_elem_by_name_attr(parent_elem, elem_name, attr_name, attr_value, elem_val_select, edit_attr_val)
+    def get_props_map_for_init_params()
+      prop_map = {
+          "1_search_initparams" => {
+              #parent element XPATH, the element under which needs to be changed
+              "parent_elem_path" => "config",
+              #child element name
+              "elem_name"  => "initParams",
+              #attribute used to select the correct child element
+              "attr_name"  => "path",
+              #attribuate value for the child element
+              "attr_value" => "/update/**"
 
-      parent_elem.elements.to_a.each do |elem|
+          },
+          "2_search_initparams_defaults" => {
+              "parent_elem_path" => "config/initParams[@path='/update/**']",
+              "parent_elem_attrs" => {
+                  "path" => "/update/**"
+              },
+              "elem_name" => "lst",
+              "attr_name" => "name",
+              "attr_value" => "defaults"
+          },
+          "3_search_initparams_defaults_updatechain" => {
+              "parent_elem_path" => "config/initParams[@path='/update/**']/lst[@name='defaults']",
+              "elem_name" => "str",
+              "attr_name" => "name",
+              "attr_value" => "update.chain",
+              "elem_value" => "custom"
+          }
+      }
+      return prop_map
+    end
 
-        # Element name is same as the tag which is already existing in solrconfig
-        if (elem.name == elem_name)
-          # Chef::Log.info("elem.name - #{elem.name}")
-          # To support multiple values for the same element, we have elem_val_select set with element_val
-          # If the attrbute element_val_select doesn't exist then, there is only one element of that type
-          if elem_val_select.nil?
-            # If attribute exists for the element and the attr_value is also same, then return the element for update. Eg: numRecordsToKeep2
-            if not attr_name.nil?
-              Chef::Log.info("elem.attributes[attr_name] - #{elem.attributes[attr_name]}, attr_value - #{attr_value}")
-              if elem.attributes[attr_name] == attr_value
-                # Chef::Log.info("returning elem - attr name is not nil and are equal")
-                return elem
-              else
-                if edit_attr_val == "true"
-                  return elem
-                end
+    def check_default_chain_is_set()
+      resp = collection_api(node['ipaddress'],node['port_num'], {}, nil, "/solr/"+node['collection_name']+"/config/updateRequestProcessorChain")
+      # collect all the processor chain names
+      update_processor_chain_names = []
+      resp['config']['updateRequestProcessorChain'].each do |processor_chain|
+        update_processor_chain_names.push(processor_chain['name'])
+      end
+
+      # get the name of default chain defined in the initParams
+      resp_init_params = collection_api(node['ipaddress'],node['port_num'], {}, nil, "/solr/"+node['collection_name']+"/config/initParams")
+      default_processor_chain_name = String.new
+      resp_init_params['config']['initParams'].each do |param|
+        if param['path'] =~ /update/ && param['defaults'].key?("update.chain")
+          default_processor_chain_name = param['defaults']['update.chain']
+          break
+        end
+      end
+
+      if not update_processor_chain_names.include?(default_processor_chain_name)
+        Chef::Log.error("initParams does not contain a default chain from the list of updateRequestProcessorChains that are defined in the solrconfig.xml")
+      end
+    end
+
+    def get_parent_element(doc, parent_elem_path, elem_attrs, children, solrconfig_contains_update_processor_chain)
+      parent_elem_array = []
+      doc.elements.each(parent_elem_path) { |element| parent_elem_array.push(element)}
+      # return the element if it exists
+      if parent_elem_array.length!=0
+        #if parent exists then ensure all the parent elements have given attributes
+        parent_elem_array.each do |parent|
+          if not elem_attrs.nil?
+            elem_attrs.each do |attr_name, attr_value|
+              if parent.attributes[attr_name].nil?
+                parent.attributes[attr_name] = attr_value
               end
-            # There can be unique elements with attributes not given. Return the elem while updating the element. eg: ramBufferSize
-            else
-              return elem
-            end
-            # If element support multiple values. eg: <str name='qi'>adhoc</str>
-            # <str name='qi'>app</str>
-          else
-            if elem.text != elem_val_select
-              Chef::Log.info("#{elem.text} != #{elem_val_select}")
-              next
-            else
-              return elem
             end
           end
         end
+        # create the parent element if it does not exist
+      else
+        index = parent_elem_path.rindex("/")
+        if index != -1
+          parent_parent_elem_path = parent_elem_path.slice(0, index)
+          parent_elem_name = parent_elem_path.slice(index + 1, parent_elem_path.length)
+          # remove any attribute value provided  using '@' from xpath so that we consider only the path
+          # for ex. in path "config/updateRequestProcessorChain[@name='ignore-commit-from-client']"
+          # we want to create node with actual path 'config/updateRequestProcessorChain' as we need only path,
+          # otherwise a node will be added as below
+          # <updateRequestProcessorChain[@name='ignore-commit-from-client']></updateRequestProcessorChain[@name='ignore-commit-from-client']>
+          # we want node to be created as <updateRequestProcessorChain></updateRequestProcessorChain>
+          parent_elem_name = parent_elem_name.split('[@')[0]
+          # set the variable solarconfig_contains_update_processor_chain as false because solrconfig does not have any updateRequestProcessorChains defined
+          if parent_elem_name == "updateRequestProcessorChain"
+            solrconfig_contains_update_processor_chain = false
+          end
+          parent_parent_elem = doc.elements[parent_parent_elem_path]
+          parent_elem_array.push(create_element(parent_parent_elem, parent_parent_elem_path, parent_elem_name, elem_attrs, children, nil, nil))
+        else
+          Chef.log.warn("Unable to create the missing element, Invalid XPATH #{parent_elem_path} provided")
+        end
+
       end
-      return nil
+      return parent_elem_array, solrconfig_contains_update_processor_chain
     end
+
+    def add_element(parent_elem_array, parent_elem_path, elem_name, elem_val_select, attr_name, attr_value, children, add_after_attr_name, add_after_att_value, edit_attr_val, elem_value)
+      parent_elem_array.each do |parent_elem|
+        found = false
+        # search in parent element (using elem_name) if the element exists
+        element_to_be_added = nil
+        parent_elem.elements.to_a.each do |element|
+          if element.name == elem_name
+            # if allows multiple entries
+            if not elem_val_select.nil?
+              #  return the element with same text value as in elem_val_select
+              if element.text != elem_val_select
+                Chef::Log.info("#{element.text} != #{elem_val_select}")
+                next
+              else
+                found = true
+                element_to_be_added = element
+                break
+              end
+              # else allows single entry
+            else
+              #  if attr_name is not nil
+              if not attr_name.nil?
+                # return the element if it's attribute value matches given attr_value
+                Chef::Log.info("elem.attributes[attr_name] - #{element.attributes[attr_name]}, attr_value - #{attr_value}")
+                if element.attributes[attr_name] == attr_value
+                  # Chef::Log.info("returning elem - attr name is not nil and are equal")
+                  found = true
+                  element_to_be_added = element
+                  break
+                else
+                  # return the element if edit_attr_value is true
+                  if edit_attr_val == "true"
+                    found =true
+                    element_to_be_added = element
+                    break
+                  end
+                end
+                #  else return element
+              else
+                found = true
+                element_to_be_added = element
+                break
+              end
+            end
+          end
+        end
+        # else element does not exist so create one in all the parent elements
+        if not found
+          if elem_name != ""
+            element = create_element(parent_elem, parent_elem_path, elem_name, { attr_name => attr_value }, children, add_after_attr_name, add_after_att_value)
+            element_to_be_added = element
+          end
+        end
+
+        # update the value of the element to be added if elem_value is not nil
+        if not element_to_be_added.nil?
+          if not elem_value.nil?
+            element_to_be_added.text = elem_value
+            # else update the attribute value for the element
+          else
+            attr_value = element_to_be_added.attributes[attr_name]
+            Chef::Log.info("exisitng attr val = #{attr_value}")
+            element_to_be_added.attributes[attr_name] = attr_value
+          end
+        end
+        #print "result -> ", parent_elem, "\n"
+      end
+    end
+
+    # this method creates an element, sets its children and adds it to appropriate position in the parent element
+    def create_element(parent_elem, parent_elem_path, elem_name, elem_attrs, children, add_after_attr_name, add_after_attr_value)
+      # create the element
+      elem = REXML::Element.new(elem_name)
+
+      # set the attributes
+      if not elem_attrs.nil?
+        elem_attrs.each { |attr_name, attr_value| elem.attributes[attr_name] = attr_value }
+      end
+
+      # add the element in parent path at appropriate position
+      if add_after_attr_name.nil? || add_after_attr_value.nil?
+        parent_elem.elements << elem
+      else
+        position_found = false
+        # to add the element as first element provide add_after_attr_name = "" and add_after_attr_value = ""
+        if add_after_attr_name == "" && add_after_attr_value == ""
+          position_found = true
+        end
+        parent_elem.elements.to_a.each do |node|
+          if position_found
+            node.previous_sibling = elem
+            break
+          end
+          if node.attributes[add_after_attr_name] == add_after_attr_value
+            position_found = true
+          end
+        end
+      end
+
+      # create the children
+      if not children.nil?
+        elem_path = parent_elem_path + "/" + elem_name + "[@"
+        elem_attrs.each { |attr_name, attr_value|
+          elem_path = elem_path + attr_name + "='" + attr_value + "']"
+          break
+        }
+        children.each do |child|
+          child_elem = create_element(elem, elem_path, child["elem_name"], { child["attr_name"] => child["attr_value"] }, nil, nil, nil)
+          child_elem.text = child["elem_value"]
+        end
+      end
+
+      # return the element
+      return elem
+    end
+
 
     # The configoverlay feature of Solr which allows you to overlay the configuration changes on top of the solrconfig.xml file
     # is not supported for all the configurations. In order to support changing unsupported configuration options we modify the
@@ -727,6 +851,7 @@ module SolrCollection
     # make changes to the target XML element content. The key is the Solr OneOps configuration attribute
     #
     def get_prop_metadata_for_solrconfig_update()
+
       solr_custom_params = node['solr_custom_params']
       props_map = {
           "1_updatelog_numrecordstokeep" => {
@@ -999,6 +1124,86 @@ module SolrCollection
 
       end
 
+      props_map["25_search_comp_log_delete_update_processor"] = {
+          "parent_elem_path" => "config/updateRequestProcessorChain",
+          "parent_elem_attrs" => {
+              "name" => "custom"
+          },
+          "parent_mandatory_children" => [
+              {
+                  "elem_name" => "processor",
+                  "attr_name" => "class",
+                  "attr_value" => "solr.LogUpdateProcessorFactory"
+              },
+              {
+                  "elem_name" => "processor",
+                  "attr_name" => "class",
+                  "attr_value" => "solr.DistributedUpdateProcessorFactory"
+              },
+              {
+                  "elem_name" => "processor",
+                  "attr_name" => "class",
+                  "attr_value" => "solr.RunUpdateProcessorFactory"
+              }
+          ],
+          "elem_name" => "processor",
+          "attr_name" => "class",
+          "attr_value" => "com.walmart.strati.search.solr.LogDeleteQueryProcessorFactory",
+          "add_after_attr_name" => "class",
+          "add_after_attr_value" => "solr.DistributedUpdateProcessorFactory",
+          "elem_children" => [
+              {
+                  "elem_name" => "bool",
+                  "attr_name" => "name",
+                  "attr_value" => "logDeleteQuery",
+                  "elem_value" => "true"
+              }
+          ]
+      }
+
+      props_map["26_search_comp_ignore_commit_processor"] = {
+          "parent_elem_path" => "config/updateRequestProcessorChain",
+          "parent_elem_attrs" => {
+              "name" => "custom"
+          },
+          "parent_mandatory_children" => [
+              {
+                  "elem_name" => "processor",
+                  "attr_name" => "class",
+                  "attr_value" => "solr.LogUpdateProcessorFactory"
+              },
+              {
+                  "elem_name" => "processor",
+                  "attr_name" => "class",
+                  "attr_value" => "solr.DistributedUpdateProcessorFactory"
+              },
+              {
+                  "elem_name" => "processor",
+                  "attr_name" => "class",
+                  "attr_value" => "solr.RunUpdateProcessorFactory"
+              }
+          ],
+          "elem_name" => "processor",
+          "attr_name" => "class",
+          "attr_value" => "solr.IgnoreCommitOptimizeUpdateProcessorFactory",
+          "add_after_attr_name" => "",
+          "add_after_attr_value" => "",
+          "elem_children" => [
+              {
+                  "elem_name" => "int",
+                  "attr_name" => "name",
+                  "attr_value" => "statusCode",
+                  "elem_value" => 200
+              },
+              {
+                  "elem_name" => "str",
+                  "attr_name" => "name",
+                  "attr_value" => "responseMessage",
+                  "elem_value" => "Solr is ignoring explicit commit or optimize commands and relying only on the soft/hard commits provided in solrconfig.xml"
+              }
+          ]
+      }
+
       if not node["updatelog_numrecordstokeep"].nil?
           props_map["1_updatelog_numrecordstokeep"]["elem_value"] = node["updatelog_numrecordstokeep"]
       end
@@ -1091,28 +1296,6 @@ module SolrCollection
   #     ]
   #   }
   # }
-  def ignore_commit_optimize_requests_enabled?
-    resp = collection_api(node['ipaddress'],node['port_num'], {}, nil, "/solr/"+node['collection_name']+"/config/updateRequestProcessorChain")
-    if resp['config']['updateRequestProcessorChain'].empty?
-      Chef::Log.error("No UpdateRequestProcessorChain found")
-      return false
-    end
-    #"updateRequestProcessorChain": [{"class": "solr.DocBasedVersionConstraintsProcessorFactory"},......]
-    resp['config']['updateRequestProcessorChain'].each do |processor_chain|
-      processor_chain_with_ignore_commit_enabled = []
-      # "": [{"class": "solr.DocBasedVersionConstraintsProcessorFactory"},{"class": "solr.IgnoreCommitOptimizeUpdateProcessorFactory","statusCode":200},...]
-      processor_chain.each_value do |processor_chain_item|
-        if processor_chain_item.kind_of?(Array)
-          processor_chain_with_ignore_commit_enabled = processor_chain_item.select { |processor| processor['class'] == 'solr.IgnoreCommitOptimizeUpdateProcessorFactory'}
-        end
-      end
-      if processor_chain_with_ignore_commit_enabled == nil || processor_chain_with_ignore_commit_enabled.empty?
-        Chef::Log.error("IgnoreCommitOptimizeUpdateProcessorFactory not defined for processor name #{processor_chain['name']}")
-        return false
-      end
-    end
-    return true
-  end
 
   # This method returns the status of last backup/restore
   def get_core_backup_restore_status(host,port,core_name,command)
@@ -1213,7 +1396,7 @@ module SolrCollection
       Chef::Log.info("No differences found in config between the backup #{file1} and current zookeeper.")
     end
   end
-  
+
   # get list of dir names starting with prefix and ends with backup_timestamp+-10 min
   def get_backup_dirs(prefix, backup_location, backup_timestamp)
     input_time = DateTime.strptime(backup_timestamp,"%Y_%m_%d_%H_%M_%S" )
@@ -1298,4 +1481,3 @@ module SolrCollection
 
   end
 end
-
