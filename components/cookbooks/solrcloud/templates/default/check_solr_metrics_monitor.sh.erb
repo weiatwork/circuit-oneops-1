@@ -57,10 +57,12 @@ if [[ $jolokia_process =~ "-Djetty.base=" ]] ; then
 
   jmx_metrics_number=$(wc -l $jmx_log_file | cut -d ' ' -f 1)
 
+  # If there is atleast one collection, the minimum number of node status metrics would be 7.
   if [ ${node_status_metrics_number} -lt 7 ] ; then
     echo $solrmonitor_down
   fi
 
+  # If there is atleast one collection, the minimum number of JMX metrics that we are exposing would be 40 on 6.4 version of solr.
   if [ ${jmx_metrics_number} -lt 40 ] ; then
     echo $solrmonitor_down
   fi
@@ -85,6 +87,9 @@ if [[ $jolokia_process =~ "-Djetty.base=" ]] ; then
   fi
   echo "$time_between_node_status_log_sys_date"
 
+  # the command "$(($(date -d 'Thu May  3 15:56:01 UTC 2018' '+%s') - $(date -d 'Thu May  3 15:57:24 UTC 2018' '+%s')))" gives the result -83 (83 sec difference)
+  # We are checking if the log files have not been updated in the past 280 sec (~ 5 minutes),
+  # then we assume the solrmonitor scripts didn't generate the metrics during this time. So its down.
   if [[ ("$time_between_jmx_log_sys_date" -gt 280) || ("$time_between_node_status_log_sys_date" -gt 280) ]] ; then
     echo $solrmonitor_down
   fi
