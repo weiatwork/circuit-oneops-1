@@ -953,12 +953,16 @@ resource "artifact",
   :requires => { "constraint" => "0..*" }
 
 resource "service-mesh",
-	:cookbook => "oneops.1.service-mesh",
-	:design => true,
-	:requires => {
-    	"constraint" => "0..1",
-    	'services' => 'servicemeshcloudservice'
-     }
+  :cookbook => "oneops.1.service-mesh",
+  :design => true,
+  :requires => {
+    "constraint" => "0..1",
+    'services' => 'servicemeshcloudservice'
+   },
+  :attributes => {
+    "service-mesh-version" => "1.7.1",
+    "service-mesh-root" => "/opt/service-mesh"
+  }
 
 # depends_on
 [ { :from => 'compute',     :to => 'secgroup' } ].each do |link|
