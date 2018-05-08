@@ -20,8 +20,8 @@ attribute 'solr_version',
     :help => 'Select the specific version to set up solrcloud. Be sure the artifact uploaded to mirror repository',
     :category => '1.SolrCloud',
     :form => {'field' => 'select', 'options_for_select' => [
-       ['6.6.0 (Deprecated)', '6.6.0'],
-       ['7.1.0 (Deprecated)', '7.1.0'],  ['7.2.1', '7.2.1']
+       ['6.4.2 (Deprecated)', '6.4.2'], ['6.6.0 (Deprecated)', '6.6.0'],
+       ['7.2.1', '7.2.1'], ['7.3.0 (Not tested yet)', '7.3.0']
     ]},
     :order => 4
   }
