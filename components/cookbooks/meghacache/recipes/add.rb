@@ -124,7 +124,7 @@ if  deep_fetch(node, 'workorder', 'payLoad', 'memcached.first', 'ciAttributes', 
     cron "collect_graphite_stats" do
       user 'root'
       minute "*/1"
-      command "sudo /bin/ruby /opt/meghacache/bin/collect_graphite_stats.rb"
+      command "sudo /bin/ruby /opt/meghacache/bin/collect_graphite_stats.rb 2>&1 | /bin/logger"
       only_if { ::File.exists?("/opt/meghacache/bin/collect_graphite_stats.rb") }
     end
 
