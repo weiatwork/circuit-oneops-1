@@ -9,8 +9,8 @@ SEGMENT_LIMIT = 5 * 1024 * 1024 * 1024 - 1       # 5GB -1
 BUFFER_SIZE = 1024 * 1024                        # 1MB
 KEY_EXPIRE_ERROR_MESSAGE = 'Server failed to authenticate the request. Make sure the value of Authorization header is formed correctly including the signature'.freeze
 STATUS_CODES = {
-  success: [200, 201, 202, 203, 204],
-  failure: [400, 401, 402, 403, 404, 500, 501, 502, 503]
+  :success => [200, 201, 202, 203, 204],
+  :failure => [400, 401, 402, 403, 404, 500, 501, 502, 503]
 }
 
 def list_directories_or_files(conn, options, argv)
@@ -227,10 +227,10 @@ def get_storage_account_key(config)
   login_url = "https://login.microsoftonline.com/#{tenant_id}/oauth2/token"
 
   post_data = {
-    client_id: app_id,
-    client_secret: app_id_secret,
-    resource: azure_base_management_uri,
-    grant_type: 'client_credentials'
+    :client_id => app_id,
+    :client_secret => app_id_secret,
+    :resource => azure_base_management_uri,
+    :grant_type => 'client_credentials'
   }
 
   connection = Faraday.new
@@ -328,8 +328,8 @@ begin
       key = key_file_content['key']
     end
     conn = Fog::Storage::AzureRM.new(
-      azure_storage_account_name: storage_account_name,
-      azure_storage_access_key: key
+      :azure_storage_account_name => storage_account_name,
+      :azure_storage_access_key => key
     )
   else
     puts "Provider #{provider} not supported!"
