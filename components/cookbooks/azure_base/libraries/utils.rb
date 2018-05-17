@@ -122,7 +122,7 @@ module Utils
 
     OOLog.info("Getting Fault Domain: #{region}")
 # when new region added to oneops this fault domains needs to be updated
-    fault_domains = {:eastus2 => 3, :southcentralus => 3, :westus => 3, :eastasia => 2, :japaneast => 2, :default => 2}
+    fault_domains = {:eastus2 => 3, :southcentralus => 3, :westus => 3, :japanwest => 2, :japaneast => 2, :ukwest => 2, :uksouth => 2, :eastasia => 2, :default => -1}
 
     OOLog.info("Finished Fault Domain: #{region}")
     return fault_domains[region.to_sym].nil? ? fault_domains['default'.to_sym] : fault_domains[region.to_sym]
