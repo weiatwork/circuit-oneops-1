@@ -78,9 +78,13 @@ iis_web_site platform_name do
 end
 
 template heartbeat_path do
-  source 'heartbeat.erb'
+  source 'heartbeat.html.erb'
   cookbook 'iis-website'
-  mode '0755'
+  variables(
+    package_name: node['iis-website']['package_name'],
+    package_version: node['workorder']['rfcCi']['ciAttributes']['package_version'],
+    deployed_on: Time.new
+  )
 end
 
 
