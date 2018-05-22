@@ -265,7 +265,7 @@ def save_key(key)
 end
 
 def get_new_key_in_case_of_exception(config)
-  puts 'Invalid key. Trying to get a new one. Please try again once the process is finished'
+  puts 'Invalid key. Trying to get a new one. Please try again once this process is finished'
   key = get_storage_account_key(config)
   save_key(key)
 end
@@ -352,6 +352,10 @@ when 'list'
     if ex.to_s.include?(KEY_EXPIRE_ERROR_MESSAGE) && provider.eql?('Azure')
       get_new_key_in_case_of_exception(config)
     end
+  rescue Azure::Core::Http::HTTPError => ex
+    if ex.description.to_s.include?(KEY_EXPIRE_ERROR_MESSAGE) && provider.eql?('Azure')
+      get_new_key_in_case_of_exception(config)
+    end
   end
 
 when 'delete'
@@ -363,6 +367,10 @@ when 'delete'
     delete_directory_or_file(conn, ARGV)
   rescue RuntimeError => ex
     if ex.to_s.include?(KEY_EXPIRE_ERROR_MESSAGE) && provider.eql?('Azure')
+      get_new_key_in_case_of_exception(config)
+    end
+  rescue Azure::Core::Http::HTTPError => ex
+    if ex.description.to_s.include?(KEY_EXPIRE_ERROR_MESSAGE) && provider.eql?('Azure')
       get_new_key_in_case_of_exception(config)
     end
   end
@@ -378,6 +386,10 @@ when 'upload'
     if ex.to_s.include?(KEY_EXPIRE_ERROR_MESSAGE) && provider.eql?('Azure')
       get_new_key_in_case_of_exception(config)
     end
+  rescue Azure::Core::Http::HTTPError => ex
+    if ex.description.to_s.include?(KEY_EXPIRE_ERROR_MESSAGE) && provider.eql?('Azure')
+      get_new_key_in_case_of_exception(config)
+    end
   end
 
 when 'download'
@@ -389,6 +401,10 @@ when 'download'
     download_directory_or_file(conn, options, ARGV)
   rescue RuntimeError => ex
     if ex.to_s.include?(KEY_EXPIRE_ERROR_MESSAGE) && provider.eql?('Azure')
+      get_new_key_in_case_of_exception(config)
+    end
+  rescue Azure::Core::Http::HTTPError => ex
+    if ex.description.to_s.include?(KEY_EXPIRE_ERROR_MESSAGE) && provider.eql?('Azure')
       get_new_key_in_case_of_exception(config)
     end
   end
