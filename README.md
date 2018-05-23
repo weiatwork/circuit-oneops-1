@@ -1,7 +1,7 @@
 Overview
 ========
 
-circuit-oneops-1 clouds, components, packs and services
+Circuit-oneops-1 clouds, components, packs and services
 
 
 Usage
