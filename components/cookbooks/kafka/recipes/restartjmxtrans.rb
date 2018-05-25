@@ -1,4 +1,4 @@
-`mkdir -p /var/run/transjmx && chown transjmx:transjmx /var/run/transjmx`
+`mkdir -p /var/run/jmxtrans && chown jmxtrans:jmxtrans /var/run/jmxtrans`
 
 service "jmxtrans" do
   service_name 'jmxtrans'
