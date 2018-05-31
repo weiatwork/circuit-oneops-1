@@ -158,8 +158,6 @@ class ReplicaDistributor
   def get_cloud_to_update_domain_ips_map(ip_list, compute_ip_to_cloudid_map, exclude_ip_list)
     cloud_to_update_domain_iplist_map = Hash.new
     ip_list.each do |ip|
-      if (!ip.empty? && ip.length != 0)
-        puts "ip is #{ip}... "
       next if exclude_ip_list.include?ip
       cloud_name = compute_ip_to_cloudid_map[ip]
       domain = cloud_name.split("___")
@@ -172,9 +170,6 @@ class ReplicaDistributor
         cloud_to_update_domain_iplist_map[fault_domain][update_domain] = []
       end
       cloud_to_update_domain_iplist_map[fault_domain][update_domain].push ip
-      else
-        puts "ip - #{ip} is empty... "
-      end
     end
     return cloud_to_update_domain_iplist_map
   end
