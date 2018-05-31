@@ -38,7 +38,8 @@ resource "iis-website",
   :design       => true,
   :requires     => {
     :constraint => "1..1",
-    :help       => "Installs/Configure IIS"
+    :help       => "Installs/Configure IIS",
+    :services => "*dotnet-platform,*mirror"
   },
   :attributes   => {
     "package_name"                      => '',
@@ -123,6 +124,22 @@ resource "iis-website",
        }
   }
 
+ resource "iis-webapp",
+   :cookbook      => "oneops.1.iis-webapp",
+   :design        => true,
+   :requires      => {
+   :constraint    => "0..*",
+   :help          => "Installs web applications"
+   },
+    :attributes   => {
+       :package_name                => '',
+       :repository_url              => '',
+       :version                     => 'latest',
+       :application_path            => '',
+       :physical_path               => '$OO_LOCAL{app_directory}',
+       :new_app_pool_required       => 'false'
+  }
+
 resource "dotnetframework",
   :cookbook     => "oneops.1.dotnetframework",
   :design       => true,
@@ -133,7 +150,8 @@ resource "dotnetframework",
   },
   :attributes   => {
     "chocolatey_package_source" => 'https://chocolatey.org/api/v2/',
-    "dotnet_version_package_name" => '{ ".Net 4.6":"dotnet4.6", ".Net 3.5":"dotnet3.5" }'
+    "dotnet_version_package_name" => '{ ".Net 4.6":"dotnet4.6", ".Net 3.5":"dotnet3.5" }',
+    "dotnet_core_package_name" => 'dotnetcore-windowshosting',
   }
 
 chocolatey_package_configure_cmd=  <<-"EOF"
@@ -181,10 +199,24 @@ resource "chocopackage",
   :design        => true,
   :requires      => {
     :constraint  => "0..1",
-    :help        => "Installs chocolatey package"
+    :help        => "Installs chocolatey package",
+    :services    => '*mirror'
   },
   :attributes       => {
     "chocolatey_package_source" => 'https://chocolatey.org/api/v2/'
+  }
+
+resource "nugetpackage",
+  :cookbook      => "oneops.1.nugetpackage",
+  :design        => true,
+  :requires      => {
+    :constraint  => "0..*",
+    :help        => "Installs nuget package"
+  },
+  :attributes        => {
+    "repository_url" => '',
+    "physical_path"  => '$OO_LOCAL{app_directory}',
+    "install_dir"    => '$OO_LOCAL{platform_deployment}'
   }
 
 resource "nuget-package",
@@ -287,7 +319,8 @@ resource "secgroup",
 
 resource "os",
   :attributes => {
-    "ostype"  => "windows_2012_r2"
+    "ostype"   => "windows_2012_r2",
+    "features" => "[\"Web-Server\"]"
   }
 
 resource "volume",
@@ -301,11 +334,13 @@ resource "volume",
 [ { :from => 'iis-website', :to => 'dotnetframework' },
   { :from => 'taskscheduler',  :to => 'volume' },
   { :from => 'iis-website', :to => 'volume' },
+  { :from => 'iis-webapp', :to => 'iis-website' },
   { :from => 'nuget-package', :to => 'iis-website' },
   { :from => 'windowsservice', :to => 'iis-website' },
   { :from => 'dotnetframework', :to => 'os' },
   { :from => 'chocolatey-package', :to => 'volume' },
-  { :from => 'chocopackage', :to => 'os' } ].each do |link|
+  { :from => 'chocopackage', :to => 'os' },
+  { :from => 'nugetpackage', :to => 'volume' } ].each do |link|
   relation "#{link[:from]}::depends_on::#{link[:to]}",
     :relation_name => 'DependsOn',
     :from_resource => link[:from],
@@ -319,7 +354,7 @@ relation "iis-website::depends_on::certificate",
   :to_resource => 'certificate',
   :attributes => {"propagate_to" => "from", "flex" => false, "min" => 1, "max" => 1}
 
-[ 'iis-website', 'taskscheduler', 'dotnetframework', 'nuget-package', 'windowsservice' , 'chocolatey-package' , 'volume', 'os', 'chocopackage' ].each do |from|
+[ 'iis-website', 'taskscheduler', 'dotnetframework', 'nuget-package', 'windowsservice' , 'chocolatey-package' , 'volume', 'os', 'chocopackage', 'nugetpackage', 'iis-webapp'].each do |from|
   relation "#{from}::managed_via::compute",
     :except => [ '_default' ],
     :relation_name => 'ManagedVia',

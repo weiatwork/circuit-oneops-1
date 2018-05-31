@@ -21,6 +21,7 @@ powershell_script "Allow Port #{binding_port}" do
 end
 
 website_physical_path = physical_path
+heartbeat_path = "#{physical_path}/heartbeat.html"
 
 certs = node.workorder.payLoad.DependsOn.select { |d| d[:ciClassName] =~ /Certificate/ }
 ssl_certificate_exists = false
@@ -49,6 +50,14 @@ end
   end
 end
 
+
+
+dotnetcore = node.workorder.rfcCi.ciAttributes
+
+if dotnetcore.has_key?("install_dotnetcore")
+ runtime_version = "" if ((dotnetcore.install_dotnetcore == "true") || (runtime_version == "NoManagedCode"))
+end
+
 iis_app_pool platform_name do
   managed_runtime_version runtime_version
   process_model_identity_type identity_type
@@ -66,6 +75,17 @@ iis_web_site platform_name do
   certificate_hash thumbprint if ssl_certificate_exists
   action [:create, :update]
 end
+
+template heartbeat_path do
+  source 'heartbeat.html.erb'
+  cookbook 'iis-website'
+  variables(
+    package_name: node['iis-website']['package_name'],
+    package_version: node['workorder']['rfcCi']['ciAttributes']['package_version'],
+    deployed_on: Time.new
+  )
+end
+
 
 iis_windows_authentication 'enabling windows authentication' do
   site_name platform_name
@@ -89,6 +109,7 @@ end
 
 include_recipe 'iis::disable_ssl'
 include_recipe 'iis::enable_tls'
+include_recipe 'iis::disable_weak_ciphers'
 
 iis_log_location 'setting log location' do
   central_w3c_log_file_directory log_directory_path
@@ -160,3 +181,4 @@ end
 
 include_recipe "iis-website::add_user_iis_iusrs"
 include_recipe "iis-website::iis_logs_clean_up_task"
+include_recipe "iis-website::install_dotnet_platform"

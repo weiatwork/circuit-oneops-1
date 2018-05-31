@@ -3,6 +3,8 @@ application = node.workorder.rfcCi.ciAttributes
 version = application.version
 package_name = application.package_name
 repository_url = application.repository_url
+iisreset_before_deployment = application.iisreset_before_deployment == "true" if application.has_key?("iisreset_before_deployment")
+iisreset_after_deployment = application.iisreset_after_deployment == "true" if application.has_key?("iisreset_after_deployment")
 output_directory = ::File.join(File.dirname(application.physical_path), "platform_deployment")
 Chef::Log.info "The output directory is #{output_directory}"
 
@@ -27,12 +29,11 @@ end
 node.set['workorder']['rfcCi']['ciAttributes']['package_version'] = version
 Chef::Log.info "The package_version is #{node['workorder']['rfcCi']['ciAttributes']['package_version']}"
 package_path = ::File.join(output_directory,"#{package_name}.#{version}")
+package_physical_path = ::File.join(application.physical_path, package_name)
 
-[output_directory, ::File.join(application.physical_path, package_name)].each do |path|
-  directory path do path
-     action :delete
-     recursive true
-  end
+directory package_physical_path do
+   action :delete
+   recursive true
 end
 
 directory output_directory do
@@ -51,7 +52,19 @@ directory "#{application.physical_path}/#{package_name}/#{version}" do
   recursive true
 end
 
+service 'W3SVC' do
+  action :nothing
+  only_if { iisreset_before_deployment || iisreset_after_deployment}
+end
+
 powershell_script "copy nuget package" do
   code "Copy-Item #{package_path}/* -Destination #{application.physical_path}/#{package_name}/#{version} -Recurse -Force -Exclude *.nupkg"
   only_if { (Dir.entries("#{application.physical_path}/#{package_name}/#{version}") - %w{ . .. }).empty? }
+  notifies [:stop,:start], 'service[W3SVC]', :before
+  notifies [:stop,:start], 'service[W3SVC]', :immediately
+end
+
+directory package_path do
+   action :delete
+   recursive true
 end

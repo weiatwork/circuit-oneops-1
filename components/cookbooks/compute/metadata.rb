@@ -70,6 +70,8 @@ attribute 'availability_zone',
     :order => 6
   }
 
+
+
 attribute 'required_availability_zone',
   :description => "Required Availability Zone",
   :grouping => 'manifest',
@@ -102,6 +104,33 @@ attribute 'tags',
     :order => 9
   }
 
+attribute 'zone',
+          :description => "Fault and Update Domains",
+          :grouping => 'bom',
+          :data_type => "hash",
+          :format => {
+              :help => 'Zone',
+              :category => '1.Identity',
+              :order => 10
+          }
+
+attribute 'instance_osdisk_id',
+          :description => "Instance OS  Disk Id",
+          :grouping => 'bom',
+          :format => {
+              :help => 'Unique Id of the OS Disk Id attached to Compute within the cloud provider',
+              :category => '1.Identity',
+              :order => 11
+          }
+
+attribute 'instance_nic_id',
+          :description => "Instance NIC Id",
+          :grouping => 'bom',
+          :format => {
+              :help => 'Unique Id of the NIC Id attached to Compute within the cloud provider',
+              :category => '1.Identity',
+              :order => 12
+          }
 
 # state
 
@@ -163,6 +192,7 @@ attribute 'size',
           ['S-MEM-LXD (LXD)','S-MEM-LXD'],
           ['L-MEM-LXD (LXD)','L-MEM-LXD'],
           ['BM-V1-56 (Standard Baremetal)','BM-V1-56'],
+          ['BM-V2-56 (Torbit Baremetal)','BM-V2-56'],
           ['S-Win (Windows)','S-WIN'],
           ['M-Win (Windows)','M-WIN'],
           ['L-Win (Windows)','L-WIN'],
@@ -332,6 +362,16 @@ attribute 'private_ipv6',
     :order => 11
   }
 
+attribute 'accelerated_flag',
+  :description => "Enable Accelerated Networking",
+  :default => 'false',
+  :format => {
+    :help => 'Enables accelerated networking for a NIC.',
+    :category => '4.Networking',
+    :form => { 'field' => 'checkbox' },
+    :order => 12
+  }
+
 attribute 'is_baremetal',
   :description => "Baremetal Compute",
   :grouping => 'bom',
@@ -346,3 +386,4 @@ recipe "status", "Compute Status"
 recipe "reboot", "Reboot Compute"
 recipe "repair", "Repair Compute"
 recipe "powercycle", "Powercycle - HARD reboot"
+recipe "redeploy", "Redeploy Compute - Only works on azure"

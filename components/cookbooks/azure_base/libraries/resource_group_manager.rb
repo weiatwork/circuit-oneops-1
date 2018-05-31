@@ -1,41 +1,42 @@
-require 'azure_mgmt_resources'
 require File.expand_path('../../libraries/azure_base_manager.rb', __FILE__)
-
-::Chef::Recipe.send(:include, Azure::ARM::Resources)
-::Chef::Recipe.send(:include, Azure::ARM::Resources::Models)
+require File.expand_path('../../libraries/logger.rb', __FILE__)
+require File.expand_path('../../libraries/utils.rb', __FILE__)
 
 module AzureBase
   # class to handle operations on the Azure Resource Group
   # this is the base class, other classes will extend
   class ResourceGroupManager < AzureBase::AzureBaseManager
-
     attr_accessor :rg_name,
                   :org,
                   :assembly,
                   :environment,
                   :platform_ci_id,
                   :location,
-                  :subscription
+                  :subscription,
+                  :resource_client,
+                  :environment_ci_id,
+                  :is_new_cloud
 
     def initialize(node)
       super(node)
 
       # get the info needed to get the resource group name
-      nsPathParts = node[:workorder][:rfcCi][:nsPath].split('/')
+      nsPathParts = node['workorder']['rfcCi']['nsPath'].split('/')
       @org = nsPathParts[1]
       @assembly = nsPathParts[2]
       @environment = nsPathParts[3]
-      @platform_ci_id = node[:workorder][:box][:ciId]
-      if @service[:location] != nil
-       @location = @service[:location]
-      elsif @service[:region] != nil
-       @location = @service[:region]
+      @platform_ci_id = node['workorder']['box']['ciId']
+      @environment_ci_id = node['workorder']['payLoad']['Environment'][0]['ciId']
+      @is_new_cloud = Utils.is_new_cloud(node)
+      if !@service['location'].nil?
+        @location = @service['location']
+      elsif !@service['region'].nil?
+        @location = @service['region']
       end
-      @subscription = @service[:subscription]
+      @subscription = @service['subscription']
 
       @rg_name = get_name
-      @client = Azure::ARM::Resources::ResourceManagementClient.new(@creds)
-      @client.subscription_id = @subscription
+      @resource_client = Fog::Resources::AzureRM.new(@creds)
     end
 
     # this method will create/update the resource group with the info passed in
@@ -44,16 +45,11 @@ module AzureBase
         # get the name
         @rg_name = get_name if @rg_name.nil?
         OOLog.info("RG Name is: #{@rg_name}")
+        OOLog.info("New  cloud Pattern or old: #{@is_new_cloud}")
         # check if the rg is there
         if !exists?
-          OOLog.info("RG does NOT exists.  Creating...")
-          # create it if it isn't.
-          resource_group = Azure::ARM::Resources::Models::ResourceGroup.new
-          resource_group.location = @location
-          response =
-            @client.resource_groups.create_or_update(@rg_name,
-                                                     resource_group).value!
-          return response
+          OOLog.info('RG does NOT exists.  Creating...')
+          @resource_client.resource_groups.create(name: @rg_name, location: @location)
         else
           OOLog.info("Resource Group, #{@rg_name} already exists.  Moving on...")
         end
@@ -68,8 +64,7 @@ module AzureBase
     # if the resource group is not found it will return a nil.
     def exists?
       begin
-        response = @client.resource_groups.check_existence(@rg_name).value!
-        return response.body
+        @resource_client.resource_groups.check_resource_group_exists(@rg_name)
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error checking resource group: #{@rg_name}. Exception: #{e.body}")
       rescue => ex
@@ -79,12 +74,32 @@ module AzureBase
 
     # This method will delete the resource group
     def delete
+      rg_exists = @resource_client.resource_groups.check_resource_group_exists(@rg_name)
+      if !rg_exists
+        OOLog.info("The Resource Group #{@rg_name} does not exist. Moving on...")
+      else
+        @resource_client.resource_groups.get(@rg_name).destroy
+      end
+    end
+
+    def list_resources
       begin
-        response = @client.resource_groups.delete(@rg_name).value!
+        @resource_client.azure_resources.list_resources_in_resource_group(@rg_name)
       rescue MsRestAzure::AzureOperationError => e
-        OOLog.fatal("Error deleting resource group: #{e.body}")
+        OOLog.fatal("Error getting resources from resource group #{@rg_name}, error is: #{e.body}")
       rescue => ex
-        OOLog.fatal("Error deleting resource group: #{ex.message}")
+        OOLog.fatal("Error getting resources from resource group #{@rg_name}, error is: #{ex.message}")
+      end
+    end
+
+    # This method will get the resource group
+    def get
+      begin
+        @resource_client.resource_groups.get(@rg_name)
+      rescue MsRestAzure::AzureOperationError => e
+        OOLog.fatal("Error getting resource group: #{e.body}")
+      rescue => ex
+        OOLog.fatal("Error getting resource group: #{ex.message}")
       end
     end
 
@@ -98,12 +113,22 @@ module AzureBase
     # de-provision platforms in the same assembly / env / location without
     # destroying all of them together.
     def get_name
-      resource_group_name = @org[0..15] + '-' +
-        @assembly[0..15] + '-' +
-        @platform_ci_id.to_s + '-' +
-        @environment[0..15] + '-' +
-        Utils.abbreviate_location(@location)
-      return resource_group_name
+
+      if @is_new_cloud
+        @org[0..15] + '-' +
+            @assembly[0..15] + '-' +
+            @environment_ci_id.to_s + '-' +
+            @environment[0..15] + '-' +
+            Utils.abbreviate_location(@location)
+
+      else
+
+        @org[0..15] + '-' +
+            @assembly[0..15] + '-' +
+            @platform_ci_id.to_s + '-' +
+            @environment[0..15] + '-' +
+            Utils.abbreviate_location(@location)
+      end
     end
   end
 end

@@ -240,7 +240,7 @@ resource 'logstash',
 resource "fqdn",
   :cookbook => "oneops.1.fqdn",
   :design => true,
-  :requires => { "constraint" => "1..1", "services" => "compute,dns,*gdns" },
+  :requires => { "constraint" => "1..1", "services" => "compute,dns,*gdns,*torbit" },
   :attributes => { "aliases" => '[]' },
   :payloads => {
 'environment' => {
@@ -602,6 +602,33 @@ resource "fqdn",
              }
            ]
       }'
+    },
+    'fqdnclouds' => {
+      'description' => 'all clouds',
+      'definition' => '{
+         "returnObject": false,
+         "returnRelation": false,
+         "relationName": "base.RealizedAs",
+         "direction": "to",
+         "targetClassName": "manifest.oneops.1.Fqdn",
+         "relations": [
+           { "returnObject": false,
+             "returnRelation": false,
+             "relationName": "manifest.Requires",
+             "direction": "to",
+             "targetClassName": "manifest.Platform",
+             "relations": [
+               { "returnObject": true,
+                 "returnRelation": false,
+                 "returnRelationAttributes": true,
+                 "relationName": "base.Consumes",
+                 "direction": "from",
+                 "targetClassName": "account.Cloud"
+               }
+             ]
+           }
+         ]
+      }'
     }
   }
 
@@ -681,37 +708,21 @@ resource "volume",
      'definition' => '{
        "returnObject": false,
        "returnRelation": false,
-       "relationName": "base.RealizedAs",
-       "direction": "to",
-       "targetClassName": "manifest.oneops.1.Volume",
+       "relationName": "bom.DependsOn",
+       "direction": "from",
+       "targetClassName": "bom.oneops.1.Storage",
        "relations": [
          { "returnObject": false,
            "returnRelation": false,
-           "relationName": "manifest.DependsOn",
+           "relationName": "base.DeployedTo",
            "direction": "from",
-           "targetClassName": "manifest.oneops.1.Storage",
+           "targetClassName": "account.Cloud",
            "relations": [
-             { "returnObject": false,
+             { "returnObject": true,
                "returnRelation": false,
-               "relationName": "manifest.Requires",
-               "direction": "to",
-               "targetClassName": "manifest.Platform",
-               "relations": [
-                 { "returnObject": false,
-                   "returnRelation": false,
-                   "relationName": "base.Consumes",
-                   "direction": "from",
-                   "targetClassName": "account.Cloud",
-                   "relations": [
-                     { "returnObject": true,
-                       "returnRelation": false,
-                       "relationName": "base.Provides",
-                       "relationAttrs":[{"attributeName":"service", "condition":"eq", "avalue":"storage"}],
-                       "direction": "from"
-                     }
-                   ]
-                 }
-               ]
+               "relationName": "base.Provides",
+               "relationAttrs":[{"attributeName":"service", "condition":"eq", "avalue":"storage"}],
+               "direction": "from"
              }
            ]
          }
@@ -941,6 +952,18 @@ resource "artifact",
   :design => true,
   :requires => { "constraint" => "0..*" }
 
+resource "service-mesh",
+  :cookbook => "oneops.1.service-mesh",
+  :design => true,
+  :requires => {
+    "constraint" => "0..1",
+    'services' => 'servicemeshcloudservice'
+   },
+  :attributes => {
+    "service-mesh-version" => "1.7.1",
+    "service-mesh-root" => "/opt/service-mesh"
+  }
+
 # depends_on
 [ { :from => 'compute',     :to => 'secgroup' } ].each do |link|
   relation "#{link[:from]}::depends_on::#{link[:to]}",
@@ -980,7 +1003,10 @@ end
   { :from => 'secrets-client',  :to => 'user'},
   { :from => 'secrets-client',  :to => 'certificate'},
   { :from => 'secrets-client',  :to => 'volume'},
-  { :from => 'objectstore',  :to => 'user'}
+  { :from => 'objectstore',  :to => 'secrets-client'},
+  { :from => 'objectstore',  :to => 'user'},
+  { :from => 'service-mesh', :to => 'os'},
+  { :from => 'service-mesh', :to => 'volume'  }
 ].each do |link|
   relation "#{link[:from]}::depends_on::#{link[:to]}",
     :relation_name => 'DependsOn',
@@ -1027,7 +1053,7 @@ end
 
 # managed_via
 [ 'os', 'telegraf', 'filebeat', 'user', 'job', 'file', 'volume', 'share', 'download', 'library', 'daemon', 
-  'certificate', 'logstash', 'sensuclient', 'artifact', 'objectstore', 'secrets-client'].each do |from|
+  'certificate', 'logstash', 'sensuclient', 'artifact', 'objectstore', 'secrets-client', 'service-mesh'].each do |from|
   relation "#{from}::managed_via::compute",
     :except => [ '_default' ],
     :relation_name => 'ManagedVia',
