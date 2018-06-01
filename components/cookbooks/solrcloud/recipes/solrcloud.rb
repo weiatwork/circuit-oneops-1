@@ -401,7 +401,8 @@ if (node['solr_version'].start_with? "6.") || (node['solr_version'].start_with? 
                   :oo_platform => oo_platform,
                   :oo_cloud => node['oo_cloud'],
                   :node_ip => node['ipaddress'],
-                  :oo_environment_name => oo_environment_name
+                  :oo_environment_name => oo_environment_name,
+                  :solr_log_path => node["data_dir_path"]
               })
   end
 
