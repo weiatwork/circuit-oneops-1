@@ -329,6 +329,25 @@ attribute 'node_solr_portnum',
       :order => 24
   }
 
+
+attribute 'fault_domain',
+  :description => 'Fault Domain',
+  :grouping => 'bom',
+  :format => {
+    :important => true,
+    :category => '4.Other',
+    :order => 25
+  }
+
+attribute 'update_domain',
+  :description => 'Update Domain',
+  :grouping => 'bom',
+  :format => {
+    :important => true,
+    :category => '4.Other',
+    :order => 26
+  }
+
 attribute 'url_max_requests_per_sec_map',
   :description => "Url pattern and maxRequestsPerSec for them in DoSFilter",
   :default => "{}",
