@@ -171,6 +171,7 @@ if cloud_provider_name == 'azure' && allow_ephemeral_on_azure == 'false'
   node.set["enable_cinder"] = "false"
   # Verify that blockstorage/cinder mount point is same as installation dir on solrcloud attr.
   CloudProvider.enforce_storage_use(node, node['cinder_volume_mountpoint'], volume_app_mount_point)
+  CloudProvider.show_faultdomain_and_updatedomain(node)
 end
 
 # To set the ip,port and version for each solrcloud component
