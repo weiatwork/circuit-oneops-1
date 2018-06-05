@@ -43,3 +43,6 @@ shard_num_to_iplist_map.each do |shard_num, ip_list|
     add_replica(node['collection_name'], shard_num, ip, port_num.to_s)
   end
 end
+
+replicaDistributor.show_summary(computes, cloud_provider, port_num.to_s)
+

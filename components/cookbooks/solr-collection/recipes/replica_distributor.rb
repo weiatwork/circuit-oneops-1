@@ -4,6 +4,8 @@ require 'net/http'
 # This class is used to implement cloud provider specific code.
 class ReplicaDistributor
 
+  include SolrCollection::Util
+
   # [["fd1", {"ud1"=>["ip8", "ip9", "ip10", "ip11"], "ud2"=>["ip12", "ip13", "ip14", "ip15"]}], ["fd0", {"ud2"=>["ip5", "ip6", "ip7"], "ud1"=>["ip1", "ip2", "ip3", "ip4"]}]]
   # converts above array to map as below
   # {"fd1"=>{"ud1"=>["ip8", "ip9", "ip10", "ip11"], "ud2"=>["ip12", "ip13", "ip14", "ip15"]}, "fd0"=>{"ud2"=>["ip5", "ip6", "ip7"], "ud1"=>["ip1", "ip2", "ip3", "ip4"]}}
@@ -345,4 +347,71 @@ class ReplicaDistributor
     return shard_num_to_iplist_map
   end
 
+  # convert given ip_list to map |cloudid  => [ip list]|
+  # Example for Openstack - {"1"=>["ip1_11", "ip2_22"], "2"=>["ip3_33", "ip4_44"]", "3"=>["ip5_55"]}
+  def get_cloud_to_compute_ip_map(cloud_provider, ip_list, compute_ip_to_cloud_update_domain_map)
+    cloud_to_iplist_map = Hash.new
+    ip_list.each do |ip|
+      cloud_to_update_domain = compute_ip_to_cloud_update_domain_map[ip]
+      if cloud_provider != 'azure'
+        cloud_id = cloud_to_update_domain.split('___')[0]
+      end
+      if !cloud_to_iplist_map.has_key?cloud_id
+        cloud_to_iplist_map[cloud_id] = []
+      end
+       cloud_to_iplist_map[cloud_id].push ip
+    end
+    return cloud_to_iplist_map
+  end
+
+  # Shows a summary of the allocations done for all the collections
+  def show_summary(computes, cloud_provider, portnum)
+    compute_ip_to_cloud_id_map = get_compute_ip_to_cloud_id_map(computes, cloud_provider)
+    Chef::Log.info("Computes with cloud/domain information == #{compute_ip_to_cloud_id_map}")
+    cloud_to_compute_map = get_cloud_to_compute_ip_map(cloud_provider, compute_ip_to_cloud_id_map.keys, compute_ip_to_cloud_id_map)
+
+    cloud_ip_cores = Hash.new
+    cloud_to_compute_map.each { |cloud, computes|
+      cloud_ip_cores[cloud] = Hash.new
+      computes.each { |ip|
+        cloud_ip_cores[cloud][ip] = []
+      }
+    }
+
+    params = {
+      :action => "CLUSTERSTATUS"
+    }
+    # Capture the detailed information about clouds, IPs and cores
+    clusterstatus_resp_obj = collection_api("localhost", portnum, params)
+    collections = clusterstatus_resp_obj["cluster"]["collections"]
+    collections.each { |coll_name, coll_info|
+      shards = coll_info["shards"]
+      shards.each { |shard_name, shard_info|
+        replicas = shard_info["replicas"]
+        replicas.each { |replica_name, replica_info|
+          node_name = replica_info["node_name"]
+          ip = node_name.slice(0, node_name.index(':'))
+          cloud_id = compute_ip_to_cloud_id_map[ip]
+          if cloud_provider != 'azure'
+            cloud = cloud_id.split('___')[0]
+          end
+          cloud_ip_cores[cloud][ip].push(coll_name + ", " + shard_name + ", " + replica_name)
+        }
+      }
+    }
+
+    cloud_numcores_map = Hash.new
+    cloud_ip_cores.each { |cloud, cloud_info|
+      core_per_cloud = 0
+      cloud_info.each { |ip, cores|
+        core_per_cloud = core_per_cloud + cores.length
+      }
+      cloud_numcores_map[cloud] = core_per_cloud
+    }
+    # Show both the summary and the detailed information as both are helpful for verification
+    Chef::Log.info("Verify cloud_numcores_map: #{cloud_numcores_map.to_json}")
+    Chef::Log.info("Verify cloud_ip_cores: #{cloud_ip_cores.to_json}")
+  end
+
 end
+
