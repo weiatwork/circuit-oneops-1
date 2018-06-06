@@ -229,6 +229,7 @@ end
 execute "#{node[:zookeeper][:enable_zk_sasl_plain] == 'true'}" do
    command "/etc/zookeeper/lock_zk.sh"
    action :run
+   only_if { File.exists?("/etc/zookeeper/lock_zk.sh") }
 end
 
 template "/etc/zookeeper/unlock_zk.sh" do
