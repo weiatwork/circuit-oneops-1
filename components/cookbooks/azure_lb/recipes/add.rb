@@ -280,7 +280,7 @@ else
    # Traverse each NIC and update it with the LB info
    nics.each do |nic|
     compute_natrules.each do |compute|
-      if nic.virtual_machine_id.eql? compute[:instance_id]
+      if nic.virtual_machine_id.downcase.eql? compute[:instance_id].downcase
         nic.load_balancer_backend_address_pools_ids = backend_address_pool_ids
         compute_nat_rules_id = "/subscriptions/#{subscription_id}/resourceGroups/#{resource_group_name}/providers/Microsoft.Network/loadBalancers/#{lb_name}/inboundNatRules/#{compute[:nat_rule][:name]}"
         nic.load_balancer_inbound_nat_rules_ids = [compute_nat_rules_id]
