@@ -147,7 +147,8 @@ def create_gslb_vserver
         :name => gslb_vserver_name,
         :dnsrecordtype => @new_resource.dnsrecordtype,
         :servicetype =>  @new_resource.servicetype,
-        :lbmethod => @new_resource.lbmethod
+        :lbmethod => @new_resource.lbmethod,
+        :ecs => "ENABLED"
     }
 
     req = 'object= { "gslbvserver":'+JSON.dump(gslb_vserver)+'}'
