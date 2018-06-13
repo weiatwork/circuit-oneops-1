@@ -13,21 +13,6 @@ def create_publicip(cred_hash, location, resource_group_name)
   pip
 end
 
-def get_probes(ecvs)
-  probes = []
-
-  ecvs.each do |ecv|
-    probe = AzureNetwork::LoadBalancer.create_probe(ecv[:probe_name], ecv[:protocol], ecv[:port], ecv[:interval_secs], ecv[:num_probes], ecv[:request_path])
-    OOLog.info("Probe name: #{ecv[:probe_name]}")
-    OOLog.info("Probe protocol: #{ecv[:protocol]}")
-    OOLog.info("Probe port: #{ecv[:port]}")
-    OOLog.info("Probe path: #{ecv[:request_path]}")
-    probes.push(probe)
-  end
-
-  probes
-end
-
 def get_listeners_from_wo
   listeners = Array.new
 
@@ -239,7 +224,7 @@ backend_address_pools.push(backend_address_pool_name)
 backend_address_pool_ids.push(backend_address_pool_id)
 
 # ECV/Probes
-probes = get_probes(work_order_utils.ecvs)
+probes = work_order_utils.ecvs
 
 # Listeners/LB Rules
 lb_rules = get_loadbalancer_rules(subscription_id, resource_group_name, lb_name, env_name, platform_name, work_order_utils.listeners, probes, frontend_ipconfig_id, backend_address_pool_id, work_order_utils.load_distribution)
