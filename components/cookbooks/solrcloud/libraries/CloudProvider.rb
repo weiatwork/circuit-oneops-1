@@ -137,7 +137,7 @@ class CloudProvider
 
     computes.each do |compute|
       next if compute[:ciAttributes][:private_ip].nil?
-      if self.class.zone_info_missing?(compute)
+      if zone_info_missing?(compute)
         raise "Zone attrribute with fault_domain/update_domain information is required."
       end
       zone  = JSON.parse(compute['ciAttributes']['zone'])
@@ -157,7 +157,7 @@ class CloudProvider
   end
 
   # check if 'zone' attribute and/or its details are missing at compute
-  def self.zone_info_missing?(compute)
+  def zone_info_missing?(compute)
     # check if 'zone' attribute is missing at compute
     if compute['ciAttributes']['zone'].nil?
       return true
@@ -238,7 +238,7 @@ class CloudProvider
   def self.show_faultdomain_and_updatedomain(node)
     computes = self.get_computes_payload(node)
     computes.each do |compute|
-      if self.zone_info_missing?(compute)
+      if zone_info_missing?(compute)
         raise "Zone attrribute with fault_domain/update_domain information is required."
       end
       if compute[:ciAttributes][:private_ip] == node['ipaddress']
