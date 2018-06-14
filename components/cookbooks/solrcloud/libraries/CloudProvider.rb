@@ -137,7 +137,7 @@ class CloudProvider
 
     computes.each do |compute|
       next if compute[:ciAttributes][:private_ip].nil?
-      if self.zone_info_missing?(compute)
+      if self.class.zone_info_missing?(compute)
         raise "Zone attrribute with fault_domain/update_domain information is required."
       end
       zone  = JSON.parse(compute['ciAttributes']['zone'])
@@ -240,7 +240,7 @@ class CloudProvider
     computes.each do |compute|
       if self.zone_info_missing?(compute)
         raise "Zone attrribute with fault_domain/update_domain information is required."
-      end      
+      end
       if compute[:ciAttributes][:private_ip] == node['ipaddress']
         zone  = JSON.parse(compute['ciAttributes']['zone'])
         fault_domain = zone['fault_domain']
@@ -248,7 +248,6 @@ class CloudProvider
         Chef::Log.info(" Fault Domain = #{fault_domain}" + ", Update Domain = #{update_domain}")
         puts "***RESULT:fault_domain=#{fault_domain}"
         puts "***RESULT:update_domain=#{update_domain}"
-        return true
       end
     end
   end
