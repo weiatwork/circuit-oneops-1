@@ -11,7 +11,7 @@ KEY_EXPIRE_ERROR_MESSAGE = 'Server failed to authenticate the request. Make sure
 STATUS_CODES = {
   :success => [200, 201, 202, 203, 204],
   :failure => [400, 401, 402, 403, 404, 500, 501, 502, 503]
-}
+}.freeze
 
 def list_directories_or_files(conn, options, argv)
   # check if need to list files or directories
@@ -81,6 +81,21 @@ def upload_directory_or_file(conn, argv, provider)
   source_file_or_dir = argv[1]
   destination_directory = argv[2]
   file_exclustion_filter = argv[3] || '*'
+
+  if provider.eql?('Azure')
+    if destination_directory.length < 3 || destination_directory.length > 63
+      puts 'Invalid container name length, length should be 3-63 characters'
+      exit 1
+    end
+    if destination_directory !~ /^[a-z0-9]+(\d*\-\d*)[a-z0-9]+$/
+      puts 'Invalid container name, name should have lowercase alphanumeric and dash only'
+      exit 1
+    end
+    if source_file_or_dir.length > 1024
+      puts 'File name should be less than 1024 characters'
+      exit 1
+    end
+  end
 
   unless File.exist?(source_file_or_dir)
     puts "Given local source file/directory not exists #{source_file_or_dir}"
@@ -352,6 +367,8 @@ when 'list'
     if ex.to_s.include?(KEY_EXPIRE_ERROR_MESSAGE) && provider.eql?('Azure')
       get_new_key_in_case_of_exception(config)
     end
+  rescue Excon::Error => ex
+    raise ex
   rescue Azure::Core::Http::HTTPError => ex
     if ex.description.to_s.include?(KEY_EXPIRE_ERROR_MESSAGE) && provider.eql?('Azure')
       get_new_key_in_case_of_exception(config)
@@ -369,6 +386,8 @@ when 'delete'
     if ex.to_s.include?(KEY_EXPIRE_ERROR_MESSAGE) && provider.eql?('Azure')
       get_new_key_in_case_of_exception(config)
     end
+  rescue Excon::Error => ex
+    raise ex
   rescue Azure::Core::Http::HTTPError => ex
     if ex.description.to_s.include?(KEY_EXPIRE_ERROR_MESSAGE) && provider.eql?('Azure')
       get_new_key_in_case_of_exception(config)
@@ -386,6 +405,8 @@ when 'upload'
     if ex.to_s.include?(KEY_EXPIRE_ERROR_MESSAGE) && provider.eql?('Azure')
       get_new_key_in_case_of_exception(config)
     end
+  rescue Excon::Error => ex
+    raise ex
   rescue Azure::Core::Http::HTTPError => ex
     if ex.description.to_s.include?(KEY_EXPIRE_ERROR_MESSAGE) && provider.eql?('Azure')
       get_new_key_in_case_of_exception(config)
@@ -403,6 +424,8 @@ when 'download'
     if ex.to_s.include?(KEY_EXPIRE_ERROR_MESSAGE) && provider.eql?('Azure')
       get_new_key_in_case_of_exception(config)
     end
+  rescue Excon::Error => ex
+    raise ex
   rescue Azure::Core::Http::HTTPError => ex
     if ex.description.to_s.include?(KEY_EXPIRE_ERROR_MESSAGE) && provider.eql?('Azure')
       get_new_key_in_case_of_exception(config)
