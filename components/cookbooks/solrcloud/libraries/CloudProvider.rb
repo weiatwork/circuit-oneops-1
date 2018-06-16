@@ -6,15 +6,18 @@ require 'json'
 
 # This class is used to implement cloud provider specific code. 
 class CloudProvider
-  
+
   def initialize(node)
     #get the current node's cloud name
     @cloud_name = node[:workorder][:cloud][:ciName]
     Chef::Log.info("@cloud_name : #{@cloud_name}")
-    
+
     @cloud_provider = self.class.get_cloud_provider_name(node)
     Chef::Log.info("Initializing Cloud Provider : #{@cloud_provider}")
-    
+
+    @computes = self.class.get_computes_payload(node)
+    @cloud_id_to_name_map = get_cloud_id_to_name_map(node)
+
     # Replica distribution varies based on cloud provider. For ex. with 'Openstack' cloud provider, we distribute replicas across clouds and witn 'Azure', 
     # replicas are distributes across domains. If no cloud provider in payload, then error out. 
     if @cloud_provider == nil || @cloud_provider.empty?
@@ -249,6 +252,85 @@ class CloudProvider
         puts "***RESULT:fault_domain=#{fault_domain}"
         puts "***RESULT:update_domain=#{update_domain}"
       end
+    end
+  end
+
+  def get_cloud_id_to_name_map(node)
+    clouds = node.workorder.payLoad.has_key?("Clouds") ? node.workorder.payLoad.Clouds : (node.workorder.payLoad.has_key?("CloudPayload") ? node.workorder.payLoad.CloudPayload : nil)
+    # Ex: cloud_id_to_name_map => {'35709237':'prod-cdc5','35709238':'prod-cdc6'}
+    cloud_id_to_name_map = Hash.new
+    clouds.each { |cloud|
+      cloud_id_to_name_map[cloud[:ciId].to_s] = cloud[:ciName]
+    }
+    return cloud_id_to_name_map
+  end
+
+  def verify_replica_distribution_across_clouds(cloud_numcores_map, cluster_cores)
+    # Determine how many replicas should be available in each cloud.
+    min_cores_per_cloud = cluster_cores / cloud_numcores_map.size
+    remainder_cores = cluster_cores % cloud_numcores_map.size
+    cloud_cores_map = Hash.new
+    cloud_numcores_map.keys.each { |cloud|
+      if remainder_cores > 0
+        cloud_cores_map[cloud] = min_cores_per_cloud + 1
+        remainder_cores -= 1
+      else
+        cloud_cores_map[cloud] = min_cores_per_cloud
+      end
+    }
+    # Check if a some value of an array is contained in other
+    cores = cloud_cores_map.values & cloud_numcores_map.values
+    if cores.length == cloud_numcores_map.values.length
+      replica_distribution_status = true
+    else
+      replica_distribution_status = false
+    end
+    return replica_distribution_status
+  end
+
+  # Shows a summary of the allocations done for all collections
+  def show_summary(compute_ip_to_cloud_domain_map, clusterstatus_resp_obj)
+    if (@cloud_provider != "azure")
+      cloud_ip_cores = Hash.new
+      @zone_to_compute_ip_map.each { |cloud, computes|
+        cloud_ip_cores[cloud] = Hash.new
+        computes.each { |ip|
+          cloud_ip_cores[cloud][ip] = Array.new
+        }
+      }
+      collections = clusterstatus_resp_obj["cluster"]["collections"]
+      collections.each { |coll_name, coll_info|
+        shards = coll_info["shards"]
+        shards.each { |shard_name, shard_info|
+          replicas = shard_info["replicas"]
+          replicas.each { |replica_name, replica_info|
+            node_name = replica_info["node_name"]
+            ip = node_name.slice(0, node_name.index(':'))
+            cloud_domain = compute_ip_to_cloud_domain_map[ip]
+            cloud_id = cloud_domain.split('___')[0]
+            cloud_name = @cloud_id_to_name_map[cloud_id]
+            cloud_ip_cores[cloud_name][ip].push(coll_name + ", " + shard_name + ", " + replica_name)
+          }
+        }
+      }
+      cloud_numcores_map = Hash.new
+      cluster_cores = 0
+      cloud_ip_cores.each { |cloud, cloud_info|
+        core_per_cloud = 0
+        cloud_info.each { |ip, cores|
+          core_per_cloud = core_per_cloud + cores.length
+        }
+        cluster_cores = cluster_cores + core_per_cloud
+        cloud_numcores_map[cloud] = core_per_cloud
+      }
+      # Show both the summary and the detailed information as both are helpful for verification
+      Chef::Log.info("Verify cloud_numcores_map: #{cloud_numcores_map.to_json}")
+      Chef::Log.info("Verify cloud_ip_cores: #{cloud_ip_cores.to_json}")
+
+      replica_distribution_status = verify_replica_distribution_across_clouds(cloud_numcores_map, cluster_cores)
+      Chef::Log.info("Distribution of replicas across clouds :: Status => #{replica_distribution_status}")
+    else
+      Chef::Log.info("Show summary API is not implemented for Azure Cloud Provider yet.")
     end
   end
 

@@ -1,4 +1,5 @@
 extend SolrCollection::Util
+extend SolrCloud::Util
 require "#{File.dirname(__FILE__)}/replica_distributor"
 require 'json'
 
@@ -30,12 +31,14 @@ ipaddress = node['ipaddress']
 port_num = node['port_num'].to_i
 
 existing_cluster_collections = get_collections(ipaddress, port_num.to_s)
-cloud_provider = CloudProvider.get_cloud_provider_name(node)
+cloud_provider_name = CloudProvider.get_cloud_provider_name(node)
 computes = CloudProvider.get_computes_payload(node)
+
+cloud_provider = CloudProvider.new(node)
 
 replicaDistributor = ReplicaDistributor.new
 Chef::Log.info("existing_cluster_collections = #{existing_cluster_collections.to_json}")
-shard_num_to_iplist_map = replicaDistributor.get_shard_number_to_core_ips_map(node['num_shards'].to_i, node['replication_factor'].to_i, computes, cloud_provider, collections_for_node_sharing, existing_cluster_collections)
+shard_num_to_iplist_map = replicaDistributor.get_shard_number_to_core_ips_map(node['num_shards'].to_i, node['replication_factor'].to_i, computes, cloud_provider_name, collections_for_node_sharing, existing_cluster_collections)
 
 Chef::Log.info("shard_num_to_iplist_map = #{shard_num_to_iplist_map.to_json}")
 shard_num_to_iplist_map.each do |shard_num, ip_list|
@@ -44,5 +47,10 @@ shard_num_to_iplist_map.each do |shard_num, ip_list|
   end
 end
 
-replicaDistributor.show_summary(computes, cloud_provider, port_num.to_s)
+params = {
+  :action => "CLUSTERSTATUS"
+}
+clusterstatus_resp_obj = solr_collection_api("localhost", node['port_num'].to_s, params)
+compute_ip_to_cloud_domain_map = replicaDistributor.get_compute_ip_to_cloud_id_map(computes, cloud_provider)
+cloud_provider.show_summary(compute_ip_to_cloud_domain_map, clusterstatus_resp_obj)
 
