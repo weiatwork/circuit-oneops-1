@@ -71,6 +71,10 @@ module AzureCompute
       else
         false
       end
+
+      if @accelerated_networking.eql? 'true'
+        OOLog.fatal "Accelerated Network is only available for CentOS 7.4" unless @ostype.eql? 'centos-7.4'
+      end
     end
 
     def create_or_update_vm

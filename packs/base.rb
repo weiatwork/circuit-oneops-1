@@ -952,6 +952,7 @@ resource "artifact",
   :design => true,
   :requires => { "constraint" => "0..*" }
 
+
 resource "service-mesh",
   :cookbook => "oneops.1.service-mesh",
   :design => true,
@@ -962,6 +963,21 @@ resource "service-mesh",
   :attributes => {
     "service-mesh-version" => "1.7.1",
     "service-mesh-root" => "/opt/service-mesh"
+  }
+
+resource "baas-job",
+  :cookbook => "oneops.1.baas-job",
+  :design => true,
+  :requires => {
+    "constraint" => "0..1",
+    'services' => 'baascloudservice'
+   },
+  :attributes => {
+    "driver-version" => "",
+    "driver-id" => "",
+    "run-env" => "",
+    "job_map_1" => "{}",
+    "job_map_2" => "{}"
   }
 
 # depends_on
@@ -1005,6 +1021,8 @@ end
   { :from => 'secrets-client',  :to => 'volume'},
   { :from => 'objectstore',  :to => 'secrets-client'},
   { :from => 'objectstore',  :to => 'user'},
+  { :from => 'baas-job', :to => 'os'},
+  { :from => 'baas-job', :to => 'volume'  },
   { :from => 'service-mesh', :to => 'os'},
   { :from => 'service-mesh', :to => 'volume'  }
 ].each do |link|
@@ -1053,7 +1071,7 @@ end
 
 # managed_via
 [ 'os', 'telegraf', 'filebeat', 'user', 'job', 'file', 'volume', 'share', 'download', 'library', 'daemon', 
-  'certificate', 'logstash', 'sensuclient', 'artifact', 'objectstore', 'secrets-client', 'service-mesh'].each do |from|
+  'certificate', 'logstash', 'sensuclient', 'artifact', 'objectstore', 'secrets-client', 'baas-job', 'service-mesh'].each do |from|
   relation "#{from}::managed_via::compute",
     :except => [ '_default' ],
     :relation_name => 'ManagedVia',
