@@ -15,7 +15,6 @@ class CloudProvider
     @cloud_provider = self.class.get_cloud_provider_name(node)
     Chef::Log.info("Initializing Cloud Provider : #{@cloud_provider}")
 
-    @computes = self.class.get_computes_payload(node)
     @cloud_id_to_name_map = get_cloud_id_to_name_map(node)
 
     # Replica distribution varies based on cloud provider. For ex. with 'Openstack' cloud provider, we distribute replicas across clouds and witn 'Azure', 
@@ -268,12 +267,12 @@ class CloudProvider
   def verify_replica_distribution_across_clouds(cloud_numcores_map, cluster_cores)
     # Determine how many replicas should be available in each cloud.
     min_cores_per_cloud = cluster_cores / cloud_numcores_map.size
-    remainder_cores = cluster_cores % cloud_numcores_map.size
+    remaining_cores = cluster_cores % cloud_numcores_map.size
     cloud_cores_map = Hash.new
     cloud_numcores_map.keys.each { |cloud|
-      if remainder_cores > 0
+      if remaining_cores > 0
         cloud_cores_map[cloud] = min_cores_per_cloud + 1
-        remainder_cores -= 1
+        remaining_cores -= 1
       else
         cloud_cores_map[cloud] = min_cores_per_cloud
       end
