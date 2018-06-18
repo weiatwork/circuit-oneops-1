@@ -322,9 +322,12 @@ class CloudProvider
         cluster_cores = cluster_cores + core_per_cloud
         cloud_numcores_map[cloud] = core_per_cloud
       }
-      # Show both the summary and the detailed information as both are helpful for verification
-      Chef::Log.info("Verify cloud_numcores_map: #{cloud_numcores_map.to_json}")
-      Chef::Log.info("Verify cloud_ip_cores: #{cloud_ip_cores.to_json}")
+      # Show both the summary and the detailed information as both are helpful for verification.
+      # Ex: Verify cloud_numcores_map => {"prod-cdc6":3,"prod-cdc5":3}
+      Chef::Log.info("Verify cloud_numcores_map => #{cloud_numcores_map.to_json}")
+      # Ex: Verify cloud_ip_cores => {"prod-cdc5":{"ip_11":["qw, shard1, core_node3"],"ip_22":["qw, shard2, core_node6"],"ip_33":[qw, shard2, core_node5]},
+      # "prod-cdc6":{"ip21":["qw, shard1, core_node1"],"ip22":["qw, shard1, core_node2"],"ip23":["qw, shard2, core_node4"]}
+      Chef::Log.info("Verify cloud_ip_cores => #{cloud_ip_cores.to_json}")
 
       replica_distribution_status = verify_replica_distribution_across_clouds(cloud_numcores_map, cluster_cores)
       Chef::Log.info("Distribution of replicas across clouds :: Status => #{replica_distribution_status}")
