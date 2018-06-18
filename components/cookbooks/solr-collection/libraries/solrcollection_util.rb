@@ -29,6 +29,7 @@ module SolrCollection
         obj = JSON.parse(response.body())
         raise obj['error']['msg']
       rescue JSON::ParserError => e
+        Chef::Log.error("response.body.error.msg not found")
         # If error.msg could not be raised, then check response.msg
         if response.msg != nil then
           raise "Error \"#{response.msg}\" occurred while executing #{path}. Check oneops logs or Solr-server logs."
