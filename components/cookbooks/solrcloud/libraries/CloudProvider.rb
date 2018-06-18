@@ -137,7 +137,7 @@ class CloudProvider
 
     computes.each do |compute|
       next if compute[:ciAttributes][:private_ip].nil?
-      if zone_info_missing?(compute)
+      if self.class.zone_info_missing?(compute)
         raise "Zone attrribute with fault_domain/update_domain information is required."
       end
       zone  = JSON.parse(compute['ciAttributes']['zone'])
@@ -157,7 +157,7 @@ class CloudProvider
   end
 
   # check if 'zone' attribute and/or its details are missing at compute
-  def zone_info_missing?(compute)
+  def self.zone_info_missing?(compute)
     # check if 'zone' attribute is missing at compute
     if compute['ciAttributes']['zone'].nil?
       return true
@@ -233,6 +233,24 @@ class CloudProvider
       raise error
     end
   end
-    
+
+  # Shows fault domain and update domain for each solrcloud component.
+  def self.show_faultdomain_and_updatedomain(node)
+    computes = self.get_computes_payload(node)
+    computes.each do |compute|
+      if self.zone_info_missing?(compute)
+        raise "Zone attrribute with fault_domain/update_domain information is required."
+      end
+      if compute[:ciAttributes][:private_ip] == node['ipaddress']
+        zone  = JSON.parse(compute['ciAttributes']['zone'])
+        fault_domain = zone['fault_domain']
+        update_domain = zone['update_domain']
+        Chef::Log.info(" Fault Domain = #{fault_domain}" + ", Update Domain = #{update_domain}")
+        puts "***RESULT:fault_domain=#{fault_domain}"
+        puts "***RESULT:update_domain=#{update_domain}"
+      end
+    end
+  end
+
 end
 
