@@ -1090,3 +1090,38 @@ end
     :to_resource   => 'sshkeys',
     :attributes    => { }
 end
+
+procedure "gslb-migration",
+   :description => "Migrate GSLB to Torbit",
+     :arguments => {
+        "migrate" => {
+                "name" => "migrate",
+                "defaultValue" => "true",
+                "dataType" => "string"
+        }
+   },
+  :definition => '{
+    "flow": [
+        {
+            "execStrategy": "one-by-one",
+            "relationName": "manifest.Entrypoint",
+            "direction": "from",
+            "targetClassName": "manifest.oneops.1.Fqdn",
+            "flow": [
+                {
+                    "relationName": "base.RealizedAs",
+                    "execStrategy": "one-for-all",
+                    "direction": "from",
+                    "targetClassName": "bom.oneops.1.Fqdn",
+                    "actions": [
+                        {
+                            "actionName": "migrate",
+                            "stepNumber": 1,
+                            "isCritical": true
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}'
