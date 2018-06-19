@@ -1024,7 +1024,8 @@ end
   { :from => 'baas-job', :to => 'os'},
   { :from => 'baas-job', :to => 'volume'  },
   { :from => 'service-mesh', :to => 'os'},
-  { :from => 'service-mesh', :to => 'volume'  }
+  { :from => 'service-mesh', :to => 'volume'},
+  { :from => 'service-mesh', :to => 'java'}
 ].each do |link|
   relation "#{link[:from]}::depends_on::#{link[:to]}",
     :relation_name => 'DependsOn',
