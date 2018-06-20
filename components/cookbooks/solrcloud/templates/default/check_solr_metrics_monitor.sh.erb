@@ -45,6 +45,14 @@ jolokia_process=$(ps aux | grep "joloki[a]")
 # Check if Jolokia is up and running
 if [[ $jolokia_process =~ "-Djetty.base=" ]] ; then
 
+  # Check if jolokia_proxy has a lot of connections ESTABLISHED. If yes, then restart the jolokia_proxy.
+  established_jolokia_connections=$(netstat -an | grep ESTABLISHED | grep 13001 | wc -l)
+  if [ "$established_jolokia_connections" -gt 15 ] ; then
+    echo "Restarting jolokia_proxy as the number of established connections is $established_jolokia_connections"
+    sudo service jolokia_proxy restart
+  fi
+
+
   # Check if log files are not empty
   if [[ ! -s $node_status_log_file ]] ; then
     echo "$node_status_log_file is empty"
@@ -128,6 +136,9 @@ if [[ $jolokia_process =~ "-Djetty.base=" ]] ; then
 
 else
   echo "Jolokia Proxy is down |up=0"
+
+  echo "Starting jolokia_proxy"
+  sudo service jolokia_proxy start
 fi
 
 
