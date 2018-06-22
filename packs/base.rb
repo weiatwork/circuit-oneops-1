@@ -1024,7 +1024,8 @@ end
   { :from => 'baas-job', :to => 'os'},
   { :from => 'baas-job', :to => 'volume'  },
   { :from => 'service-mesh', :to => 'os'},
-  { :from => 'service-mesh', :to => 'volume'  }
+  { :from => 'service-mesh', :to => 'volume'},
+  { :from => 'service-mesh', :to => 'java'}
 ].each do |link|
   relation "#{link[:from]}::depends_on::#{link[:to]}",
     :relation_name => 'DependsOn',
@@ -1089,3 +1090,38 @@ end
     :to_resource   => 'sshkeys',
     :attributes    => { }
 end
+
+procedure "gslb-migration",
+   :description => "Migrate GSLB to Torbit",
+     :arguments => {
+        "migrate" => {
+                "name" => "migrate",
+                "defaultValue" => "true",
+                "dataType" => "string"
+        }
+   },
+  :definition => '{
+    "flow": [
+        {
+            "execStrategy": "one-by-one",
+            "relationName": "manifest.Entrypoint",
+            "direction": "from",
+            "targetClassName": "manifest.oneops.1.Fqdn",
+            "flow": [
+                {
+                    "relationName": "base.RealizedAs",
+                    "execStrategy": "one-for-all",
+                    "direction": "from",
+                    "targetClassName": "bom.oneops.1.Fqdn",
+                    "actions": [
+                        {
+                            "actionName": "migrate",
+                            "stepNumber": 1,
+                            "isCritical": true
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}'
