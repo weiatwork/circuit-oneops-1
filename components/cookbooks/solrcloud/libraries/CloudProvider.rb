@@ -255,7 +255,7 @@ class CloudProvider
   end
 
   def get_cloud_id_to_name_map(node)
-    clouds = node.workorder.payLoad.has_key?("Clouds") ? node.workorder.payLoad.Clouds : (node.workorder.payLoad.has_key?("CloudPayload") ? node.workorder.payLoad.CloudPayload : nil)
+    clouds = get_clouds_payload(node)
     # Ex: cloud_id_to_name_map => {'35709237':'prod-cdc5','35709238':'prod-cdc6'}
     cloud_id_to_name_map = Hash.new
     clouds.each { |cloud|
@@ -264,37 +264,14 @@ class CloudProvider
     return cloud_id_to_name_map
   end
 
-  def verify_replica_distribution_across_clouds(cloud_numcores_map, cluster_cores)
-    # Determine how many replicas should be available in each cloud.
-    min_cores_per_cloud = cluster_cores / cloud_numcores_map.size
-    remaining_cores = cluster_cores % cloud_numcores_map.size
-    cloud_cores_map = Hash.new
-    cloud_numcores_map.keys.each { |cloud|
-      if remaining_cores > 0
-        cloud_cores_map[cloud] = min_cores_per_cloud + 1
-        remaining_cores -= 1
-      else
-        cloud_cores_map[cloud] = min_cores_per_cloud
-      end
-    }
-    # Check if a some value of an array is contained in other
-    cores = cloud_cores_map.values & cloud_numcores_map.values
-    if cores.length == cloud_numcores_map.values.length
-      replica_distribution_status = true
-    else
-      replica_distribution_status = false
-    end
-    return replica_distribution_status
-  end
-
   # Shows a summary of the allocations done for all collections
   def show_summary(compute_ip_to_cloud_domain_map, clusterstatus_resp_obj)
     if (@cloud_provider != "azure")
       cloud_ip_cores = Hash.new
-      @zone_to_compute_ip_map.each { |cloud, computes|
-        cloud_ip_cores[cloud] = Hash.new
+      @zone_to_compute_ip_map.each { |cloud_name, computes|
+        cloud_ip_cores[cloud_name] = Hash.new
         computes.each { |ip|
-          cloud_ip_cores[cloud][ip] = Array.new
+          cloud_ip_cores[cloud_name][ip] = Array.new
         }
       }
       collections = clusterstatus_resp_obj["cluster"]["collections"]
@@ -314,13 +291,13 @@ class CloudProvider
       }
       cloud_numcores_map = Hash.new
       cluster_cores = 0
-      cloud_ip_cores.each { |cloud, cloud_info|
+      cloud_ip_cores.each { |cloud_name, cloud_info|
         core_per_cloud = 0
         cloud_info.each { |ip, cores|
           core_per_cloud = core_per_cloud + cores.length
         }
         cluster_cores = cluster_cores + core_per_cloud
-        cloud_numcores_map[cloud] = core_per_cloud
+        cloud_numcores_map[cloud_name] = core_per_cloud
       }
       # Show both the summary and the detailed information as both are helpful for verification.
       # Ex: Verify cloud_numcores_map => {"prod-cdc6":3,"prod-cdc5":3}
@@ -329,8 +306,6 @@ class CloudProvider
       # "prod-cdc6":{"ip21":["qw, shard1, core_node1"],"ip22":["qw, shard1, core_node2"],"ip23":["qw, shard2, core_node4"]}
       Chef::Log.info("Verify cloud_ip_cores => #{cloud_ip_cores.to_json}")
 
-      replica_distribution_status = verify_replica_distribution_across_clouds(cloud_numcores_map, cluster_cores)
-      Chef::Log.info("Distribution of replicas across clouds :: Status => #{replica_distribution_status}")
     else
       Chef::Log.info("Show summary API is not implemented for Azure Cloud Provider yet.")
     end

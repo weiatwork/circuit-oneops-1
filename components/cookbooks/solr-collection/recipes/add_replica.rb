@@ -31,6 +31,7 @@ ipaddress = node['ipaddress']
 port_num = node['port_num'].to_i
 
 existing_cluster_collections = get_collections(ipaddress, port_num.to_s)
+# Get cloud provider name (ex: Azure or Openstack)
 cloud_provider_name = CloudProvider.get_cloud_provider_name(node)
 computes = CloudProvider.get_computes_payload(node)
 
@@ -51,6 +52,6 @@ params = {
   :action => "CLUSTERSTATUS"
 }
 clusterstatus_resp_obj = solr_collection_api("localhost", node['port_num'].to_s, params)
-compute_ip_to_cloud_domain_map = replicaDistributor.get_compute_ip_to_cloud_id_map(computes, cloud_provider)
+compute_ip_to_cloud_domain_map = replicaDistributor.get_compute_ip_to_cloud_id_map(computes, cloud_provider_name)
 cloud_provider.show_summary(compute_ip_to_cloud_domain_map, clusterstatus_resp_obj)
 
