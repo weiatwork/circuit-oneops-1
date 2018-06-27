@@ -117,14 +117,6 @@ end
      group "root"
      mode  '0777'
  end
-
-# create "kafka_corrupt_files.sh" script 
- template "/usr/local/kafka/bin/kafka_corrupt_files.sh" do
-     source "kafka_corrupt_files.sh.erb"
-     owner "root"
-     group "root"
-     mode  '0777'
- end
  
  # adding permissions so that kafka_logerrs.sh will be executed without erros
  bash "add permissions to kafka_logerrs.sh" do
