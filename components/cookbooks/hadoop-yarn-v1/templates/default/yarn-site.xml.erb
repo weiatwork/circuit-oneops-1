@@ -40,6 +40,20 @@
         <value><%= @primaryResourceManager %>:8050</value>
     </property>
 
+    <!-- FairScheduler configuration -->
+    <property>
+        <name>yarn.resourcemanager.scheduler.class</name>
+        <value>org.apache.hadoop.yarn.server.resourcemanager.scheduler.fair.FairScheduler</value>
+    </property>
+    <property>
+        <name>yarn.scheduler.fair.preemption</name>
+        <value>true</value>
+    </property>
+    <property>
+        <name>yarn.scheduler.fair.assignmultiple</name>
+        <value>true</value>
+    </property>
+
     <!-- NodeManager configuration -->
 <% if spark_dist == "" %>
     <property>
